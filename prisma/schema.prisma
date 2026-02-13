@@ -1,0 +1,534 @@
+// CrowdLobby Database Schema
+// Demand aggregation platform for product requests
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USERS
+// ============================================================================
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  displayName    String   @map("display_name")
+  handle         String?  @unique
+  phoneE164      String?  @map("phone_e164")
+  phoneVerified  Boolean  @default(false) @map("phone_verified")
+  emailVerified  Boolean  @default(false) @map("email_verified")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  campaigns        Campaign[]
+  pledges          Pledge[]
+  orders           Order[]
+  brandTeams       BrandTeam[]
+  brandResponses   BrandResponse[]
+  pollVotes        PollVote[]
+  follows          Follow[]
+  reports          Report[]         @relation("reporter")
+  moderationActions ModerationAction[] @relation("admin")
+  magicLinks       MagicLink[]
+  phoneVerifications PhoneVerification[]
+  sessions         Session[]
+  creatorRewards   CreatorReward[]
+
+  @@map("users")
+}
+
+model MagicLink {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@map("magic_links")
+}
+
+model PhoneVerification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String
+  code      String
+  expiresAt DateTime @map("expires_at")
+  verifiedAt DateTime? @map("verified_at")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("phone_verifications")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@map("sessions")
+}
+
+// ============================================================================
+// BRANDS
+// ============================================================================
+
+model Brand {
+  id        String      @id @default(uuid())
+  name      String
+  slug      String      @unique
+  website   String?
+  logo      String?
+  status    BrandStatus @default(UNCLAIMED)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  team           BrandTeam[]
+  verifications  BrandVerification[]
+  campaigns      Campaign[]
+  responses      BrandResponse[]
+  polls          Poll[]
+  offers         Offer[]
+  payouts        Payout[]
+
+  @@map("brands")
+}
+
+enum BrandStatus {
+  UNCLAIMED
+  CLAIMED
+  VERIFIED
+}
+
+model BrandTeam {
+  brandId   String   @map("brand_id")
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      TeamRole
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([brandId, userId])
+  @@map("brand_team")
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model BrandVerification {
+  id         String             @id @default(uuid())
+  brandId    String             @map("brand_id")
+  brand      Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  method     VerificationMethod
+  status     VerificationStatus @default(PENDING)
+  token      String
+  createdAt  DateTime           @default(now()) @map("created_at")
+  verifiedAt DateTime?          @map("verified_at")
+
+  @@map("brand_verifications")
+}
+
+enum VerificationMethod {
+  EMAIL_DOMAIN
+  DNS_TXT
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+// ============================================================================
+// CAMPAIGNS
+// ============================================================================
+
+model Campaign {
+  id                  String         @id @default(uuid())
+  creatorUserId       String         @map("creator_user_id")
+  creator             User           @relation(fields: [creatorUserId], references: [id])
+  title               String
+  description         String
+  category            String
+  template            CampaignTemplate
+  targetedBrandId     String?        @map("targeted_brand_id")
+  targetedBrand       Brand?         @relation(fields: [targetedBrandId], references: [id])
+  openToAlternatives  Boolean        @default(false) @map("open_to_alternatives")
+  status              CampaignStatus @default(LIVE)
+  currency            String         @default("GBP")
+  fingerprintHash     String?        @map("fingerprint_hash")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  // Cached signal score (updated periodically)
+  signalScore         Float?         @map("signal_score")
+  signalScoreUpdatedAt DateTime?     @map("signal_score_updated_at")
+
+  // Relations
+  media          CampaignMedia[]
+  pledges        Pledge[]
+  brandResponses BrandResponse[]
+  polls          Poll[]
+  offers         Offer[]
+  follows        Follow[]
+  creatorRewards CreatorReward[]
+
+  @@index([status])
+  @@index([targetedBrandId])
+  @@index([category])
+  @@index([signalScore])
+  @@map("campaigns")
+}
+
+enum CampaignTemplate {
+  VARIANT
+  FEATURE
+}
+
+enum CampaignStatus {
+  DRAFT
+  LIVE
+  PAUSED
+  CLOSED
+}
+
+model CampaignMedia {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  kind       MediaKind
+  url        String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("campaign_media")
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+}
+
+// ============================================================================
+// PLEDGES
+// ============================================================================
+
+model Pledge {
+  id           String     @id @default(uuid())
+  campaignId   String     @map("campaign_id")
+  campaign     Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId       String     @map("user_id")
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pledgeType   PledgeType @map("pledge_type")
+  priceCeiling Decimal?   @map("price_ceiling") @db.Decimal(10, 2)
+  timeframeDays Int?      @map("timeframe_days")
+  region       String?
+  options      Json?      // Flexible storage for size, color, etc.
+  isPrivate    Boolean    @default(false) @map("is_private")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  @@unique([campaignId, userId, pledgeType])
+  @@index([campaignId])
+  @@index([userId])
+  @@map("pledges")
+}
+
+enum PledgeType {
+  SUPPORT
+  INTENT
+}
+
+// ============================================================================
+// BRAND INTERACTIONS
+// ============================================================================
+
+model BrandResponse {
+  id           String   @id @default(uuid())
+  campaignId   String   @map("campaign_id")
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  brandId      String   @map("brand_id")
+  brand        Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  authorUserId String   @map("author_user_id")
+  author       User     @relation(fields: [authorUserId], references: [id])
+  content      String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("brand_responses")
+}
+
+model Poll {
+  id         String     @id @default(uuid())
+  campaignId String     @map("campaign_id")
+  campaign   Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  brandId    String     @map("brand_id")
+  brand      Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  question   String
+  status     PollStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  closedAt   DateTime?  @map("closed_at")
+
+  options PollOption[]
+  votes   PollVote[]
+
+  @@map("polls")
+}
+
+enum PollStatus {
+  ACTIVE
+  CLOSED
+}
+
+model PollOption {
+  id         String   @id @default(uuid())
+  pollId     String   @map("poll_id")
+  poll       Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionText String   @map("option_text")
+  order      Int      @default(0)
+
+  votes PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  pollId    String   @map("poll_id")
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String   @map("option_id")
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([pollId, userId])
+  @@map("poll_votes")
+}
+
+// ============================================================================
+// OFFERS & ORDERS
+// ============================================================================
+
+model Offer {
+  id               String      @id @default(uuid())
+  campaignId       String      @map("campaign_id")
+  campaign         Campaign    @relation(fields: [campaignId], references: [id])
+  brandId          String      @map("brand_id")
+  brand            Brand       @relation(fields: [brandId], references: [id])
+  title            String
+  description      String?
+  price            Decimal     @db.Decimal(10, 2)
+  currency         String      @default("GBP")
+  goalQuantity     Int         @map("goal_quantity")
+  deadline         DateTime
+  shippingRequired Boolean     @default(true) @map("shipping_required")
+  status           OfferStatus @default(DRAFT)
+  createdAt        DateTime    @default(now()) @map("created_at")
+  activatedAt      DateTime?   @map("activated_at")
+  closedAt         DateTime?   @map("closed_at")
+
+  orders  Order[]
+  payouts Payout[]
+
+  @@index([campaignId])
+  @@index([status])
+  @@map("offers")
+}
+
+enum OfferStatus {
+  DRAFT
+  ACTIVE
+  SUCCESSFUL
+  FAILED
+  CANCELLED
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  offerId         String      @map("offer_id")
+  offer           Offer       @relation(fields: [offerId], references: [id])
+  userId          String      @map("user_id")
+  user            User        @relation(fields: [userId], references: [id])
+  amount          Decimal     @db.Decimal(10, 2)
+  currency        String
+  shippingName    String?     @map("shipping_name")
+  shippingLine1   String?     @map("shipping_line1")
+  shippingLine2   String?     @map("shipping_line2")
+  shippingCity    String?     @map("shipping_city")
+  shippingPostcode String?    @map("shipping_postcode")
+  shippingCountry String?     @map("shipping_country")
+  status          OrderStatus @default(PAID)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  payments Payment[]
+
+  @@index([offerId])
+  @@index([userId])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+model Payment {
+  id                      String        @id @default(uuid())
+  orderId                 String        @map("order_id")
+  order                   Order         @relation(fields: [orderId], references: [id])
+  provider                String        @default("stripe")
+  providerPaymentIntentId String        @map("provider_payment_intent_id")
+  status                  PaymentStatus
+  amount                  Decimal       @db.Decimal(10, 2)
+  currency                String
+  createdAt               DateTime      @default(now()) @map("created_at")
+
+  @@index([providerPaymentIntentId])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  REFUNDED
+  CHARGEBACK
+}
+
+// ============================================================================
+// PAYOUTS & REWARDS
+// ============================================================================
+
+model Payout {
+  id           String       @id @default(uuid())
+  offerId      String       @map("offer_id")
+  offer        Offer        @relation(fields: [offerId], references: [id])
+  brandId      String       @map("brand_id")
+  brand        Brand        @relation(fields: [brandId], references: [id])
+  grossAmount  Decimal      @map("gross_amount") @db.Decimal(10, 2)
+  platformFee  Decimal      @map("platform_fee") @db.Decimal(10, 2)
+  creatorShare Decimal      @map("creator_share") @db.Decimal(10, 2)
+  netToBrand   Decimal      @map("net_to_brand") @db.Decimal(10, 2)
+  status       PayoutStatus @default(PENDING)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  paidAt       DateTime?    @map("paid_at")
+
+  creatorReward CreatorReward?
+
+  @@map("payouts")
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model CreatorReward {
+  id            String       @id @default(uuid())
+  campaignId    String       @map("campaign_id")
+  campaign      Campaign     @relation(fields: [campaignId], references: [id])
+  creatorUserId String       @map("creator_user_id")
+  creator       User         @relation(fields: [creatorUserId], references: [id])
+  payoutId      String       @unique @map("payout_id")
+  payout        Payout       @relation(fields: [payoutId], references: [id])
+  amount        Decimal      @db.Decimal(10, 2)
+  status        RewardStatus @default(PENDING)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  paidAt        DateTime?    @map("paid_at")
+
+  @@map("creator_rewards")
+}
+
+enum RewardStatus {
+  PENDING
+  PAID
+}
+
+// ============================================================================
+// SOCIAL FEATURES
+// ============================================================================
+
+model Follow {
+  campaignId String   @map("campaign_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@id([campaignId, userId])
+  @@map("follows")
+}
+
+// ============================================================================
+// MODERATION
+// ============================================================================
+
+model Report {
+  id             String       @id @default(uuid())
+  reporterUserId String       @map("reporter_user_id")
+  reporter       User         @relation("reporter", fields: [reporterUserId], references: [id])
+  targetType     TargetType   @map("target_type")
+  targetId       String       @map("target_id")
+  reason         String
+  details        String?
+  status         ReportStatus @default(OPEN)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  resolvedAt     DateTime?    @map("resolved_at")
+
+  @@index([status])
+  @@map("reports")
+}
+
+enum TargetType {
+  CAMPAIGN
+  OFFER
+  BRAND_RESPONSE
+  BRAND
+  USER
+}
+
+enum ReportStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+model ModerationAction {
+  id          String         @id @default(uuid())
+  adminUserId String         @map("admin_user_id")
+  admin       User           @relation("admin", fields: [adminUserId], references: [id])
+  action      ModerationType
+  targetType  TargetType     @map("target_type")
+  targetId    String         @map("target_id")
+  notes       String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@map("moderation_actions")
+}
+
+enum ModerationType {
+  REMOVE
+  BAN
+  WARN
+  SHADOWBAN
+  RESTORE
+}
