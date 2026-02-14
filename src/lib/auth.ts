@@ -88,7 +88,14 @@ export async function getSession(): Promise<Session | null> {
     }
 
     return {
-      user: session.user,
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        displayName: session.user.displayName,
+        handle: session.user.handle ?? undefined,
+        emailVerified: session.user.emailVerified,
+        phoneVerified: session.user.phoneVerified,
+      },
       expires: session.expiresAt,
     }
   } catch {
@@ -205,7 +212,17 @@ export async function verifyMagicLink(token: string): Promise<{ jwt: string; use
   // Create session
   const jwt = await createSession(magicLink.userId)
 
-  return { jwt, user: magicLink.user }
+  return {
+    jwt,
+    user: {
+      id: magicLink.user.id,
+      email: magicLink.user.email,
+      displayName: magicLink.user.displayName,
+      handle: magicLink.user.handle ?? undefined,
+      emailVerified: magicLink.user.emailVerified,
+      phoneVerified: magicLink.user.phoneVerified,
+    },
+  }
 }
 
 // Create phone verification code
