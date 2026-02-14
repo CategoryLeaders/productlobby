@@ -1,9 +1,19 @@
 import Stripe from 'stripe'
 import { prisma } from './db'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-})
+let _stripe: Stripe | null = null
+
+function getStripeClient(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    })
+  }
+  return _stripe
+}
 
 // Platform fee configuration
 const PLATFORM_FEE_PERCENT = parseFloat(process.env.PLATFORM_FEE_PERCENT || '0.03')
@@ -55,7 +65,7 @@ export async function createOfferCheckout(
   const amountInPence = Math.round(Number(offer.price) * 100)
 
   // Create payment intent
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await getStripeClient().paymentIntents.create({
     amount: amountInPence,
     currency: offer.currency.toLowerCase(),
     metadata: {
@@ -77,7 +87,7 @@ export async function createOfferCheckout(
 
 // Handle successful payment - create order
 export async function handlePaymentSuccess(paymentIntentId: string): Promise<void> {
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+  const paymentIntent = await getStripeClient().paymentIntents.retrieve(paymentIntentId)
 
   if (paymentIntent.status !== 'succeeded') {
     throw new Error('Payment not successful')
@@ -160,7 +170,7 @@ export async function refundOrder(orderId: string): Promise<void> {
   }
 
   // Create refund in Stripe
-  await stripe.refunds.create({
+  await getStripeClient().refunds.create({
     payment_intent: payment.providerPaymentIntentId,
   })
 
