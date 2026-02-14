@@ -3,7 +3,7 @@ import { prisma } from './db'
 
 let _stripe: Stripe | null = null
 
-function getStripeClient(): Stripe {
+export function getStripeClient(): Stripe {
   if (!_stripe) {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY environment variable is not set')
