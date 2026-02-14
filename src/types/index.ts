@@ -48,6 +48,7 @@ export const CreateCampaignSchema = z.object({
   targetedBrandId: z.string().uuid().optional().nullable(),
   openToAlternatives: z.boolean().default(false),
   currency: z.string().length(3).default('GBP'),
+  mediaUrls: z.array(z.string().url()).max(10).optional(),
 })
 
 export const UpdateCampaignSchema = CreateCampaignSchema.partial()
@@ -258,6 +259,12 @@ export interface CampaignWithStats {
     slug: string
     logo: string | null
   } | null
+  media?: {
+    id: string
+    kind: 'IMAGE' | 'VIDEO'
+    url: string
+    order: number
+  }[]
   _count: {
     pledges: number
     follows: number
