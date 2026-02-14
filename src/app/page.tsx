@@ -105,10 +105,10 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold text-center mb-12">Popular Categories</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { name: 'Apparel', description: 'Sizes, colors, fits', icon: '\ud83d\udc55' },
-              { name: 'Tech', description: 'Hardware & gadgets', icon: '\ud83d\udcbb' },
-              { name: 'Audio', description: 'Speakers & headphones', icon: '\ud83c\udfa7' },
-              { name: 'Wearables', description: 'Watches & fitness', icon: '\u231a' },
+              { name: 'Apparel', description: 'Sizes, colors, fits', icon: '👕' },
+              { name: 'Tech', description: 'Hardware & gadgets', icon: '💻' },
+              { name: 'Audio', description: 'Speakers & headphones', icon: '🎧' },
+              { name: 'Wearables', description: 'Watches & fitness', icon: '⌚' },
             ].map((category) => (
               <Link
                 key={category.name}
