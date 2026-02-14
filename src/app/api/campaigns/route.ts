@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { CreateCampaignSchema, CampaignQuerySchema } from '@/types'
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
       limit: searchParams.get('limit') || 20,
     })
 
-    const where: Parameters<typeof prisma.campaign.findMany>[0]['where'] = {
+    const where: Prisma.CampaignWhereInput = {
       status: query.status || 'LIVE',
     }
 
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       where.targetedBrandId = query.brandId
     }
 
-    const orderBy: Parameters<typeof prisma.campaign.findMany>[0]['orderBy'] =
+    const orderBy: Prisma.CampaignOrderByWithRelationInput | Prisma.CampaignOrderByWithRelationInput[] =
       query.sort === 'newest'
         ? { createdAt: 'desc' }
         : query.sort === 'signal'
