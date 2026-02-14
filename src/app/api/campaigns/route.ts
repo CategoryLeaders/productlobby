@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
       }, { status: 409 })
     }
 
-    // Create the campaign
+    // Create the campaign with media if provided
     const campaign = await prisma.campaign.create({
       data: {
         creatorUserId: user.id,
@@ -200,6 +200,18 @@ export async function POST(request: NextRequest) {
         currency: data.currency,
         fingerprintHash: fingerprint,
         status: 'LIVE',
+        // Create media records if URLs provided
+        ...(data.mediaUrls && data.mediaUrls.length > 0
+          ? {
+              media: {
+                create: data.mediaUrls.map((url, index) => ({
+                  kind: 'IMAGE' as const,
+                  url,
+                  order: index,
+                })),
+              },
+            }
+          : {}),
       },
       include: {
         creator: {
@@ -215,6 +227,9 @@ export async function POST(request: NextRequest) {
             name: true,
             slug: true,
           },
+        },
+        media: {
+          orderBy: { order: 'asc' },
         },
       },
     })
