@@ -6,7 +6,17 @@ import { nanoid } from 'nanoid'
 import { Resend } from 'resend'
 import dns from 'dns/promises'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+
+function getResendClient(): Resend {
+  if (!_resend) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    _resend = new Resend(process.env.RESEND_API_KEY)
+  }
+  return _resend
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -91,13 +101,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       // Send verification email
       const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/brands/${id}/verify?token=${token}`
 
-      await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'CrowdLobby <noreply@crowdlobby.com>',
+      await getResendClient().emails.send({
+        from: process.env.EMAIL_FROM || 'ProductLobby <noreply@productlobby.com>',
         to: email,
-        subject: `Verify your claim to ${brand.name} on CrowdLobby`,
+        subject: `Verify your claim to ${brand.name} on ProductLobby`,
         html: `
           <h2>Verify Brand Ownership</h2>
-          <p>Click the link below to verify your claim to ${brand.name} on CrowdLobby:</p>
+          <p>Click the link below to verify your claim to ${brand.name} on ProductLobby:</p>
           <a href="${verifyUrl}">Verify Brand</a>
           <p>This link expires in 24 hours.</p>
         `,
@@ -130,8 +140,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         data: {
           method: 'DNS_TXT',
           domain,
-          record: `crowdlobby-verify=${token}`,
-          instructions: `Add a TXT record to ${domain} with value: crowdlobby-verify=${token}`,
+          record: `productlobby-verify=${token}`,
+          instructions: `Add a TXT record to ${domain} with value: productlobby-verify=${token}`,
         },
       })
     }
