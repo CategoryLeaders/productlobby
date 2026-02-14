@@ -1,6 +1,17 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+
+function getResendClient(): Resend {
+  if (!_resend) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    _resend = new Resend(process.env.RESEND_API_KEY)
+  }
+  return _resend
+}
+
 const FROM_EMAIL = process.env.EMAIL_FROM || 'ProductLobby <noreply@productlobby.com>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -17,7 +28,7 @@ export async function sendMagicLinkEmail(
   const magicLink = `${APP_URL}/auth/verify?token=${token}`
 
   try {
-    await resend.emails.send({
+    await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Sign in to ProductLobby',
@@ -69,7 +80,6 @@ export async function sendPhoneVerificationSMS(
   phone: string,
   code: string
 ): Promise<EmailResult> {
-  // In production, use Twilio SDK
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken = process.env.TWILIO_AUTH_TOKEN
   const fromNumber = process.env.TWILIO_PHONE_NUMBER
@@ -80,7 +90,6 @@ export async function sendPhoneVerificationSMS(
   }
 
   try {
-    // Using fetch for simplicity (in production, use Twilio SDK)
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
       {
@@ -119,7 +128,7 @@ export async function sendOfferSuccessEmail(
   }
 ): Promise<EmailResult> {
   try {
-    await resend.emails.send({
+    await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: `Great news! "${data.offerTitle}" was successful`,
@@ -131,7 +140,7 @@ export async function sendOfferSuccessEmail(
               <h1 style="color: #0284c7; margin: 0;">ProductLobby</h1>
             </div>
 
-            <h2 style="color: #10b981;">🎉 The offer was successful!</h2>
+            <h2 style="color: #10b981;">The offer was successful!</h2>
 
             <p>The offer <strong>"${data.offerTitle}"</strong> for the campaign <strong>"${data.campaignTitle}"</strong> reached its goal!</p>
 
@@ -171,7 +180,7 @@ export async function sendOfferFailedEmail(
   }
 ): Promise<EmailResult> {
   try {
-    await resend.emails.send({
+    await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: `Update: "${data.offerTitle}" did not reach its goal`,
@@ -229,7 +238,7 @@ export async function sendBrandNotificationEmail(
   }
 ): Promise<EmailResult> {
   try {
-    await resend.emails.send({
+    await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: `High demand campaign: "${data.campaignTitle}"`,
@@ -241,7 +250,7 @@ export async function sendBrandNotificationEmail(
               <h1 style="color: #0284c7; margin: 0;">ProductLobby</h1>
             </div>
 
-            <h2>📊 High Demand Alert</h2>
+            <h2>High Demand Alert</h2>
 
             <p>A campaign targeting your brand has reached significant demand:</p>
 
