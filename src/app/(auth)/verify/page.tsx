@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 function VerifyContent() {
   const router = useRouter()
@@ -12,6 +13,7 @@ function VerifyContent() {
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
 
   useEffect(() => {
     if (!token) {
@@ -50,44 +52,42 @@ function VerifyContent() {
   }, [token, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-card border border-gray-200 p-8 text-center">
         {status === 'loading' && (
           <>
-            <Loader2 className="w-16 h-16 text-primary-600 animate-spin mx-auto mb-6" />
-            <h1 className="text-2xl font-bold mb-2">Verifying...</h1>
+            <Loader2 className="w-16 h-16 text-violet-600 animate-spin mx-auto mb-6" />
+            <h1 className="text-2xl font-bold font-display text-foreground mb-2">Verifying...</h1>
             <p className="text-gray-600">Please wait while we sign you in.</p>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <div className="w-16 h-16 bg-success-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-8 h-8 text-success-500" />
+            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">You&apos;re in!</h1>
+            <h1 className="text-2xl font-bold font-display text-foreground mb-2">You're in!</h1>
             <p className="text-gray-600 mb-6">Redirecting you to the app...</p>
-            <Link
-              href="/campaigns"
-              className="text-primary-600 hover:text-primary-700 font-medium"
-            >
-              Click here if not redirected
+            <Link href="/campaigns">
+              <Button variant="secondary" className="w-full">
+                Click here if not redirected
+              </Button>
             </Link>
           </>
         )}
 
         {status === 'error' && (
           <>
-            <div className="w-16 h-16 bg-error-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <XCircle className="w-8 h-8 text-error-500" />
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <XCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">Verification Failed</h1>
+            <h1 className="text-2xl font-bold font-display text-foreground mb-2">Verification Failed</h1>
             <p className="text-gray-600 mb-6">{error}</p>
-            <Link
-              href="/auth/login"
-              className="bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition inline-block"
-            >
-              Try Again
+            <Link href="/auth/login">
+              <Button className="w-full">
+                Try Again
+              </Button>
             </Link>
           </>
         )}
@@ -99,8 +99,8 @@ function VerifyContent() {
 export default function VerifyPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
       </div>
     }>
       <VerifyContent />

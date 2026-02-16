@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Mail, Loader2, CheckCircle, Github } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
+export default function SignupPage() {
+  const [formData, setFormData] = useState({ displayName: '', email: '' })
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -22,7 +22,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: formData.email, displayName: formData.displayName }),
       })
 
       const data = await res.json()
@@ -48,10 +48,10 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold font-display text-foreground mb-2">Check your email</h1>
           <p className="text-gray-600 mb-2">
-            We sent a magic link to <strong>{email}</strong>
+            We sent a magic link to <strong>{formData.email}</strong>
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            Click the link to sign in. The link expires in 15 minutes.
+            Click the link to verify your email and sign up. The link expires in 15 minutes.
           </p>
           <button
             onClick={() => setSent(false)}
@@ -75,22 +75,35 @@ export default function LoginPage() {
 
           {/* Heading */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold font-display text-foreground">Welcome back</h1>
+            <h1 className="text-2xl font-bold font-display text-foreground">Join ProductLobby</h1>
             <p className="text-gray-600 text-sm mt-2">
-              Sign in to your ProductLobby account
+              Start lobbying for the products you want
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
+              type="text"
+              label="Display name"
+              placeholder="Your name"
+              value={formData.displayName}
+              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+              required
+            />
+
+            <Input
               type="email"
               label="Email address"
               placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
             />
+
+            <p className="text-xs text-gray-500 px-1">
+              We'll send you a magic link to verify your email
+            </p>
 
             {error && (
               <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm border border-red-200">
@@ -104,7 +117,7 @@ export default function LoginPage() {
               loading={loading}
               className="w-full"
             >
-              Send Magic Link
+              Create Account
             </Button>
           </form>
 
@@ -147,16 +160,16 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-sm text-gray-600 mt-6">
-            Don't have an account?{' '}
-            <Link href="/auth/signup" className="text-violet-600 font-medium hover:text-violet-700 transition-colors">
-              Sign up
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-violet-600 font-medium hover:text-violet-700 transition-colors">
+              Log in
             </Link>
           </p>
         </div>
 
         {/* Terms Link */}
         <p className="text-center text-xs text-gray-500 mt-4">
-          By signing in, you agree to our{' '}
+          By signing up, you agree to our{' '}
           <Link href="/terms" className="text-violet-600 hover:underline">
             Terms of Service
           </Link>{' '}
