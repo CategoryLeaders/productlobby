@@ -46,6 +46,7 @@ model User {
   referralLinks          ReferralLink[]
   contributionEvents     ContributionEvent[]
   notifications          Notification[]
+  campaignUpdates        CampaignUpdate[]
 
   @@map("users")
 }
