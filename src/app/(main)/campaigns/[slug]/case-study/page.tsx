@@ -108,7 +108,7 @@ const CASE_STUDY = {
   creatorReflection:
     "What started as a frustrated late-night post became a movement. I'm grateful for every person who supported this idea. Nike listened to what we wanted, and that makes all the difference.",
   brandPlans:
-    'We're committing to extended size availability across our entire women\'s running line. This demand data will help us make smarter product decisions going forward.',
+    "We are committing to extended size availability across our entire women's running line. This demand data will help us make smarter product decisions going forward.",
 }
 
 export default function CaseStudyPage({ params }: CaseStudyPageProps) {

@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate response rate for each brand
     const brandsWithStats = await Promise.all(
-      brands.map(async (brand) => {
+      brands.map(async (brand: any) => {
         const totalCampaigns = await prisma.campaign.count({
           where: { targetedBrandId: brand.id },
         })

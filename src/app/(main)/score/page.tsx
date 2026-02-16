@@ -29,7 +29,7 @@ export default function ScorePage() {
     { label: 'Content Quality', points: 120, color: 'green' as const },
     { label: 'Referrals', points: 85, color: 'violet' as const, note: '12 people joined via your links' },
     { label: 'Comments', points: 67, color: 'lime' as const, note: '23 comments, 8 with engagement' },
-    { label: 'Advocacy', points: 70, color: 'blue' as const, note: 'Social shares, brand outreach' },
+    { label: 'Advocacy', points: 70, color: 'violet' as const, note: 'Social shares, brand outreach' },
   ]
 
   const totalEarnings = DEMO_HERO_CAMPAIGNS.reduce((sum, c) => sum + c.heroEarnings, 0)

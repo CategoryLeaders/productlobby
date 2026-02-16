@@ -9,6 +9,7 @@ export interface Breadcrumb {
 
 export interface PageHeaderProps {
   title: string
+  subtitle?: string
   description?: string
   breadcrumbs?: Breadcrumb[]
   actions?: React.ReactNode
@@ -16,6 +17,7 @@ export interface PageHeaderProps {
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
+  subtitle,
   description,
   breadcrumbs,
   actions,
@@ -51,6 +53,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           <h1 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-2">
             {title}
           </h1>
+          {subtitle && (
+            <p className="text-lg text-gray-500 mb-1">{subtitle}</p>
+          )}
           {description && (
             <p className="text-gray-600 text-base leading-relaxed max-w-2xl">
               {description}

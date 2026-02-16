@@ -3,7 +3,7 @@
 import React, { forwardRef } from 'react'
 import { cn } from '@/lib/utils'
 
-type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost' | 'destructive'
+type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost' | 'destructive' | 'outline'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 export interface ButtonProps
@@ -28,6 +28,8 @@ const variantStyles: Record<ButtonVariant, string> = {
     'bg-transparent text-foreground hover:bg-foreground/10 focus:ring-violet-500 active:bg-foreground/20',
   destructive:
     'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800',
+  outline:
+    'border border-gray-300 text-foreground bg-white hover:bg-gray-50 focus:ring-violet-500 active:bg-gray-100',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {

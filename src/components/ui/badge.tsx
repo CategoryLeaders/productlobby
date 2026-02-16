@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils'
 
 type BadgeVariant =
   | 'default'
+  | 'secondary'
+  | 'destructive'
   | 'lime'
   | 'green'
   | 'red'
@@ -21,6 +23,8 @@ export interface BadgeProps
 
 const variantStyles: Record<BadgeVariant, string> = {
   default: 'bg-violet-100 text-violet-800',
+  secondary: 'bg-gray-100 text-gray-800',
+  destructive: 'bg-red-100 text-red-800',
   lime: 'bg-lime-100 text-lime-800',
   green: 'bg-green-100 text-green-800',
   red: 'bg-red-100 text-red-800',

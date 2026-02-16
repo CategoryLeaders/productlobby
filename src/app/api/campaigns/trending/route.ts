@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // Get verified lobby counts for each campaign
     const campaignsWithStats = await Promise.all(
-      campaigns.map(async (campaign) => {
+      campaigns.map(async (campaign: any) => {
         const [verifiedLobbyCount, intensityDistribution] = await Promise.all([
           prisma.lobby.count({
             where: {

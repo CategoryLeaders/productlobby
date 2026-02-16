@@ -37,19 +37,19 @@ export async function calculateSignalScore(campaignId: string): Promise<SignalSc
   })
 
   // Support pledges
-  const supportPledges = pledges.filter(p => p.pledgeType === 'SUPPORT')
+  const supportPledges = pledges.filter((p: typeof pledges[0]) => p.pledgeType === 'SUPPORT')
   const supportCount = supportPledges.length
 
   // Intent pledges
-  const intentPledges = pledges.filter(p => p.pledgeType === 'INTENT')
+  const intentPledges = pledges.filter((p: typeof pledges[0]) => p.pledgeType === 'INTENT')
   const intentCount = intentPledges.length
-  const intentPhoneVerifiedCount = intentPledges.filter(p => p.user.phoneVerified).length
+  const intentPhoneVerifiedCount = intentPledges.filter((p: typeof pledges[0]) => p.user.phoneVerified).length
 
   // Price ceilings
   const priceCeilings = intentPledges
-    .map(p => p.priceCeiling)
-    .filter((p): p is NonNullable<typeof p> => p !== null)
-    .map(p => Number(p))
+    .map((p: typeof pledges[0]) => p.priceCeiling)
+    .filter((p: any): p is NonNullable<typeof p> => p !== null)
+    .map((p: any) => Number(p))
 
   const medianPriceCeiling = priceCeilings.length > 0
     ? calculatePercentile(priceCeilings, 50)
@@ -60,10 +60,10 @@ export async function calculateSignalScore(campaignId: string): Promise<SignalSc
 
   // Momentum: intent pledges in last 7 days vs previous 7 days
   const intentLast7Days = intentPledges.filter(
-    p => p.createdAt >= sevenDaysAgo
+    (p: typeof pledges[0]) => p.createdAt >= sevenDaysAgo
   ).length
   const intentPrev7Days = intentPledges.filter(
-    p => p.createdAt >= fourteenDaysAgo && p.createdAt < sevenDaysAgo
+    (p: typeof pledges[0]) => p.createdAt >= fourteenDaysAgo && p.createdAt < sevenDaysAgo
   ).length
 
   // Fraud risk (placeholder - would integrate with fraud detection service)

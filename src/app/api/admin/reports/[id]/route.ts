@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Take moderation action
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       // Log the action
       await tx.moderationAction.create({
         data: {

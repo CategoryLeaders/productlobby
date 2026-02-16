@@ -72,7 +72,7 @@ const FAQ_ITEMS = [
     id: 2,
     question: 'When will I be charged?',
     answer:
-      'Your card will be charged only after the campaign reaches its goal AND the deadline passes. You'll receive a confirmation email within 24 hours. If the goal is not met, you will not be charged.',
+      "Your card will be charged only after the campaign reaches its goal AND the deadline passes. You'll receive a confirmation email within 24 hours. If the goal is not met, you will not be charged.",
   },
   {
     id: 3,

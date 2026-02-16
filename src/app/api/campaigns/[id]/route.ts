@@ -137,7 +137,7 @@ export async function GET(
 
     // Group and count wishlist themes
     const themeCounts: Record<string, number> = {}
-    wishlistThemes.forEach((item) => {
+    wishlistThemes.forEach((item: any) => {
       const normalized = item.text.toLowerCase().trim()
       themeCounts[normalized] = (themeCounts[normalized] || 0) + 1
     })
@@ -149,7 +149,7 @@ export async function GET(
 
     // Get aggregated preference data
     const preferenceData = await Promise.all(
-      campaign.preferenceFields.map(async (field) => {
+      campaign.preferenceFields.map(async (field: any) => {
         const responses = await prisma.lobbyPreference.findMany({
           where: {
             campaignPreferenceFieldId: field.id,
@@ -163,7 +163,7 @@ export async function GET(
         })
 
         const valueCounts: Record<string, number> = {}
-        responses.forEach((response) => {
+        responses.forEach((response: any) => {
           valueCounts[response.value] = (valueCounts[response.value] || 0) + 1
         })
 

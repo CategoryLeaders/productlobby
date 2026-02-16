@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       limit: searchParams.get('limit') || 20,
     })
 
-    const where: Prisma.CampaignWhereInput = {
+    const where: any = {
       status: query.status || 'LIVE',
     }
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       where.targetedBrandId = query.brandId
     }
 
-    const orderBy: Prisma.CampaignOrderByWithRelationInput | Prisma.CampaignOrderByWithRelationInput[] =
+    const orderBy: any =
       query.sort === 'newest'
         ? { createdAt: 'desc' }
         : query.sort === 'signal'
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     // Add stats to each campaign
     const campaignsWithStats = await Promise.all(
-      campaigns.map(async (campaign) => {
+      campaigns.map(async (campaign: any) => {
         const stats = await prisma.pledge.groupBy({
           by: ['pledgeType'],
           where: { campaignId: campaign.id },
@@ -94,8 +94,8 @@ export async function GET(request: NextRequest) {
           },
         })
 
-        const supportCount = stats.find((s) => s.pledgeType === 'SUPPORT')?._count || 0
-        const intentStats = stats.find((s) => s.pledgeType === 'INTENT')
+        const supportCount = stats.find((s: any) => s.pledgeType === 'SUPPORT')?._count || 0
+        const intentStats = stats.find((s: any) => s.pledgeType === 'INTENT')
         const intentCount = intentStats?._count || 0
         const estimatedDemand = intentStats?._sum.priceCeiling
           ? Number(intentStats._sum.priceCeiling)

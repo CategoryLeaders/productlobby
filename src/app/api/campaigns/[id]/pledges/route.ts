@@ -144,7 +144,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
 
     // Hide private pledges' user info
-    const publicPledges = pledges.map((pledge) => ({
+    const publicPledges = pledges.map((pledge: any) => ({
       ...pledge,
       user: pledge.isPrivate
         ? { id: 'private', displayName: 'Private Supporter', handle: null }

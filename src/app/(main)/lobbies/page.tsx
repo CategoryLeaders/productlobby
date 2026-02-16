@@ -25,9 +25,9 @@ const intensityConfig = {
 }
 
 const statusConfig = {
-  'live': { label: 'Live', color: 'lime' },
-  'shipped': { label: 'Shipped! ✓', color: 'green' },
-  'brand_reviewing': { label: 'Brand reviewing', color: 'default' },
+  'live': { label: 'Live', color: 'lime' as const },
+  'shipped': { label: 'Shipped! ✓', color: 'green' as const },
+  'brand_reviewing': { label: 'Brand reviewing', color: 'default' as const },
 }
 
 const DEMO_LOBBIES: Lobby[] = [

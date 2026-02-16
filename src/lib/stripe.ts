@@ -121,7 +121,7 @@ export async function handlePaymentSuccess(paymentIntentId: string): Promise<voi
   }
 
   // Create order and payment in transaction
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     const order = await tx.order.create({
       data: {
         offerId,
@@ -175,7 +175,7 @@ export async function refundOrder(orderId: string): Promise<void> {
   })
 
   // Update records
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     await tx.order.update({
       where: { id: orderId },
       data: { status: 'REFUNDED' },
@@ -214,7 +214,7 @@ export async function createOfferPayout(offerId: string): Promise<void> {
 
   // Calculate totals
   const grossAmount = offer.orders.reduce(
-    (sum, order) => sum + Number(order.amount),
+    (sum: number, order: any) => sum + Number(order.amount),
     0
   )
 
@@ -223,7 +223,7 @@ export async function createOfferPayout(offerId: string): Promise<void> {
   const netToBrand = grossAmount - platformFee
 
   // Create payout record
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     const payout = await tx.payout.create({
       data: {
         offerId,

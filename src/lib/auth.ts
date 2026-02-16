@@ -197,3 +197,136 @@ export async function requireAuth(): Promise<CurrentUser> {
 
   return user
 }
+
+// ============================================================================
+// MAGIC LINK CREATION
+// ============================================================================
+
+/**
+ * Create a magic link token for email authentication
+ * Returns the token to be used in an email link
+ */
+export async function createMagicLink(email: string): Promise<string> {
+  try {
+    // Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email },
+    })
+
+    // Create user if doesn't exist
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email,
+          displayName: email.split('@')[0],
+          handle: null,
+          avatar: null,
+          emailVerified: false,
+        },
+      })
+    }
+
+    // Generate magic link token
+    const token = crypto.randomUUID()
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+    // Create magic link in database
+    await prisma.magicLink.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+      },
+    })
+
+    return token
+  } catch (error) {
+    throw new Error('Failed to create magic link')
+  }
+}
+
+// ============================================================================
+// PHONE VERIFICATION
+// ============================================================================
+
+/**
+ * Create a phone verification code for a user
+ * Returns the verification code
+ */
+export async function createPhoneVerification(userId: string, phone: string): Promise<string> {
+  try {
+    // Generate random 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    // Create phone verification in database
+    await prisma.phoneVerification.create({
+      data: {
+        userId,
+        phone,
+        code,
+        expiresAt,
+      },
+    })
+
+    return code
+  } catch (error) {
+    throw new Error('Failed to create phone verification')
+  }
+}
+
+/**
+ * Verify a phone verification code
+ * Returns true if code is valid, false otherwise
+ */
+export async function verifyPhoneCode(userId: string, code: string): Promise<boolean> {
+  try {
+    const verification = await prisma.phoneVerification.findFirst({
+      where: {
+        userId,
+        code,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    })
+
+    if (!verification) {
+      return false
+    }
+
+    // Mark as verified
+    await prisma.phoneVerification.update({
+      where: { id: verification.id },
+      data: { verifiedAt: new Date() },
+    })
+
+    // Update user phone verification status
+    await prisma.user.update({
+      where: { id: userId },
+      data: { phoneVerified: true, phone: verification.phone },
+    })
+
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+/**
+ * Check if a user has verified their phone
+ * Throws error if phone is not verified
+ */
+export async function requirePhoneVerification(userId: string): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user?.phoneVerified) {
+      throw new Error('Phone verification required')
+    }
+  } catch (error) {
+    throw new Error('Phone verification required')
+  }
+}

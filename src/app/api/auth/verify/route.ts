@@ -14,28 +14,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await verifyMagicLink(token)
+    const user = await verifyMagicLink(token)
 
-    if (!result) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired link' },
         { status: 401 }
       )
     }
 
-    // Set session cookie
-    const cookieStore = await cookies()
-    cookieStore.set('session', result.jwt, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-    })
+    // Create and set session cookie
+    const { createSession } = await import('@/lib/auth')
+    const sessionToken = await createSession(user.id)
 
     return NextResponse.json({
       success: true,
-      user: result.user,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+      },
     })
   } catch (error) {
     console.error('Verify error:', error)

@@ -128,11 +128,10 @@ export default function CampaignsPage() {
         <EmptyState
           title="No campaigns yet"
           description={`You don't have any ${activeFilter !== 'All' ? activeFilter.toLowerCase() : ''} campaigns.`}
-          action={
-            <Link href="/dashboard/campaigns/new">
-              <Button variant="primary">Create First Campaign</Button>
-            </Link>
-          }
+          action={{
+            label: 'Create First Campaign',
+            onClick: () => window.location.href = '/dashboard/campaigns/new'
+          }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
