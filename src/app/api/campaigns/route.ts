@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
           },
           _count: {
             select: {
-              pledges: true,
+              lobbies: true,
               follows: true,
             },
           },
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         id: true,
         title: true,
         _count: {
-          select: { pledges: true },
+          select: { lobbies: true },
         },
       },
     })

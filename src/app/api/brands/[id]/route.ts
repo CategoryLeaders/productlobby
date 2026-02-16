@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             category: true,
             signalScore: true,
             _count: {
-              select: { pledges: true },
+              select: { lobbies: true },
             },
           },
         },
