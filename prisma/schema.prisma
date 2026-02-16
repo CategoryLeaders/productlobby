@@ -1,5 +1,5 @@
-// CrowdLobby Database Schema
-// Demand aggregation platform for product requests
+// ProductLobby Database Schema
+// Consumer-driven product demand platform with lobbying & pre-order paths
 
 generator client {
   provider = "prisma-client-js"
@@ -11,34 +11,41 @@ datasource db {
 }
 
 // ============================================================================
-// USERS
+// USERS & AUTH
 // ============================================================================
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  displayName    String   @map("display_name")
-  handle         String?  @unique
-  phoneE164      String?  @map("phone_e164")
-  phoneVerified  Boolean  @default(false) @map("phone_verified")
-  emailVerified  Boolean  @default(false) @map("email_verified")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  email             String   @unique
+  displayName       String   @map("display_name")
+  handle            String?  @unique
+  avatar            String?
+  bio               String?
+  phoneE164         String?  @map("phone_e164")
+  phoneVerified     Boolean  @default(false) @map("phone_verified")
+  emailVerified     Boolean  @default(false) @map("email_verified")
+  contributionScore Int      @default(0) @map("contribution_score")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relations
-  campaigns        Campaign[]
-  pledges          Pledge[]
-  orders           Order[]
-  brandTeams       BrandTeam[]
-  brandResponses   BrandResponse[]
-  pollVotes        PollVote[]
-  follows          Follow[]
-  reports          Report[]         @relation("reporter")
-  moderationActions ModerationAction[] @relation("admin")
-  magicLinks       MagicLink[]
-  phoneVerifications PhoneVerification[]
-  sessions         Session[]
-  creatorRewards   CreatorReward[]
+  campaigns              Campaign[]
+  lobbies                Lobby[]
+  orders                 Order[]
+  brandTeams             BrandTeam[]
+  brandResponses         BrandResponse[]
+  pollVotes              PollVote[]
+  follows                Follow[]
+  reports                Report[]                @relation("reporter")
+  moderationActions      ModerationAction[]      @relation("admin")
+  magicLinks             MagicLink[]
+  phoneVerifications     PhoneVerification[]
+  sessions               Session[]
+  creatorRewards         CreatorReward[]
+  heroRewards            HeroReward[]
+  referralLinks          ReferralLink[]
+  contributionEvents     ContributionEvent[]
+  notifications          Notification[]
 
   @@map("users")
 }
@@ -88,14 +95,16 @@ model Session {
 // ============================================================================
 
 model Brand {
-  id        String      @id @default(uuid())
-  name      String
-  slug      String      @unique
-  website   String?
-  logo      String?
-  status    BrandStatus @default(UNCLAIMED)
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  id                  String      @id @default(uuid())
+  name                String
+  slug                String      @unique
+  website             String?
+  logo                String?
+  description         String?
+  status              BrandStatus @default(UNCLAIMED)
+  responsivenessScore Float?      @map("responsiveness_score")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
 
   // Relations
   team           BrandTeam[]
@@ -164,43 +173,45 @@ enum VerificationStatus {
 model Campaign {
   id                  String         @id @default(uuid())
   creatorUserId       String         @map("creator_user_id")
-  creator             User           @relation(fields: [creatorUserId], references: [id])
+  creator             User           @relation(fields: [creatorUserId], references: [id], onDelete: Cascade)
   title               String
+  slug                String
   description         String
   category            String
-  template            CampaignTemplate
   targetedBrandId     String?        @map("targeted_brand_id")
-  targetedBrand       Brand?         @relation(fields: [targetedBrandId], references: [id])
+  targetedBrand       Brand?         @relation(fields: [targetedBrandId], references: [id], onDelete: SetNull)
   openToAlternatives  Boolean        @default(false) @map("open_to_alternatives")
-  status              CampaignStatus @default(LIVE)
+  status              CampaignStatus @default(DRAFT)
+  path                CampaignPath   @default(LOBBYING)
   currency            String         @default("GBP")
-  fingerprintHash     String?        @map("fingerprint_hash")
+  completenessScore   Int            @default(0) @map("completeness_score")
+  signalScore         Float?         @map("signal_score")
+  signalScoreUpdatedAt DateTime?     @map("signal_score_updated_at")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
-  // Cached signal score (updated periodically)
-  signalScore         Float?         @map("signal_score")
-  signalScoreUpdatedAt DateTime?     @map("signal_score_updated_at")
-
   // Relations
-  media          CampaignMedia[]
-  pledges        Pledge[]
-  brandResponses BrandResponse[]
-  polls          Poll[]
-  offers         Offer[]
-  follows        Follow[]
-  creatorRewards CreatorReward[]
+  media               CampaignMedia[]
+  preferenceFields    CampaignPreferenceField[]
+  lobbies             Lobby[]
+  updates             CampaignUpdate[]
+  brandResponses      BrandResponse[]
+  polls               Poll[]
+  offers              Offer[]
+  follows             Follow[]
+  creatorRewards      CreatorReward[]
+  heroRewards         HeroReward[]
+  contributionEvents  ContributionEvent[]
+  referralLinks       ReferralLink[]
 
+  @@unique([slug])
   @@index([status])
+  @@index([path])
   @@index([targetedBrandId])
   @@index([category])
   @@index([signalScore])
+  @@index([creatorUserId])
   @@map("campaigns")
-}
-
-enum CampaignTemplate {
-  VARIANT
-  FEATURE
 }
 
 enum CampaignStatus {
@@ -210,15 +221,23 @@ enum CampaignStatus {
   CLOSED
 }
 
+enum CampaignPath {
+  LOBBYING
+  PATH_A
+  PATH_B
+}
+
 model CampaignMedia {
   id         String   @id @default(uuid())
   campaignId String   @map("campaign_id")
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   kind       MediaKind
   url        String
+  altText    String?  @map("alt_text")
   order      Int      @default(0)
   createdAt  DateTime @default(now()) @map("created_at")
 
+  @@index([campaignId])
   @@map("campaign_media")
 }
 
@@ -227,34 +246,108 @@ enum MediaKind {
   VIDEO
 }
 
-// ============================================================================
-// PLEDGES
-// ============================================================================
+model CampaignPreferenceField {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  fieldName  String   @map("field_name")
+  fieldType  FieldType @map("field_type")
+  options    Json?
+  placeholder String?
+  required   Boolean  @default(false)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
 
-model Pledge {
-  id           String     @id @default(uuid())
-  campaignId   String     @map("campaign_id")
-  campaign     Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  userId       String     @map("user_id")
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pledgeType   PledgeType @map("pledge_type")
-  priceCeiling Decimal?   @map("price_ceiling") @db.Decimal(10, 2)
-  timeframeDays Int?      @map("timeframe_days")
-  region       String?
-  options      Json?      // Flexible storage for size, color, etc.
-  isPrivate    Boolean    @default(false) @map("is_private")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  // Relations
+  lobbyPreferences LobbyPreference[]
 
-  @@unique([campaignId, userId, pledgeType])
   @@index([campaignId])
-  @@index([userId])
-  @@map("pledges")
+  @@map("campaign_preference_fields")
 }
 
-enum PledgeType {
-  SUPPORT
-  INTENT
+enum FieldType {
+  TEXT
+  SELECT
+  MULTI_SELECT
+  NUMBER
+  RANGE
+}
+
+model CampaignUpdate {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creatorUserId String @map("creator_user_id")
+  creator    User     @relation(fields: [creatorUserId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([campaignId])
+  @@index([creatorUserId])
+  @@map("campaign_updates")
+}
+
+// ============================================================================
+// LOBBIES (Free Support)
+// ============================================================================
+
+model Lobby {
+  id         String       @id @default(uuid())
+  campaignId String       @map("campaign_id")
+  campaign   Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId     String       @map("user_id")
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intensity  LobbyIntensity
+  status     LobbyStatus  @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  preferences LobbyPreference[]
+  wishlists   LobbyWishlist[]
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
+  @@index([status])
+  @@map("lobbies")
+}
+
+enum LobbyIntensity {
+  NEAT_IDEA
+  PROBABLY_BUY
+  TAKE_MY_MONEY
+}
+
+enum LobbyStatus {
+  PENDING
+  VERIFIED
+}
+
+model LobbyPreference {
+  id                    String   @id @default(uuid())
+  lobbyId               String   @map("lobby_id")
+  lobby                 Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  campaignPreferenceFieldId String @map("campaign_preference_field_id")
+  preferenceField       CampaignPreferenceField @relation(fields: [campaignPreferenceFieldId], references: [id], onDelete: Cascade)
+  value                 String
+
+  @@unique([lobbyId, campaignPreferenceFieldId])
+  @@index([lobbyId])
+  @@index([campaignPreferenceFieldId])
+  @@map("lobby_preferences")
+}
+
+model LobbyWishlist {
+  id        String   @id @default(uuid())
+  lobbyId   String   @map("lobby_id")
+  lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([lobbyId])
+  @@map("lobby_wishlists")
 }
 
 // ============================================================================
@@ -262,17 +355,27 @@ enum PledgeType {
 // ============================================================================
 
 model BrandResponse {
-  id           String   @id @default(uuid())
-  campaignId   String   @map("campaign_id")
-  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  brandId      String   @map("brand_id")
-  brand        Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  authorUserId String   @map("author_user_id")
-  author       User     @relation(fields: [authorUserId], references: [id])
+  id           String              @id @default(uuid())
+  campaignId   String              @map("campaign_id")
+  campaign     Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  brandId      String              @map("brand_id")
+  brand        Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  authorUserId String              @map("author_user_id")
+  author       User                @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
   content      String
-  createdAt    DateTime @default(now()) @map("created_at")
+  responseType BrandResponseType   @map("response_type")
+  createdAt    DateTime            @default(now()) @map("created_at")
 
+  @@index([campaignId])
+  @@index([brandId])
+  @@index([createdAt])
   @@map("brand_responses")
+}
+
+enum BrandResponseType {
+  STATUS_UPDATE
+  COMMENT
+  ANNOUNCEMENT
 }
 
 model Poll {
@@ -394,15 +497,16 @@ enum OrderStatus {
 model Payment {
   id                      String        @id @default(uuid())
   orderId                 String        @map("order_id")
-  order                   Order         @relation(fields: [orderId], references: [id])
+  order                   Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   provider                String        @default("stripe")
-  providerPaymentIntentId String        @map("provider_payment_intent_id")
+  stripePaymentIntentId   String?       @map("stripe_payment_intent_id")
   status                  PaymentStatus
   amount                  Decimal       @db.Decimal(10, 2)
   currency                String
   createdAt               DateTime      @default(now()) @map("created_at")
 
-  @@index([providerPaymentIntentId])
+  @@index([stripePaymentIntentId])
+  @@index([orderId])
   @@map("payments")
 }
 
@@ -419,19 +523,24 @@ enum PaymentStatus {
 model Payout {
   id           String       @id @default(uuid())
   offerId      String       @map("offer_id")
-  offer        Offer        @relation(fields: [offerId], references: [id])
+  offer        Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
   brandId      String       @map("brand_id")
-  brand        Brand        @relation(fields: [brandId], references: [id])
+  brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
   grossAmount  Decimal      @map("gross_amount") @db.Decimal(10, 2)
   platformFee  Decimal      @map("platform_fee") @db.Decimal(10, 2)
   creatorShare Decimal      @map("creator_share") @db.Decimal(10, 2)
+  heroPool     Decimal      @map("hero_pool") @db.Decimal(10, 2)
   netToBrand   Decimal      @map("net_to_brand") @db.Decimal(10, 2)
   status       PayoutStatus @default(PENDING)
   createdAt    DateTime     @default(now()) @map("created_at")
   paidAt       DateTime?    @map("paid_at")
 
   creatorReward CreatorReward?
+  heroRewards   HeroReward[]
 
+  @@index([offerId])
+  @@index([brandId])
+  @@index([status])
   @@map("payouts")
 }
 
@@ -444,17 +553,41 @@ enum PayoutStatus {
 model CreatorReward {
   id            String       @id @default(uuid())
   campaignId    String       @map("campaign_id")
-  campaign      Campaign     @relation(fields: [campaignId], references: [id])
+  campaign      Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   creatorUserId String       @map("creator_user_id")
-  creator       User         @relation(fields: [creatorUserId], references: [id])
+  creator       User         @relation(fields: [creatorUserId], references: [id], onDelete: Cascade)
   payoutId      String       @unique @map("payout_id")
-  payout        Payout       @relation(fields: [payoutId], references: [id])
+  payout        Payout       @relation(fields: [payoutId], references: [id], onDelete: Cascade)
   amount        Decimal      @db.Decimal(10, 2)
   status        RewardStatus @default(PENDING)
   createdAt     DateTime     @default(now()) @map("created_at")
   paidAt        DateTime?    @map("paid_at")
 
+  @@index([campaignId])
+  @@index([creatorUserId])
+  @@index([status])
   @@map("creator_rewards")
+}
+
+model HeroReward {
+  id                String       @id @default(uuid())
+  campaignId        String       @map("campaign_id")
+  campaign          Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId            String       @map("user_id")
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payoutId          String       @map("payout_id")
+  payout            Payout       @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  amount            Decimal      @db.Decimal(10, 2)
+  contributionScore Int          @map("contribution_score")
+  status            RewardStatus @default(PENDING)
+  createdAt         DateTime     @default(now()) @map("created_at")
+  paidAt            DateTime?    @map("paid_at")
+
+  @@index([campaignId])
+  @@index([userId])
+  @@index([payoutId])
+  @@index([status])
+  @@map("hero_rewards")
 }
 
 enum RewardStatus {
@@ -474,7 +607,54 @@ model Follow {
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@id([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
   @@map("follows")
+}
+
+model ContributionEvent {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId  String   @map("campaign_id")
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  eventType   ContributionEventType @map("event_type")
+  points      Int
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("contribution_events")
+}
+
+enum ContributionEventType {
+  PREFERENCE_SUBMITTED
+  WISHLIST_SUBMITTED
+  REFERRAL_SIGNUP
+  COMMENT_ENGAGEMENT
+  SOCIAL_SHARE
+  BRAND_OUTREACH
+}
+
+model ReferralLink {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId String   @map("campaign_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  code       String   @unique
+  clickCount Int      @default(0) @map("click_count")
+  signupCount Int     @default(0) @map("signup_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, campaignId])
+  @@index([code])
+  @@index([userId])
+  @@index([campaignId])
+  @@map("referral_links")
 }
 
 // ============================================================================
@@ -515,13 +695,15 @@ enum ReportStatus {
 model ModerationAction {
   id          String         @id @default(uuid())
   adminUserId String         @map("admin_user_id")
-  admin       User           @relation("admin", fields: [adminUserId], references: [id])
+  admin       User           @relation("admin", fields: [adminUserId], references: [id], onDelete: Cascade)
   action      ModerationType
   targetType  TargetType     @map("target_type")
   targetId    String         @map("target_id")
   notes       String?
   createdAt   DateTime       @default(now()) @map("created_at")
 
+  @@index([adminUserId])
+  @@index([createdAt])
   @@map("moderation_actions")
 }
 
@@ -531,4 +713,21 @@ enum ModerationType {
   WARN
   SHADOWBAN
   RESTORE
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  linkUrl   String?  @map("link_url")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
 }

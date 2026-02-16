@@ -4,73 +4,263 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
-    --radius: 0.5rem;
+    /* Brand Color Palette - HSL Values for Tailwind Compatibility */
+    --color-violet-50: 269 89% 98%;
+    --color-violet-100: 269 100% 96%;
+    --color-violet-200: 269 100% 91%;
+    --color-violet-300: 269 97% 85%;
+    --color-violet-400: 270 95% 75%;
+    --color-violet-500: 270 91% 65%;
+    --color-violet-600: 270 92% 58%;
+    --color-violet-700: 270 92% 50%;
+    --color-violet-800: 270 85% 42%;
+    --color-violet-900: 270 81% 35%;
+    --color-violet-950: 270 100% 24%;
+
+    /* Primary Violet - #7C3AED */
+    --color-primary: 270 92% 50%;
+    --color-primary-light: 269 100% 96%;
+
+    /* Accent Lime - #84CC16 */
+    --color-accent: 82 94% 51%;
+    --color-accent-light: 82 100% 96%;
+
+    /* Secondary Green - #22C55E */
+    --color-green-50: 142 71% 94%;
+    --color-green-100: 142 72% 87%;
+    --color-green-200: 142 73% 76%;
+    --color-green-300: 142 76% 64%;
+    --color-green-400: 142 72% 54%;
+    --color-green-500: 142 71% 45%;
+    --color-green-600: 142 71% 41%;
+    --color-green-700: 142 72% 29%;
+    --color-green-800: 142 71% 25%;
+
+    /* Base Colors */
+    --color-background: 0 0% 98%;
+    --color-foreground: 217 33% 17%;
+    --color-dark-text: 217 33% 12%;
+
+    /* Logo Colors */
+    --color-logo-violet: 264 93% 62%;
+
+    /* Neutral Grays */
+    --color-gray-50: 210 40% 98%;
+    --color-gray-100: 210 40% 96%;
+    --color-gray-200: 214 32% 91%;
+    --color-gray-300: 216 33% 87%;
+    --color-gray-400: 218 33% 67%;
+    --color-gray-500: 220 13% 54%;
+    --color-gray-600: 215 14% 34%;
+    --color-gray-700: 215 16% 27%;
+    --color-gray-800: 217 33% 17%;
+    --color-gray-900: 222 47% 11%;
+
+    /* Focus and Interactive */
+    --color-focus-ring: 270 92% 50%;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 199 89% 48%;
+  /* Base element styles */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: hsl(var(--color-background));
+    color: hsl(var(--color-foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold;
+  }
+
+  h1 {
+    @apply text-4xl tracking-tight;
+  }
+
+  h2 {
+    @apply text-3xl tracking-tight;
+  }
+
+  h3 {
+    @apply text-2xl tracking-tight;
+  }
+
+  h4 {
+    @apply text-xl tracking-tight;
+  }
+
+  h5 {
+    @apply text-lg tracking-tight;
+  }
+
+  h6 {
+    @apply text-base tracking-tight;
+  }
+
+  /* Focus ring styles */
+  :focus-visible {
+    outline: 2px solid hsl(var(--color-focus-ring));
+    outline-offset: 2px;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: hsl(var(--color-violet-100));
+    color: hsl(var(--color-violet-700));
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--color-background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--color-gray-300));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--color-gray-400));
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--color-gray-300)) hsl(var(--color-background));
+  }
+
+  /* Link styles */
+  a {
+    @apply text-violet-600 hover:text-violet-700 transition-colors;
+  }
+
+  a:focus-visible {
+    @apply rounded;
+  }
+
+  /* Button base styles */
+  button {
+    @apply transition-colors;
+  }
+
+  /* Input focus styles */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: hsl(var(--color-focus-ring));
+    box-shadow: 0 0 0 3px hsl(var(--color-violet-100));
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@layer components {
+  /* Card component */
+  .card {
+    @apply bg-white rounded-lg shadow-card border border-gray-100;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  .card-hover {
+    @apply hover:shadow-card-hover transition-shadow;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-violet-100 text-violet-700 rounded-lg font-medium hover:bg-violet-200 transition-colors;
+  }
+
+  .btn-accent {
+    @apply px-4 py-2 bg-lime-500 text-gray-900 rounded-lg font-medium hover:bg-lime-600 transition-colors;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors;
+  }
+
+  /* Container utilities */
+  .container-lg {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Text utilities */
+  .text-gradient {
+    @apply bg-gradient-to-r from-violet-600 to-lime-500 bg-clip-text text-transparent;
   }
 }
 
 @layer utilities {
-  .animate-in {
-    animation: animateIn 0.3s ease-out;
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
   }
 
-  @keyframes animateIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Background utilities */
+  .bg-light-violet {
+    @apply bg-violet-50;
+  }
+
+  .bg-light-lime {
+    @apply bg-lime-50;
+  }
+
+  .bg-light-green {
+    @apply bg-green-50;
+  }
+
+  /* Text color utilities */
+  .text-dark {
+    @apply text-gray-900;
+  }
+
+  .text-muted {
+    @apply text-gray-600;
+  }
+
+  /* Border utilities */
+  .border-violet {
+    @apply border-violet-200;
+  }
+
+  .border-light {
+    @apply border-gray-100;
+  }
+
+  /* Spacing utilities */
+  .gap-comfortable {
+    @apply gap-6;
+  }
+
+  /* Shadow utilities */
+  .shadow-subtle {
+    @apply shadow-card;
+  }
+
+  .shadow-lifted {
+    @apply shadow-elevated;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    @apply animate-fade-in;
+  }
+
+  .animate-slide-up {
+    @apply animate-slide-up;
+  }
+
+  .animate-pulse-subtle {
+    @apply animate-pulse-subtle;
   }
 }

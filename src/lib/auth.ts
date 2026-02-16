@@ -1,63 +1,40 @@
-import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
-import { nanoid } from 'nanoid'
-import { prisma } from './db'
+import { prisma } from '@/lib/db'
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-secret-change-in-production'
-)
+// ============================================================================
+// TYPES
+// ============================================================================
 
-const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days
-
-export interface SessionUser {
+export interface CurrentUser {
   id: string
   email: string
   displayName: string
-  handle?: string
+  handle: string | null
+  avatar: string | null
   emailVerified: boolean
-  phoneVerified: boolean
 }
 
-export interface Session {
-  user: SessionUser
-  expires: Date
-}
+// ============================================================================
+// COOKIE MANAGEMENT
+// ============================================================================
 
-// Create a new session for a user
-export async function createSession(userId: string): Promise<string> {
-  const token = nanoid(32)
-  const expiresAt = new Date(Date.now() + SESSION_DURATION)
+const SESSION_COOKIE_NAME = 'session_token'
+const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
 
-  await prisma.session.create({
-    data: {
-      userId,
-      token,
-      expiresAt,
-    },
-  })
-
-  const jwt = await new SignJWT({ sessionToken: token })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(expiresAt)
-    .sign(JWT_SECRET)
-
-  return jwt
-}
-
-// Get current session from cookies
-export async function getSession(): Promise<Session | null> {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get('session')
-
-  if (!sessionCookie?.value) {
-    return null
-  }
-
+/**
+ * Get the current authenticated user from the session cookie
+ * Returns the authenticated user or null if no valid session exists
+ */
+export async function getCurrentUser(): Promise<CurrentUser | null> {
   try {
-    const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET)
-    const sessionToken = payload.sessionToken as string
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value
 
+    if (!sessionToken) {
+      return null
+    }
+
+    // Look up session in database
     const session = await prisma.session.findUnique({
       where: { token: sessionToken },
       include: {
@@ -67,236 +44,156 @@ export async function getSession(): Promise<Session | null> {
             email: true,
             displayName: true,
             handle: true,
+            avatar: true,
             emailVerified: true,
-            phoneVerified: true,
           },
         },
       },
     })
 
+    // Check if session exists and hasn't expired
     if (!session || session.expiresAt < new Date()) {
       return null
     }
 
-    // Refresh session if less than 1 day remaining
-    if (session.expiresAt.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
-      const newExpiresAt = new Date(Date.now() + SESSION_DURATION)
-      await prisma.session.update({
-        where: { id: session.id },
-        data: { expiresAt: newExpiresAt },
-      })
-    }
-
     return {
-      user: {
-        id: session.user.id,
-        email: session.user.email,
-        displayName: session.user.displayName,
-        handle: session.user.handle ?? undefined,
-        emailVerified: session.user.emailVerified,
-        phoneVerified: session.user.phoneVerified,
-      },
-      expires: session.expiresAt,
+      id: session.user.id,
+      email: session.user.email,
+      displayName: session.user.displayName,
+      handle: session.user.handle,
+      avatar: session.user.avatar,
+      emailVerified: session.user.emailVerified,
     }
   } catch {
     return null
   }
 }
 
-// Get current user (convenience function)
-export async function getCurrentUser(): Promise<SessionUser | null> {
-  const session = await getSession()
-  return session?.user || null
-}
+/**
+ * Create a new session for a user and set the session cookie
+ * Returns the session token string
+ */
+export async function createSession(userId: string): Promise<string> {
+  // Generate random token
+  const token = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + SESSION_DURATION)
 
-// Require authentication (throws if not authenticated)
-export async function requireAuth(): Promise<SessionUser> {
-  const user = await getCurrentUser()
-  if (!user) {
-    throw new Error('Authentication required')
-  }
-  return user
-}
-
-// Delete session (logout)
-export async function deleteSession(): Promise<void> {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get('session')
-
-  if (sessionCookie?.value) {
-    try {
-      const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET)
-      const sessionToken = payload.sessionToken as string
-
-      await prisma.session.deleteMany({
-        where: { token: sessionToken },
-      })
-    } catch {
-      // Token invalid, just clear cookie
-    }
-  }
-}
-
-// Create magic link token
-export async function createMagicLink(email: string): Promise<string> {
-  const token = nanoid(32)
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
-
-  // Find or create user
-  let user = await prisma.user.findUnique({ where: { email } })
-
-  if (!user) {
-    // Create user with email as display name initially
-    user = await prisma.user.create({
-      data: {
-        email,
-        displayName: email.split('@')[0],
-      },
-    })
-  }
-
-  // Delete any existing magic links for this user
-  await prisma.magicLink.deleteMany({
-    where: { userId: user.id },
-  })
-
-  // Create new magic link
-  await prisma.magicLink.create({
+  // Create session in database
+  await prisma.session.create({
     data: {
+      userId,
       token,
-      userId: user.id,
       expiresAt,
     },
+  })
+
+  // Set httpOnly, secure, sameSite cookie
+  const cookieStore = await cookies()
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: SESSION_DURATION / 1000, // Convert to seconds
+    path: '/',
   })
 
   return token
 }
 
-// Verify magic link and create session
-export async function verifyMagicLink(token: string): Promise<{ jwt: string; user: SessionUser } | null> {
-  const magicLink = await prisma.magicLink.findUnique({
-    where: { token },
-    include: {
-      user: {
-        select: {
-          id: true,
-          email: true,
-          displayName: true,
-          handle: true,
-          emailVerified: true,
-          phoneVerified: true,
+/**
+ * Delete the current session (logout)
+ * Removes session from database and clears the cookie
+ */
+export async function deleteSession(): Promise<void> {
+  try {
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value
+
+    if (sessionToken) {
+      // Delete session from database
+      await prisma.session.deleteMany({
+        where: { token: sessionToken },
+      })
+    }
+
+    // Clear the cookie
+    cookieStore.delete(SESSION_COOKIE_NAME)
+  } catch {
+    // Continue even if there's an error
+  }
+}
+
+// ============================================================================
+// MAGIC LINK VERIFICATION
+// ============================================================================
+
+/**
+ * Verify a magic link token and authenticate the user
+ * Returns the user if token is valid, null otherwise
+ * Marks the magic link as used and sets emailVerified = true
+ */
+export async function verifyMagicLink(token: string): Promise<CurrentUser | null> {
+  try {
+    const magicLink = await prisma.magicLink.findUnique({
+      where: { token },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            handle: true,
+            avatar: true,
+            emailVerified: true,
+          },
         },
       },
-    },
-  })
+    })
 
-  if (!magicLink || magicLink.expiresAt < new Date() || magicLink.usedAt) {
-    return null
-  }
+    // Validate magic link exists, not expired, and not already used
+    if (!magicLink || magicLink.expiresAt < new Date() || magicLink.usedAt) {
+      return null
+    }
 
-  // Mark magic link as used
-  await prisma.magicLink.update({
-    where: { id: magicLink.id },
-    data: { usedAt: new Date() },
-  })
+    // Mark magic link as used
+    await prisma.magicLink.update({
+      where: { id: magicLink.id },
+      data: { usedAt: new Date() },
+    })
 
-  // Mark email as verified
-  if (!magicLink.user.emailVerified) {
+    // Update user to mark email as verified
     await prisma.user.update({
       where: { id: magicLink.userId },
       data: { emailVerified: true },
     })
-    magicLink.user.emailVerified = true
-  }
 
-  // Create session
-  const jwt = await createSession(magicLink.userId)
-
-  return {
-    jwt,
-    user: {
+    return {
       id: magicLink.user.id,
       email: magicLink.user.email,
       displayName: magicLink.user.displayName,
-      handle: magicLink.user.handle ?? undefined,
-      emailVerified: magicLink.user.emailVerified,
-      phoneVerified: magicLink.user.phoneVerified,
-    },
+      handle: magicLink.user.handle,
+      avatar: magicLink.user.avatar,
+      emailVerified: true,
+    }
+  } catch {
+    return null
   }
 }
 
-// Create phone verification code
-export async function createPhoneVerification(userId: string, phone: string): Promise<string> {
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+// ============================================================================
+// AUTH REQUIREMENT
+// ============================================================================
 
-  // Delete any existing verifications for this user
-  await prisma.phoneVerification.deleteMany({
-    where: { userId },
-  })
+/**
+ * Middleware function for API routes that require authentication
+ * Returns the current user or throws an error if not authenticated
+ */
+export async function requireAuth(): Promise<CurrentUser> {
+  const user = await getCurrentUser()
 
-  await prisma.phoneVerification.create({
-    data: {
-      userId,
-      phone,
-      code,
-      expiresAt,
-    },
-  })
-
-  return code
-}
-
-// Verify phone code
-export async function verifyPhoneCode(userId: string, code: string): Promise<boolean> {
-  const verification = await prisma.phoneVerification.findFirst({
-    where: {
-      userId,
-      code,
-      expiresAt: { gt: new Date() },
-      verifiedAt: null,
-      attempts: { lt: 5 },
-    },
-  })
-
-  if (!verification) {
-    // Increment attempts if verification exists but code is wrong
-    await prisma.phoneVerification.updateMany({
-      where: {
-        userId,
-        verifiedAt: null,
-      },
-      data: { attempts: { increment: 1 } },
-    })
-    return false
+  if (!user) {
+    throw new Error('Unauthorized')
   }
 
-  // Mark as verified
-  await prisma.phoneVerification.update({
-    where: { id: verification.id },
-    data: { verifiedAt: new Date() },
-  })
-
-  // Update user phone
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      phoneE164: verification.phone,
-      phoneVerified: true,
-    },
-  })
-
-  return true
-}
-
-// Check if user has required verification for high-signal actions
-export async function requirePhoneVerification(userId: string): Promise<void> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { phoneVerified: true },
-  })
-
-  if (!user?.phoneVerified) {
-    throw new Error('Phone verification required for this action')
-  }
+  return user
 }

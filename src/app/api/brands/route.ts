@@ -1,33 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
-import { CreateBrandSchema } from '@/types'
 import { slugify } from '@/lib/utils'
 
-// GET /api/brands - Search brands
+type SortType = 'name' | 'responsiveness'
+
+// GET /api/brands - Search/list brands
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const query = searchParams.get('query') || ''
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const search = searchParams.get('search') || undefined
+    const sort = (searchParams.get('sort') || 'name') as SortType
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
+
+    let orderBy: any = { name: 'asc' }
+    if (sort === 'responsiveness') {
+      orderBy = { responsivenessScore: { sort: 'desc', nulls: 'last' } }
+    }
 
     const brands = await prisma.brand.findMany({
-      where: query
+      where: search
         ? {
             OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { slug: { contains: query, mode: 'insensitive' } },
+              { name: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
             ],
           }
         : {},
       take: limit,
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logo: true,
-        status: true,
+      orderBy,
+      include: {
         _count: {
           select: { campaigns: true },
         },
@@ -35,40 +37,41 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      success: true,
-      data: brands,
+      brands,
+      total: brands.length,
     })
   } catch (error) {
-    console.error('Search brands error:', error)
+    console.error('[GET /api/brands]', error)
     return NextResponse.json(
-      { success: false, error: 'Something went wrong' },
+      { error: 'Failed to fetch brands' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/brands - Create an unclaimed brand
+// POST /api/brands - Create brand
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
+        { error: 'Authentication required' },
         { status: 401 }
       )
     }
 
     const body = await request.json()
-    const result = CreateBrandSchema.safeParse(body)
+    const { name, website, description } = body
 
-    if (!result.success) {
+    // Validation
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: result.error.errors[0].message },
+        { error: 'Name is required' },
         { status: 400 }
       )
     }
 
-    const { name, website } = result.data
+    // Generate slug
     let slug = slugify(name)
 
     // Ensure slug is unique
@@ -77,23 +80,39 @@ export async function POST(request: NextRequest) {
       slug = `${slug}-${Date.now().toString(36)}`
     }
 
+    // Create brand and add user as owner in transaction
     const brand = await prisma.brand.create({
       data: {
         name,
         slug,
-        website,
+        website: website || null,
+        description: description || null,
         status: 'UNCLAIMED',
+        team: {
+          create: {
+            userId: user.id,
+            role: 'OWNER',
+          },
+        },
+      },
+      include: {
+        team: {
+          select: {
+            userId: true,
+            role: true,
+          },
+        },
+        _count: {
+          select: { campaigns: true },
+        },
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: brand,
-    }, { status: 201 })
+    return NextResponse.json(brand, { status: 201 })
   } catch (error) {
-    console.error('Create brand error:', error)
+    console.error('[POST /api/brands]', error)
     return NextResponse.json(
-      { success: false, error: 'Something went wrong' },
+      { error: 'Failed to create brand' },
       { status: 500 }
     )
   }

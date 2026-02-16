@@ -1,0 +1,228 @@
+'use client'
+
+import React from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar } from '@/components/ui/avatar'
+import { cn } from '@/lib/utils'
+
+export interface IntensityDistribution {
+  low: number
+  medium: number
+  high: number
+}
+
+export interface CampaignCardProps {
+  id: string
+  title: string
+  slug: string
+  description: string
+  category: string
+  image?: string
+  lobbyCount: number
+  intensityDistribution: IntensityDistribution
+  completenessScore: number
+  status: 'active' | 'completed' | 'paused' | 'draft'
+  creator: {
+    id: string
+    displayName: string
+    email: string
+    avatar?: string
+  }
+  brand?: {
+    id: string
+    name: string
+    logo?: string
+  }
+  createdAt: string
+}
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'lime'
+    case 'completed':
+      return 'green'
+    case 'paused':
+      return 'yellow'
+    case 'draft':
+      return 'gray'
+    default:
+      return 'default'
+  }
+}
+
+const getStatusLabel = (status: string) => {
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+const getCreatorInitials = (name: string, email: string) => {
+  if (name) {
+    return name
+      .split(' ')
+      .map((n) => n.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+  return email.charAt(0).toUpperCase()
+}
+
+export const CampaignCard: React.FC<CampaignCardProps> = ({
+  id,
+  title,
+  slug,
+  description,
+  category,
+  image,
+  lobbyCount,
+  intensityDistribution,
+  completenessScore,
+  status,
+  creator,
+  brand,
+  createdAt,
+}) => {
+  const totalIntensity =
+    intensityDistribution.low +
+    intensityDistribution.medium +
+    intensityDistribution.high
+
+  const lowPercent = totalIntensity > 0
+    ? (intensityDistribution.low / totalIntensity) * 100
+    : 0
+  const mediumPercent = totalIntensity > 0
+    ? (intensityDistribution.medium / totalIntensity) * 100
+    : 0
+  const highPercent = totalIntensity > 0
+    ? (intensityDistribution.high / totalIntensity) * 100
+    : 0
+
+  const creatorInitials = getCreatorInitials(creator.displayName, creator.email)
+
+  return (
+    <Link href={`/campaigns/${slug}`}>
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 h-full flex flex-col cursor-pointer group">
+        {/* Hero Image */}
+        <div className="relative w-full h-48 bg-gradient-to-br from-violet-50 to-violet-100 overflow-hidden">
+          {image ? (
+            <Image
+              src={image}
+              alt={title}
+              fill
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-violet-300 text-center">
+                <div className="text-4xl mb-2">📋</div>
+                <p className="text-sm font-medium">Campaign Image</p>
+              </div>
+            </div>
+          )}
+
+          {/* Category Badge */}
+          <div className="absolute top-3 left-3">
+            <Badge variant="default" size="sm">
+              {category}
+            </Badge>
+          </div>
+
+          {/* Status Badge */}
+          <div className="absolute top-3 right-3">
+            <Badge variant={getStatusColor(status)} size="sm">
+              {getStatusLabel(status)}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-4 flex flex-col">
+          {/* Title */}
+          <h3 className="font-display font-semibold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-violet-600 transition-colors duration-200">
+            {title}
+          </h3>
+
+          {/* Description */}
+          <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+            {description}
+          </p>
+
+          {/* Lobby Count & Intensity Bar */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-foreground">
+                {lobbyCount} lobbies
+              </span>
+              <span className="text-xs text-gray-500">
+                {completenessScore}% complete
+              </span>
+            </div>
+
+            {/* Intensity Mini-Bar */}
+            <div className="flex h-2 rounded-full overflow-hidden bg-gray-200">
+              {lowPercent > 0 && (
+                <div
+                  className="bg-green-500 transition-all duration-300"
+                  style={{ width: `${lowPercent}%` }}
+                ></div>
+              )}
+              {mediumPercent > 0 && (
+                <div
+                  className="bg-yellow-400 transition-all duration-300"
+                  style={{ width: `${mediumPercent}%` }}
+                ></div>
+              )}
+              {highPercent > 0 && (
+                <div
+                  className="bg-violet-600 transition-all duration-300"
+                  style={{ width: `${highPercent}%` }}
+                ></div>
+              )}
+            </div>
+          </div>
+
+          {/* Creator Info */}
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200">
+            <Avatar
+              src={creator.avatar}
+              alt={creator.displayName}
+              initials={creatorInitials}
+              size="sm"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {creator.displayName || creator.email}
+              </p>
+              <p className="text-xs text-gray-500">Creator</p>
+            </div>
+          </div>
+
+          {/* Brand Target (if any) */}
+          {brand && (
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <p className="text-xs text-gray-500 mb-2">Target Brand</p>
+              <Badge variant="outline" size="sm">
+                {brand.name}
+              </Badge>
+            </div>
+          )}
+
+          {/* CTA Button */}
+          <Button
+            variant="primary"
+            size="md"
+            className="w-full mt-auto"
+            onClick={(e) => {
+              e.preventDefault()
+            }}
+          >
+            Lobby for this!
+          </Button>
+        </div>
+      </div>
+    </Link>
+  )
+}

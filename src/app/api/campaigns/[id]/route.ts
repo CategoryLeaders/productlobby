@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
-import { UpdateCampaignSchema } from '@/types'
-import { calculateSignalScore } from '@/lib/signal-score'
+import { slugify } from '@/lib/utils'
 
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
-
-// GET /api/campaigns/[id] - Get campaign details
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// GET /api/campaigns/[id] - Get single campaign with full details
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await params
+    const { id } = params
 
     const campaign = await prisma.campaign.findUnique({
       where: { id },
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           select: {
             id: true,
             displayName: true,
-            handle: true,
+            avatar: true,
           },
         },
         targetedBrand: {
@@ -29,11 +27,26 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: true,
             slug: true,
             logo: true,
-            status: true,
           },
         },
         media: {
           orderBy: { order: 'asc' },
+        },
+        preferenceFields: {
+          orderBy: { order: 'asc' },
+        },
+        updates: {
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            creator: {
+              select: {
+                id: true,
+                displayName: true,
+                avatar: true,
+              },
+            },
+          },
         },
         brandResponses: {
           include: {
@@ -41,59 +54,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               select: {
                 id: true,
                 name: true,
-                slug: true,
                 logo: true,
               },
             },
             author: {
               select: {
+                id: true,
                 displayName: true,
+                avatar: true,
               },
             },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-        polls: {
-          where: { status: 'ACTIVE' },
-          include: {
-            brand: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            options: {
-              include: {
-                _count: {
-                  select: { votes: true },
-                },
-              },
-            },
-          },
-        },
-        offers: {
-          where: {
-            status: { in: ['ACTIVE', 'SUCCESSFUL'] },
-          },
-          include: {
-            brand: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                logo: true,
-              },
-            },
-            _count: {
-              select: { orders: true },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-        _count: {
-          select: {
-            pledges: true,
-            follows: true,
           },
         },
       },
@@ -101,144 +71,274 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!campaign) {
       return NextResponse.json(
-        { success: false, error: 'Campaign not found' },
+        { error: 'Campaign not found' },
         { status: 404 }
       )
     }
 
-    // Calculate fresh signal score
-    const signalResult = await calculateSignalScore(campaign.id)
-
-    // Get pledge stats
-    const pledgeStats = await prisma.pledge.groupBy({
-      by: ['pledgeType'],
-      where: { campaignId: id },
-      _count: true,
-    })
-
-    // Get intent price stats
-    const intentPrices = await prisma.pledge.aggregate({
-      where: {
-        campaignId: id,
-        pledgeType: 'INTENT',
-      },
-      _avg: { priceCeiling: true },
-      _max: { priceCeiling: true },
-      _sum: { priceCeiling: true },
-    })
-
-    const supportCount = pledgeStats.find((s) => s.pledgeType === 'SUPPORT')?._count || 0
-    const intentCount = pledgeStats.find((s) => s.pledgeType === 'INTENT')?._count || 0
-
-    // Check if current user has pledged/followed
-    const user = await getCurrentUser()
-    let userPledge = null
-    let userFollowing = false
-
-    if (user) {
-      userPledge = await prisma.pledge.findFirst({
+    // Get lobby stats
+    const [
+      totalLobbies,
+      pendingLobbies,
+      intensityDistribution,
+      recentLobbies,
+      wishlistThemes,
+    ] = await Promise.all([
+      // Total verified lobbies
+      prisma.lobby.count({
         where: {
           campaignId: id,
-          userId: user.id,
+          status: 'VERIFIED',
         },
-      })
-
-      const follow = await prisma.follow.findUnique({
+      }),
+      // Pending lobbies
+      prisma.lobby.count({
         where: {
-          campaignId_userId: {
+          campaignId: id,
+          status: 'PENDING',
+        },
+      }),
+      // Intensity distribution
+      prisma.lobby.groupBy({
+        by: ['intensity'],
+        where: {
+          campaignId: id,
+          status: 'VERIFIED',
+        },
+        _count: true,
+      }),
+      // Recent lobbies
+      prisma.lobby.findMany({
+        where: {
+          campaignId: id,
+          status: 'VERIFIED',
+        },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          intensity: true,
+          createdAt: true,
+        },
+      }),
+      // Get wishlist themes
+      prisma.lobbyWishlist.findMany({
+        where: {
+          lobby: {
             campaignId: id,
-            userId: user.id,
+            status: 'VERIFIED',
           },
         },
+        select: {
+          text: true,
+        },
+      }),
+    ])
+
+    // Group and count wishlist themes
+    const themeCounts: Record<string, number> = {}
+    wishlistThemes.forEach((item) => {
+      const normalized = item.text.toLowerCase().trim()
+      themeCounts[normalized] = (themeCounts[normalized] || 0) + 1
+    })
+
+    const topWishlistThemes = Object.entries(themeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([theme, count]) => ({ theme, count }))
+
+    // Get aggregated preference data
+    const preferenceData = await Promise.all(
+      campaign.preferenceFields.map(async (field) => {
+        const responses = await prisma.lobbyPreference.findMany({
+          where: {
+            campaignPreferenceFieldId: field.id,
+            lobby: {
+              status: 'VERIFIED',
+            },
+          },
+          select: {
+            value: true,
+          },
+        })
+
+        const valueCounts: Record<string, number> = {}
+        responses.forEach((response) => {
+          valueCounts[response.value] = (valueCounts[response.value] || 0) + 1
+        })
+
+        return {
+          fieldId: field.id,
+          fieldName: field.fieldName,
+          fieldType: field.fieldType,
+          valueCounts,
+        }
       })
-      userFollowing = !!follow
+    )
+
+    // Build intensity distribution object
+    const intensityDistributionObject: Record<string, number> = {
+      NEAT_IDEA: 0,
+      PROBABLY_BUY: 0,
+      TAKE_MY_MONEY: 0,
     }
 
+    intensityDistribution.forEach((item: any) => {
+      intensityDistributionObject[item.intensity] = item._count
+    })
+
     return NextResponse.json({
-      success: true,
-      data: {
-        ...campaign,
-        signalScore: signalResult.score,
-        signalTier: signalResult.tier,
-        stats: {
-          supportCount,
-          intentCount,
-          estimatedDemand: signalResult.demandValue,
-          avgPriceCeiling: intentPrices._avg.priceCeiling
-            ? Number(intentPrices._avg.priceCeiling)
-            : 0,
-          maxPriceCeiling: intentPrices._max.priceCeiling
-            ? Number(intentPrices._max.priceCeiling)
-            : 0,
-          totalDemandValue: intentPrices._sum.priceCeiling
-            ? Number(intentPrices._sum.priceCeiling)
-            : 0,
-        },
-        userPledge,
-        userFollowing,
+      ...campaign,
+      lobbyStats: {
+        totalLobbies,
+        pendingLobbies,
+        intensityDistribution: intensityDistributionObject,
+        recentLobbies,
       },
+      topWishlistThemes,
+      preferenceData,
     })
   } catch (error) {
-    console.error('Get campaign error:', error)
+    console.error('[GET /api/campaigns/[id]]', error)
     return NextResponse.json(
-      { success: false, error: 'Something went wrong' },
+      { error: 'Failed to fetch campaign' },
       { status: 500 }
     )
   }
 }
 
 // PATCH /api/campaigns/[id] - Update campaign
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
+        { error: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    const { id } = await params
+    const { id } = params
 
-    // Check ownership
+    // Get campaign and verify ownership
     const campaign = await prisma.campaign.findUnique({
       where: { id },
-      select: { creatorUserId: true, status: true },
+      select: { creatorUserId: true },
     })
 
     if (!campaign) {
       return NextResponse.json(
-        { success: false, error: 'Campaign not found' },
+        { error: 'Campaign not found' },
         { status: 404 }
       )
     }
 
     if (campaign.creatorUserId !== user.id) {
       return NextResponse.json(
-        { success: false, error: 'Not authorized' },
+        { error: 'Unauthorized - only campaign creator can update' },
         { status: 403 }
       )
     }
 
     const body = await request.json()
-    const result = UpdateCampaignSchema.safeParse(body)
+    const { title, description, category, status, preferenceFields } = body
 
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error.errors[0].message },
-        { status: 400 }
-      )
+    // Build update data
+    const updateData: any = {}
+
+    if (title !== undefined) {
+      if (typeof title !== 'string' || title.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Title must be a non-empty string' },
+          { status: 400 }
+        )
+      }
+      updateData.title = title
+      // Update slug if title changed
+      updateData.slug = slugify(title)
     }
 
-    const updated = await prisma.campaign.update({
+    if (description !== undefined) {
+      if (typeof description !== 'string' || description.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Description must be a non-empty string' },
+          { status: 400 }
+        )
+      }
+      updateData.description = description
+    }
+
+    if (category !== undefined) {
+      if (typeof category !== 'string') {
+        return NextResponse.json(
+          { error: 'Category must be a string' },
+          { status: 400 }
+        )
+      }
+      updateData.category = category
+    }
+
+    if (status !== undefined) {
+      updateData.status = status
+    }
+
+    // Handle preference fields update
+    if (preferenceFields !== undefined && Array.isArray(preferenceFields)) {
+      // Delete existing fields and create new ones
+      await prisma.campaignPreferenceField.deleteMany({
+        where: { campaignId: id },
+      })
+
+      updateData.preferenceFields = {
+        create: preferenceFields.map((field: any, index: number) => ({
+          fieldName: field.fieldName,
+          fieldType: field.fieldType,
+          options: field.options || null,
+          placeholder: field.placeholder || null,
+          required: field.required || false,
+          order: index,
+        })),
+      }
+    }
+
+    // Recalculate completeness score
+    const existingCampaign = await prisma.campaign.findUnique({
       where: { id },
-      data: result.data,
+      select: {
+        title: true,
+        description: true,
+        category: true,
+        targetedBrandId: true,
+        preferenceFields: true,
+      },
+    })
+
+    let completenessScore = 0
+    const finalTitle = title || existingCampaign?.title
+    const finalDescription = description || existingCampaign?.description
+    const finalCategory = category || existingCampaign?.category
+    const finalFields = preferenceFields || existingCampaign?.preferenceFields
+
+    if (finalTitle) completenessScore += 20
+    if (finalDescription && finalDescription.length > 50) completenessScore += 20
+    if (finalCategory) completenessScore += 20
+    if (existingCampaign?.targetedBrandId) completenessScore += 20
+    if (finalFields && finalFields.length > 0) completenessScore += 20
+
+    updateData.completenessScore = completenessScore
+
+    const updatedCampaign = await prisma.campaign.update({
+      where: { id },
+      data: updateData,
       include: {
         creator: {
           select: {
             id: true,
             displayName: true,
-            handle: true,
+            avatar: true,
           },
         },
         targetedBrand: {
@@ -246,19 +346,23 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             id: true,
             name: true,
             slug: true,
+            logo: true,
           },
+        },
+        preferenceFields: {
+          orderBy: { order: 'asc' },
+        },
+        media: {
+          orderBy: { order: 'asc' },
         },
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: updated,
-    })
+    return NextResponse.json(updatedCampaign)
   } catch (error) {
-    console.error('Update campaign error:', error)
+    console.error('[PATCH /api/campaigns/[id]]', error)
     return NextResponse.json(
-      { success: false, error: 'Something went wrong' },
+      { error: 'Failed to update campaign' },
       { status: 500 }
     )
   }

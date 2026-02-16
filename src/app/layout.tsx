@@ -1,22 +1,36 @@
 import type { Metadata } from 'next'
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
+import { Poppins, Inter, Nunito, Baloo_2 } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  weight: ['400', '500', '600'],
 })
 
-const plusJakarta = Plus_Jakarta_Sans({
+const poppins = Poppins({
   subsets: ['latin'],
-  variable: '--font-plus-jakarta',
+  variable: '--font-poppins',
+  weight: ['600', '700'],
+})
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  variable: '--font-nunito',
+  weight: ['500'],
+})
+
+const baloo2 = Baloo_2({
+  subsets: ['latin'],
+  variable: '--font-baloo2',
+  weight: ['700'],
 })
 
 export const metadata: Metadata = {
-  title: 'ProductLobby - Demand Aggregation for Products You Want',
-  description: 'Create campaigns for products or features, gather support, and get brands to listen. ProductLobby turns your wish list into binding offers.',
-  keywords: ['crowdfunding', 'product requests', 'demand aggregation', 'brand engagement'],
+  title: 'ProductLobby — Your Ideas, Their Products',
+  description: 'Lobby for the products and features you want. Aggregate demand, influence brands, and turn your ideas into reality on ProductLobby.',
+  keywords: ['product requests', 'demand aggregation', 'crowdfunding', 'brand engagement'],
 }
 
 export default function RootLayout({
@@ -26,7 +40,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${poppins.variable} ${nunito.variable} ${baloo2.variable} font-sans antialiased bg-background text-foreground`}
+      >
         <Providers>
           {children}
         </Providers>
