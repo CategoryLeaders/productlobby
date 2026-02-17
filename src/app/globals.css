@@ -251,16 +251,4 @@
     @apply shadow-elevated;
   }
 
-  /* Animation utilities */
-  .animate-fade-in {
-    @apply animate-fade-in;
-  }
-
-  .animate-slide-up {
-    @apply animate-slide-up;
-  }
-
-  .animate-pulse-subtle {
-    @apply animate-pulse-subtle;
-  }
 }
