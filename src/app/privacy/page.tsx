@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 const sections = [
   { title: '1. Information We Collect', body: 'We collect information you provide directly: your email address when creating an account, campaign content you create, pledges and buying intent data, and payment information processed through Stripe. We also collect usage data including pages visited, features used, and device/browser information through standard web analytics.' },
@@ -20,7 +21,7 @@ export default function PrivacyPage() {
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold text-primary-600">ProductLobby</Link>
+            <Link href="/"><Logo size="md" /></Link>
             <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
               <ArrowLeft className="w-4 h-4 mr-2" />Home
             </Link>

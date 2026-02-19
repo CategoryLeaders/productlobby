@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft, Users, Shield, Zap, Heart } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 export default function AboutPage() {
   return (
@@ -7,7 +8,7 @@ export default function AboutPage() {
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold text-primary-600">ProductLobby</Link>
+            <Link href="/"><Logo size="md" /></Link>
             <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
               <ArrowLeft className="w-4 h-4 mr-2" />Home
             </Link>

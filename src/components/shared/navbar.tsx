@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/ui/logo'
 import {
   Search,
   Menu,
@@ -61,8 +62,8 @@ export const Navbar: React.FC = () => {
       >
         <div className="h-full px-4 md:px-6 lg:px-8 max-w-7xl mx-auto flex items-center justify-between">
           {/* Left: Logo */}
-          <Link href="/" className="flex-shrink-0 font-logo-accent font-bold text-2xl text-logo-violet">
-            ProductLobby
+          <Link href="/" className="flex-shrink-0">
+            <Logo size="md" />
           </Link>
 
           {/* Center: Nav Links (hidden on mobile) */}

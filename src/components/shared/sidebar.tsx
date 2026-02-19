@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/ui/logo'
 import {
   Home,
   BarChart3,
@@ -67,8 +68,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
         {/* Logo */}
         <div className="px-6 py-8 border-b border-gray-200">
-          <Link href="/" className="font-logo-accent font-bold text-2xl text-logo-violet">
-            ProductLobby
+          <Link href="/">
+            <Logo size="md" />
           </Link>
         </div>
 
@@ -113,8 +114,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
             <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-200 shadow-elevated animate-slide-up">
               {/* Logo */}
               <div className="px-6 py-8 border-b border-gray-200">
-                <Link href="/" className="font-logo-accent font-bold text-2xl text-logo-violet">
-                  ProductLobby
+                <Link href="/">
+                  <Logo size="md" />
                 </Link>
               </div>
 

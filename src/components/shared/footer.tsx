@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { Logo } from '@/components/ui/logo'
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear()
@@ -47,9 +48,9 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Column 1: Logo & Tagline */}
           <div>
-            <h2 className="font-logo-accent font-bold text-2xl text-logo-violet mb-2">
-              ProductLobby
-            </h2>
+            <div className="mb-2">
+              <Logo size="md" />
+            </div>
             <p className="text-gray-600 text-sm leading-relaxed max-w-xs">
               Your ideas, their products.
             </p>
