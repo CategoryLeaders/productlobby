@@ -82,35 +82,18 @@ export async function GET(request: NextRequest) {
       prisma.campaign.count({ where }),
     ])
 
-    // Add stats to each campaign
-    const campaignsWithStats = await Promise.all(
-      campaigns.map(async (campaign: any) => {
-        const stats = await prisma.pledge.groupBy({
-          by: ['pledgeType'],
-          where: { campaignId: campaign.id },
-          _count: true,
-          _sum: {
-            priceCeiling: true,
-          },
-        })
-
-        const supportCount = stats.find((s: any) => s.pledgeType === 'SUPPORT')?._count || 0
-        const intentStats = stats.find((s: any) => s.pledgeType === 'INTENT')
-        const intentCount = intentStats?._count || 0
-        const estimatedDemand = intentStats?._sum.priceCeiling
-          ? Number(intentStats._sum.priceCeiling)
-          : 0
-
-        return {
-          ...campaign,
-          stats: {
-            supportCount,
-            intentCount,
-            estimatedDemand,
-          },
-        }
-      })
-    )
+    // Add stats to each campaign based on lobby data
+    const campaignsWithStats = campaigns.map((campaign: any) => {
+      const lobbyCount = campaign._count?.lobbies || 0
+      return {
+        ...campaign,
+        stats: {
+          supportCount: lobbyCount,
+          intentCount: 0,
+          estimatedDemand: 0,
+        },
+      }
+    })
 
     return NextResponse.json({
       success: true,
