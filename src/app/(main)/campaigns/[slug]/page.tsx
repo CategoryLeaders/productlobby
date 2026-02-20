@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Share2, Twitter, Facebook, MessageCircle, Mail, Megaphone } from 'lucide-react'
 import { Navbar } from '@/components/shared/navbar'
@@ -20,96 +20,74 @@ interface CampaignDetailPageProps {
   }
 }
 
-// Demo campaign data
-const CAMPAIGN_DATA = {
-  id: 'campaign-nike-women-shoes',
-  title: 'Nike Women\'s Running Shoes in Extended Sizes',
-  slug: 'nike-womens-running-shoes-extended-sizes',
-  description: 'Nike needs to expand their women\'s running shoe line to include extended sizes (14+). Many athletes with larger feet are currently unable to find properly fitting running shoes, leading them to choose competitor brands. This campaign advocates for Nike to invest in developing and manufacturing women\'s running shoes in sizes 14, 15, and 16.',
-  category: 'Fashion & Footwear',
-  brand: {
-    id: 'nike',
-    name: 'Nike',
-    logo: '👟',
-  },
+interface ApiCampaign {
+  id: string
+  title: string
+  slug: string
+  description: string
+  category: string
+  status: string
+  signalScore: number
+  completenessScore: number
+  createdAt: string
+  updatedAt: string
   creator: {
-    id: 'user-sarah-mitchell',
-    displayName: 'Sarah Mitchell',
-    email: 'sarah.mitchell@example.com',
-    avatar: undefined,
-    bio: 'Passionate about inclusive product design. Size 13 shoe wearer.',
-  },
-  lobbyCount: 2847,
-  intensityDistribution: {
-    low: 427,
-    medium: 1052,
-    high: 1368,
-  },
-  createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-  updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  status: 'active' as const,
-  completenessScore: 87,
-  vision: [
-    'Extended size availability (14-16)',
-    'Premium quality matching existing lines',
-    'Color options across the range',
-    'Competitive pricing within Nike standards',
-  ],
-  preferences: {
-    sizeDistribution: [
-      { size: 'UK 3', count: 0 },
-      { size: 'UK 4', count: 0 },
-      { size: 'UK 5', count: 0 },
-      { size: 'UK 6', count: 45 },
-      { size: 'UK 7', count: 189 },
-      { size: 'UK 8', count: 312 },
-      { size: 'UK 9', count: 287 },
-      { size: 'UK 10', count: 234 },
-      { size: 'UK 11', count: 289 },
-      { size: 'UK 12', count: 456 },
-    ],
-    colorPreferences: [
-      { color: 'Black', count: 892 },
-      { color: 'White', count: 674 },
-      { color: 'Red', count: 445 },
-      { color: 'Blue', count: 312 },
-      { color: 'Pink', count: 234 },
-      { color: 'Other', count: 290 },
-    ],
-    priceWillingness: [
-      { range: 'Under £50', percent: 5 },
-      { range: '£50-100', percent: 25 },
-      { range: '£100-150', percent: 45 },
-      { range: '£150+', percent: 25 },
-    ],
-  },
-  wishlistThemes: [
-    { theme: 'Wider toe box', mentions: 234 },
-    { theme: 'Arch support options', mentions: 189 },
-    { theme: 'Vegan materials', mentions: 156 },
-    { theme: 'Extended width options', mentions: 143 },
-    { theme: 'More colourways', mentions: 128 },
-  ],
-  updates: [
-    {
-      id: 'update-1',
-      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      title: 'We\'ve hit 2,500 lobbies!',
-      content: 'Thanks everyone for your support. We\'re halfway to our next milestone. Keep sharing!',
-      author: 'Sarah Mitchell',
-    },
-    {
-      id: 'update-2',
-      date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-      title: 'Campaign Launch',
-      content: 'Excited to launch this campaign! Together, we can make Nike see the market opportunity.',
-      author: 'Sarah Mitchell',
-    },
-  ],
-  brandResponse: {
-    status: 'unresponsive',
-    message: 'Nike hasn\'t responded to this campaign yet.',
-  },
+    id: string
+    displayName: string
+    avatar?: string
+  }
+  targetedBrand: {
+    id: string
+    name: string
+    slug: string
+    logo: string
+  } | null
+  media: Array<{
+    url: string
+    type: string
+    order: number
+  }>
+  preferenceFields: Array<{
+    id: string
+    fieldName: string
+    fieldType: string
+    options?: string[]
+    placeholder?: string
+    required: boolean
+    order: number
+  }>
+  updates: Array<{
+    id: string
+    title: string
+    content: string
+    createdAt: string
+    creator: {
+      id: string
+      displayName: string
+      avatar?: string
+    }
+  }>
+  brandResponses: Array<any>
+  lobbyStats: {
+    totalLobbies: number
+    pendingLobbies: number
+    intensityDistribution: {
+      NEAT_IDEA: number
+      PROBABLY_BUY: number
+      TAKE_MY_MONEY: number
+    }
+    recentLobbies: Array<any>
+  }
+  topWishlistThemes: Array<{
+    theme: string
+    count: number
+  }>
+  preferenceData: Array<{
+    fieldId: string
+    fieldName: string
+    fieldType: string
+    valueCounts: Record<string, number>
+  }>
 }
 
 const getCreatorInitials = (name: string) => {
@@ -121,19 +99,147 @@ const getCreatorInitials = (name: string) => {
     .slice(0, 2)
 }
 
-export default function CampaignDetailPage({ params }: CampaignDetailPageProps) {
-  const [isLobbyFlowOpen, setIsLobbyFlowOpen] = useState(false)
-  const campaign = CAMPAIGN_DATA
+// Loading spinner component
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-white flex flex-col">
+    <Navbar />
+    <main className="flex-1 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading campaign...</p>
+      </div>
+    </main>
+    <Footer />
+  </div>
+)
 
-  const totalLobbies = campaign.intensityDistribution.low + campaign.intensityDistribution.medium + campaign.intensityDistribution.high
-  const lowPercent = (campaign.intensityDistribution.low / totalLobbies) * 100
-  const mediumPercent = (campaign.intensityDistribution.medium / totalLobbies) * 100
-  const highPercent = (campaign.intensityDistribution.high / totalLobbies) * 100
+// Error page component
+const ErrorPage = ({ message }: { message: string }) => (
+  <div className="min-h-screen bg-white flex flex-col">
+    <Navbar />
+    <main className="flex-1 flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-6xl mb-4">404</div>
+        <h1 className="text-3xl font-display font-bold text-foreground mb-2">Campaign not found</h1>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <Link href="/campaigns">
+          <Button variant="primary">Back to campaigns</Button>
+        </Link>
+      </div>
+    </main>
+    <Footer />
+  </div>
+)
+
+export default function CampaignDetailPage({ params }: CampaignDetailPageProps) {
+  const [campaign, setCampaign] = useState<ApiCampaign | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isLobbyFlowOpen, setIsLobbyFlowOpen] = useState(false)
+
+  useEffect(() => {
+    const fetchCampaign = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await fetch(`/api/campaigns/${params.slug}`)
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('The campaign you\'re looking for doesn\'t exist.')
+          } else {
+            setError('Failed to load campaign. Please try again.')
+          }
+          setCampaign(null)
+          return
+        }
+
+        const data = await response.json()
+        setCampaign(data)
+      } catch (err) {
+        setError('Failed to load campaign. Please try again.')
+        setCampaign(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCampaign()
+  }, [params.slug])
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (error || !campaign) {
+    return <ErrorPage message={error || 'The campaign you\'re looking for doesn\'t exist.'} />
+  }
+
+  // Map API response to component data model
+  const lobbyCount = campaign.lobbyStats.totalLobbies
+  const intensityDistribution = {
+    low: campaign.lobbyStats.intensityDistribution.NEAT_IDEA,
+    medium: campaign.lobbyStats.intensityDistribution.PROBABLY_BUY,
+    high: campaign.lobbyStats.intensityDistribution.TAKE_MY_MONEY,
+  }
+
+  const totalLobbies = intensityDistribution.low + intensityDistribution.medium + intensityDistribution.high
+  const lowPercent = (intensityDistribution.low / totalLobbies) * 100
+  const mediumPercent = (intensityDistribution.medium / totalLobbies) * 100
+  const highPercent = (intensityDistribution.high / totalLobbies) * 100
 
   const creatorInitials = getCreatorInitials(campaign.creator.displayName)
 
-  const maxSizeCount = Math.max(...campaign.preferences.sizeDistribution.map(s => s.count))
-  const maxColorCount = Math.max(...campaign.preferences.colorPreferences.map(c => c.count))
+  // Transform preferenceData into preferences object for display
+  const preferences = campaign.preferenceData.reduce((acc, pref) => {
+    if (pref.fieldType === 'size') {
+      acc.sizeDistribution = Object.entries(pref.valueCounts).map(([size, count]) => ({
+        size,
+        count,
+      }))
+    } else if (pref.fieldType === 'color') {
+      acc.colorPreferences = Object.entries(pref.valueCounts).map(([color, count]) => ({
+        color,
+        count,
+      }))
+    } else if (pref.fieldType === 'price') {
+      acc.priceWillingness = Object.entries(pref.valueCounts).map(([range, count]) => ({
+        range,
+        percent: count,
+      }))
+    }
+    return acc
+  }, {} as any)
+
+  // Fallback empty preferences if data is missing
+  const sizeDistribution = preferences.sizeDistribution || []
+  const colorPreferences = preferences.colorPreferences || []
+  const priceWillingness = preferences.priceWillingness || []
+
+  const maxSizeCount = sizeDistribution.length > 0 ? Math.max(...sizeDistribution.map(s => s.count)) : 1
+  const maxColorCount = colorPreferences.length > 0 ? Math.max(...colorPreferences.map(c => c.count)) : 1
+
+  // Map wishlist themes (rename count to mentions)
+  const wishlistThemes = campaign.topWishlistThemes.map(item => ({
+    theme: item.theme,
+    mentions: item.count,
+  }))
+
+  // Map updates
+  const updates = campaign.updates.map(update => ({
+    id: update.id,
+    title: update.title,
+    content: update.content,
+    date: update.createdAt,
+    author: update.creator.displayName,
+  }))
+
+  // Get brand response status
+  const brandResponse = campaign.brandResponses.length > 0
+    ? { status: 'responsive', message: campaign.brandResponses[0].message || 'Brand has responded!' }
+    : { status: 'unresponsive', message: `${campaign.targetedBrand?.name || 'The brand'} hasn't responded to this campaign yet.` }
+
+  const brand = campaign.targetedBrand || { id: '', name: 'Unknown Brand', logo: '📦' }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -149,7 +255,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
               </Link>
               <ChevronRight className="w-4 h-4 text-gray-400" />
               <Link href="/campaigns" className="text-violet-600 hover:text-violet-700">
-                Fashion & Footwear
+                {campaign.category}
               </Link>
               <ChevronRight className="w-4 h-4 text-gray-400" />
               <span className="text-gray-600">{campaign.title}</span>
@@ -161,7 +267,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
             {/* Hero Image */}
             <div className="w-full h-96 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg mb-8 flex items-center justify-center overflow-hidden">
               <div className="text-center">
-                <div className="text-8xl mb-4">{campaign.brand.logo}</div>
+                <div className="text-8xl mb-4">{brand.logo}</div>
                 <p className="text-violet-600 text-lg font-display font-semibold">Campaign Hero</p>
               </div>
             </div>
@@ -175,7 +281,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
               {/* Badges & Info Row */}
               <div className="flex flex-wrap items-center gap-3 mb-6">
                 <Badge variant="default">{campaign.category}</Badge>
-                <Badge variant="outline">Targeted at: {campaign.brand.name}</Badge>
+                <Badge variant="outline">Targeted at: {brand.name}</Badge>
               </div>
 
               {/* Creator Info & Dates */}
@@ -209,7 +315,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                 <div>
                   <p className="text-gray-600 text-sm mb-2">Total Lobbies</p>
                   <p className="font-display font-bold text-4xl text-foreground">
-                    {formatNumber(campaign.lobbyCount)}
+                    {formatNumber(lobbyCount)}
                   </p>
                 </div>
 
@@ -223,7 +329,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         <span className="inline-block w-3 h-3 rounded-full bg-green-500"></span>
                         <span className="text-sm font-medium text-foreground">Neat Idea</span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">{campaign.intensityDistribution.low}</p>
+                      <p className="text-2xl font-bold text-foreground">{intensityDistribution.low}</p>
                       <p className="text-xs text-gray-600">{lowPercent.toFixed(0)}%</p>
                     </div>
 
@@ -233,7 +339,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         <span className="inline-block w-3 h-3 rounded-full bg-yellow-400"></span>
                         <span className="text-sm font-medium text-foreground">I'd Probably Buy</span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">{campaign.intensityDistribution.medium}</p>
+                      <p className="text-2xl font-bold text-foreground">{intensityDistribution.medium}</p>
                       <p className="text-xs text-gray-600">{mediumPercent.toFixed(0)}%</p>
                     </div>
 
@@ -243,7 +349,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         <span className="inline-block w-3 h-3 rounded-full bg-violet-600"></span>
                         <span className="text-sm font-medium text-foreground">Take My Money!</span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">{campaign.intensityDistribution.high}</p>
+                      <p className="text-2xl font-bold text-foreground">{intensityDistribution.high}</p>
                       <p className="text-xs text-gray-600">{highPercent.toFixed(0)}%</p>
                     </div>
                   </div>
@@ -270,9 +376,9 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-medium text-foreground">Next milestone: 5,000 lobbies</p>
-                  <p className="text-sm text-gray-600">{campaign.lobbyCount} of 5,000</p>
+                  <p className="text-sm text-gray-600">{lobbyCount} of 5,000</p>
                 </div>
-                <Progress value={(campaign.lobbyCount / 5000) * 100} className="h-2" />
+                <Progress value={(lobbyCount / 5000) * 100} className="h-2" />
               </div>
             </div>
           </div>
@@ -295,7 +401,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       Lobby for this!
                     </Button>
                     <div className="text-center text-sm text-gray-600">
-                      <p className="mb-1">{formatNumber(campaign.lobbyCount)} people have lobbied</p>
+                      <p className="mb-1">{formatNumber(lobbyCount)} people have lobbied</p>
                       <p className="font-medium text-foreground">{highPercent.toFixed(0)}% say 'shut up and take my money!'</p>
                     </div>
                   </CardContent>
@@ -324,10 +430,10 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       <div>
                         <h3 className="font-display font-semibold text-lg text-foreground mb-3">What We're Asking For</h3>
                         <ul className="space-y-2">
-                          {campaign.vision.map((item, idx) => (
-                            <li key={idx} className="flex items-start gap-3">
+                          {campaign.preferenceFields.map((field, idx) => (
+                            <li key={field.id} className="flex items-start gap-3">
                               <span className="inline-block w-2 h-2 bg-lime-500 rounded-full mt-2"></span>
-                              <span className="text-gray-700">{item}</span>
+                              <span className="text-gray-700">{field.fieldName}</span>
                             </li>
                           ))}
                         </ul>
@@ -336,17 +442,36 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       <div>
                         <h3 className="font-display font-semibold text-lg text-foreground mb-4">Campaign Gallery</h3>
                         <div className="grid grid-cols-2 gap-4">
-                          {[1, 2, 3, 4].map((i) => (
+                          {campaign.media.slice(0, 4).map((media, i) => (
                             <div
-                              key={i}
-                              className="h-48 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg flex items-center justify-center"
+                              key={media.url}
+                              className="h-48 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg flex items-center justify-center overflow-hidden"
                             >
-                              <div className="text-center">
-                                <div className="text-4xl mb-2">📸</div>
-                                <p className="text-xs text-violet-600">Image {i}</p>
-                              </div>
+                              {media.type.startsWith('image') ? (
+                                <img src={media.url} alt={`Campaign media ${i + 1}`} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="text-center">
+                                  <div className="text-4xl mb-2">📸</div>
+                                  <p className="text-xs text-violet-600">Media {i + 1}</p>
+                                </div>
+                              )}
                             </div>
                           ))}
+                          {campaign.media.length === 0 && (
+                            <>
+                              {[1, 2, 3, 4].map((i) => (
+                                <div
+                                  key={i}
+                                  className="h-48 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg flex items-center justify-center"
+                                >
+                                  <div className="text-center">
+                                    <div className="text-4xl mb-2">📸</div>
+                                    <p className="text-xs text-violet-600">Image {i}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -354,9 +479,9 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         <h3 className="font-display font-semibold text-lg text-foreground mb-3">Creator's Pitch</h3>
                         <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
                           <p className="text-gray-700 italic">
-                            "As someone who wears size 13 shoes, I've always struggled to find running shoes that fit properly. Nike makes excellent running shoes, but they stop at size 12. I know I'm not alone—there are thousands of women and girls who would choose Nike if extended sizes were available. This isn't just about shoes; it's about inclusion and recognizing that diverse bodies deserve access to quality products."
+                            "{campaign.description}"
                           </p>
-                          <p className="text-sm text-gray-600 mt-3">— Sarah Mitchell, Campaign Creator</p>
+                          <p className="text-sm text-gray-600 mt-3">— {campaign.creator.displayName}, Campaign Creator</p>
                         </div>
                       </div>
                     </div>
@@ -366,65 +491,77 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                   <TabsContent value="preferences" className="py-8">
                     <div className="space-y-8">
                       {/* Size Distribution */}
-                      <div>
-                        <h3 className="font-display font-semibold text-lg text-foreground mb-4">Popular Shoe Sizes</h3>
-                        <div className="space-y-3">
-                          {campaign.preferences.sizeDistribution
-                            .filter(s => s.count > 0)
-                            .sort((a, b) => b.count - a.count)
-                            .map((size) => (
-                              <div key={size.size}>
+                      {sizeDistribution.length > 0 && (
+                        <div>
+                          <h3 className="font-display font-semibold text-lg text-foreground mb-4">Popular Shoe Sizes</h3>
+                          <div className="space-y-3">
+                            {sizeDistribution
+                              .filter(s => s.count > 0)
+                              .sort((a, b) => b.count - a.count)
+                              .map((size) => (
+                                <div key={size.size}>
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm font-medium text-foreground">{size.size}</span>
+                                    <span className="text-sm text-gray-600">{size.count} people</span>
+                                  </div>
+                                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-violet-600 rounded-full transition-all duration-300"
+                                      style={{ width: `${(size.count / maxSizeCount) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Color Preferences */}
+                      {colorPreferences.length > 0 && (
+                        <div>
+                          <h3 className="font-display font-semibold text-lg text-foreground mb-4">Preferred Colours</h3>
+                          <div className="flex flex-wrap gap-3">
+                            {colorPreferences.map((color) => (
+                              <div
+                                key={color.color}
+                                className="bg-white border border-gray-300 rounded-lg px-4 py-2 flex items-center gap-2 hover:border-violet-500 transition-colors"
+                              >
+                                <span className="text-sm font-medium text-foreground">{color.color}</span>
+                                <span className="text-xs text-gray-600">{color.count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Price Willingness */}
+                      {priceWillingness.length > 0 && (
+                        <div>
+                          <h3 className="font-display font-semibold text-lg text-foreground mb-4">Price Range People Are Willing to Pay</h3>
+                          <div className="space-y-3">
+                            {priceWillingness.map((price) => (
+                              <div key={price.range}>
                                 <div className="flex justify-between items-center mb-1">
-                                  <span className="text-sm font-medium text-foreground">{size.size}</span>
-                                  <span className="text-sm text-gray-600">{size.count} people</span>
+                                  <span className="text-sm font-medium text-foreground">{price.range}</span>
+                                  <span className="text-sm text-gray-600">{price.percent}%</span>
                                 </div>
                                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                                   <div
-                                    className="h-full bg-violet-600 rounded-full transition-all duration-300"
-                                    style={{ width: `${(size.count / maxSizeCount) * 100}%` }}
+                                    className="h-full bg-lime-500 rounded-full transition-all duration-300"
+                                    style={{ width: `${price.percent}%` }}
                                   ></div>
                                 </div>
                               </div>
                             ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Color Preferences */}
-                      <div>
-                        <h3 className="font-display font-semibold text-lg text-foreground mb-4">Preferred Colours</h3>
-                        <div className="flex flex-wrap gap-3">
-                          {campaign.preferences.colorPreferences.map((color) => (
-                            <div
-                              key={color.color}
-                              className="bg-white border border-gray-300 rounded-lg px-4 py-2 flex items-center gap-2 hover:border-violet-500 transition-colors"
-                            >
-                              <span className="text-sm font-medium text-foreground">{color.color}</span>
-                              <span className="text-xs text-gray-600">{color.count}</span>
-                            </div>
-                          ))}
+                      {sizeDistribution.length === 0 && colorPreferences.length === 0 && priceWillingness.length === 0 && (
+                        <div className="text-center py-12">
+                          <p className="text-gray-600">No preference data available yet.</p>
                         </div>
-                      </div>
-
-                      {/* Price Willingness */}
-                      <div>
-                        <h3 className="font-display font-semibold text-lg text-foreground mb-4">Price Range People Are Willing to Pay</h3>
-                        <div className="space-y-3">
-                          {campaign.preferences.priceWillingness.map((price) => (
-                            <div key={price.range}>
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-sm font-medium text-foreground">{price.range}</span>
-                                <span className="text-sm text-gray-600">{price.percent}%</span>
-                              </div>
-                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-lime-500 rounded-full transition-all duration-300"
-                                  style={{ width: `${price.percent}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </TabsContent>
 
@@ -432,24 +569,30 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                   <TabsContent value="wishlist" className="py-8">
                     <div>
                       <h3 className="font-display font-semibold text-lg text-foreground mb-4">Top Feature Requests</h3>
-                      <div className="space-y-3">
-                        {campaign.wishlistThemes.map((theme) => (
-                          <div
-                            key={theme.theme}
-                            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-card-hover transition-shadow"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-medium text-foreground">{theme.theme}</p>
-                                <p className="text-sm text-gray-600 mt-1">{theme.mentions} people mentioned this</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-2xl font-bold text-violet-600">{theme.mentions}</p>
+                      {wishlistThemes.length > 0 ? (
+                        <div className="space-y-3">
+                          {wishlistThemes.map((theme) => (
+                            <div
+                              key={theme.theme}
+                              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-card-hover transition-shadow"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-medium text-foreground">{theme.theme}</p>
+                                  <p className="text-sm text-gray-600 mt-1">{theme.mentions} people mentioned this</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-2xl font-bold text-violet-600">{theme.mentions}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <p className="text-gray-600">No wishlist themes yet.</p>
+                        </div>
+                      )}
                       <p className="text-sm text-gray-600 mt-6">
                         Themes are aggregated from supporter comments and feedback. They represent what people care about most.
                       </p>
@@ -458,32 +601,42 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
                   {/* Tab 4: Updates */}
                   <TabsContent value="updates" className="py-8">
-                    <div className="space-y-6">
-                      {campaign.updates.map((update) => (
-                        <div key={update.id} className="border-l-4 border-violet-600 pl-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-display font-semibold text-foreground">{update.title}</h4>
-                            <span className="text-xs text-gray-500">{formatDate(update.date)}</span>
+                    {updates.length > 0 ? (
+                      <div className="space-y-6">
+                        {updates.map((update) => (
+                          <div key={update.id} className="border-l-4 border-violet-600 pl-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-display font-semibold text-foreground">{update.title}</h4>
+                              <span className="text-xs text-gray-500">{formatDate(update.date)}</span>
+                            </div>
+                            <p className="text-gray-700 mb-2">{update.content}</p>
+                            <p className="text-xs text-gray-600">By {update.author}</p>
                           </div>
-                          <p className="text-gray-700 mb-2">{update.content}</p>
-                          <p className="text-xs text-gray-600">By {update.author}</p>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <p className="text-gray-600">No updates yet.</p>
+                      </div>
+                    )}
                   </TabsContent>
 
                   {/* Tab 5: Brand Response */}
                   <TabsContent value="response" className="py-8">
                     <div className="text-center py-12">
                       <div className="mb-4">
-                        <p className="text-5xl mb-4">🤷</p>
-                        <h3 className="font-display font-semibold text-lg text-foreground mb-2">No Response Yet</h3>
+                        <p className="text-5xl mb-4">{brandResponse.status === 'responsive' ? '💬' : '🤷'}</p>
+                        <h3 className="font-display font-semibold text-lg text-foreground mb-2">
+                          {brandResponse.status === 'responsive' ? 'Brand Response' : 'No Response Yet'}
+                        </h3>
                         <p className="text-gray-600 mb-6">
-                          {campaign.brandResponse.message}
+                          {brandResponse.message}
                         </p>
-                        <Badge variant="yellow" className="mb-6">
-                          Unresponsive
-                        </Badge>
+                        {brandResponse.status === 'unresponsive' && (
+                          <Badge variant="yellow" className="mb-6">
+                            Unresponsive
+                          </Badge>
+                        )}
                       </div>
                       <Button
                         variant="primary"
@@ -491,7 +644,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         className="inline-flex items-center gap-2"
                       >
                         <Megaphone className="w-4 h-4" />
-                        Help lobby {campaign.brand.name}
+                        Help lobby {brand.name}
                       </Button>
                     </div>
                   </TabsContent>
@@ -513,7 +666,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       Lobby for this!
                     </Button>
                     <div className="text-center text-sm text-gray-600">
-                      <p className="mb-1">{formatNumber(campaign.lobbyCount)} people have lobbied</p>
+                      <p className="mb-1">{formatNumber(lobbyCount)} people have lobbied</p>
                       <p className="font-medium text-foreground">{highPercent.toFixed(0)}% say 'shut up and take my money!'</p>
                     </div>
                   </CardContent>
@@ -590,13 +743,13 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     <div>
                       <p className="text-xs text-gray-600 mb-1">Targeted Brand</p>
                       <Badge variant="outline" size="sm">
-                        {campaign.brand.name}
+                        {brand.name}
                       </Badge>
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 mb-1">Status</p>
                       <Badge variant="lime" size="sm">
-                        Active
+                        {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
                       </Badge>
                     </div>
                     <div>
@@ -627,7 +780,6 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         <p className="text-xs text-gray-600">Creator</p>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700">{campaign.creator.bio}</p>
                     <Button
                       variant="secondary"
                       size="md"
@@ -668,7 +820,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
       <LobbyFlow
         isOpen={isLobbyFlowOpen}
         onClose={() => setIsLobbyFlowOpen(false)}
-        campaignTitle={campaign.title}
+        campaignTitle={campaign?.title || 'Campaign'}
       />
     </div>
   )

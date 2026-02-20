@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, ArrowRight } from 'lucide-react'
+import { Search, ArrowRight, Loader2, Plus } from 'lucide-react'
 import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
 import { PageHeader } from '@/components/shared/page-header'
@@ -11,295 +11,146 @@ import { CampaignCard, type CampaignCardProps } from '@/components/shared/campai
 
 const CATEGORIES = [
   { value: 'all', label: 'All' },
-  { value: 'tech', label: 'Tech' },
-  { value: 'fashion', label: 'Fashion' },
-  { value: 'food', label: 'Food & Drink' },
-  { value: 'home', label: 'Home' },
-  { value: 'sports', label: 'Sports' },
-  { value: 'beauty', label: 'Beauty' },
-  { value: 'transport', label: 'Transport' },
-  { value: 'other', label: 'Other' },
+  { value: 'TECH', label: 'Tech' },
+  { value: 'FASHION', label: 'Fashion' },
+  { value: 'FOOD_DRINK', label: 'Food & Drink' },
+  { value: 'HOME', label: 'Home' },
+  { value: 'SPORTS', label: 'Sports' },
+  { value: 'BEAUTY', label: 'Beauty' },
+  { value: 'TRANSPORT', label: 'Transport' },
+  { value: 'OTHER', label: 'Other' },
 ]
 
 const SORT_OPTIONS = [
   { value: 'trending', label: 'Trending' },
   { value: 'newest', label: 'Newest' },
-  { value: 'lobbied', label: 'Most Lobbied' },
-  { value: 'nearly', label: 'Nearly There' },
+  { value: 'signal', label: 'Most Lobbied' },
 ]
 
-const DEMO_CAMPAIGNS: CampaignCardProps[] = [
-  {
-    id: '1',
-    title: 'Nike Women\'s Size 14 Running Shoes',
-    slug: 'nike-womens-size-14-running-shoes',
-    description: 'Extended size range for women\'s running shoes. Many athletes need sizes beyond standard offerings.',
-    category: 'Fashion',
-    image: undefined,
-    lobbyCount: 2847,
-    intensityDistribution: {
-      low: 800,
-      medium: 1200,
-      high: 847,
-    },
-    completenessScore: 89,
-    status: 'active',
-    creator: {
-      id: 'user1',
-      displayName: 'Sarah Chen',
-      email: 'sarah.chen@example.com',
-    },
-    brand: {
-      id: 'nike',
-      name: 'Nike',
-    },
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Portable Espresso Machine - No Electricity Required',
-    slug: 'portable-espresso-machine',
-    description: 'A genuinely portable espresso maker that doesn\'t need electricity. Perfect for camping and travel.',
-    category: 'Food & Drink',
-    image: undefined,
-    lobbyCount: 1523,
-    intensityDistribution: {
-      low: 600,
-      medium: 650,
-      high: 273,
-    },
-    completenessScore: 72,
-    status: 'active',
-    creator: {
-      id: 'user2',
-      displayName: 'Marcus Johnson',
-      email: 'marcus.j@example.com',
-    },
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Noise-Cancelling Headphones for Dogs',
-    slug: 'noise-cancelling-headphones-dogs',
-    description: 'Protective headphones designed to reduce anxiety from loud noises for anxious dogs.',
-    category: 'Tech',
-    image: undefined,
-    lobbyCount: 847,
-    intensityDistribution: {
-      low: 700,
-      medium: 120,
-      high: 27,
-    },
-    completenessScore: 45,
-    status: 'active',
-    creator: {
-      id: 'user3',
-      displayName: 'Emma Rodriguez',
-      email: 'emma.r@example.com',
-    },
-    createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '4',
-    title: 'Modular Kitchen Island with Built-in Herb Garden',
-    slug: 'modular-kitchen-island-herb-garden',
-    description: 'Customizable kitchen island that includes integrated hydroponic herb garden for fresh cooking ingredients.',
-    category: 'Home',
-    image: undefined,
-    lobbyCount: 3201,
-    intensityDistribution: {
-      low: 950,
-      medium: 1400,
-      high: 851,
-    },
-    completenessScore: 92,
-    status: 'active',
-    creator: {
-      id: 'user4',
-      displayName: 'David Kim',
-      email: 'david.kim@example.com',
-    },
-    brand: {
-      id: 'ikea',
-      name: 'IKEA',
-    },
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '5',
-    title: 'Sustainable Running Shoes from Recycled Ocean Plastic',
-    slug: 'sustainable-running-shoes-ocean-plastic',
-    description: 'High-performance running shoes made entirely from recycled ocean plastic and sustainable materials.',
-    category: 'Sports',
-    image: undefined,
-    lobbyCount: 4112,
-    intensityDistribution: {
-      low: 1100,
-      medium: 1800,
-      high: 1212,
-    },
-    completenessScore: 96,
-    status: 'active',
-    creator: {
-      id: 'user5',
-      displayName: 'Lisa Anderson',
-      email: 'lisa.anderson@example.com',
-    },
-    brand: {
-      id: 'adidas',
-      name: 'Adidas',
-    },
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '6',
-    title: 'Vegan Leather Work Bag That Doesn\'t Look Vegan',
-    slug: 'vegan-leather-work-bag',
-    description: 'Professional work bag made from vegan leather that actually looks like premium leather. No compromises on aesthetics.',
-    category: 'Fashion',
-    image: undefined,
-    lobbyCount: 1888,
-    intensityDistribution: {
-      low: 650,
-      medium: 850,
-      high: 388,
-    },
-    completenessScore: 78,
-    status: 'active',
-    creator: {
-      id: 'user6',
-      displayName: 'James Wilson',
-      email: 'james.w@example.com',
-    },
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '7',
-    title: 'AI-Powered Sleep Tracker Pillow',
-    slug: 'ai-sleep-tracker-pillow',
-    description: 'Smart pillow that tracks sleep patterns and provides personalized recommendations for better rest.',
-    category: 'Tech',
-    image: undefined,
-    lobbyCount: 956,
-    intensityDistribution: {
-      low: 400,
-      medium: 350,
-      high: 206,
-    },
-    completenessScore: 68,
-    status: 'active',
-    creator: {
-      id: 'user7',
-      displayName: 'Michael Zhang',
-      email: 'michael.z@example.com',
-    },
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '8',
-    title: 'Zero-Waste Meal Kit Delivery',
-    slug: 'zero-waste-meal-kit',
-    description: 'Sustainable meal kit delivery service with completely compostable or reusable packaging.',
-    category: 'Food & Drink',
-    image: undefined,
-    lobbyCount: 2334,
-    intensityDistribution: {
-      low: 750,
-      medium: 1050,
-      high: 534,
-    },
-    completenessScore: 85,
-    status: 'active',
-    creator: {
-      id: 'user8',
-      displayName: 'Nina Patel',
-      email: 'nina.p@example.com',
-    },
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '9',
-    title: 'Electric Cargo Bike for Families',
-    slug: 'electric-cargo-bike-families',
-    description: 'Electric cargo bike designed to safely transport children and groceries. Perfect for urban families.',
-    category: 'Transport',
-    image: undefined,
-    lobbyCount: 1677,
-    intensityDistribution: {
-      low: 550,
-      medium: 750,
-      high: 377,
-    },
-    completenessScore: 80,
-    status: 'active',
-    creator: {
-      id: 'user9',
-      displayName: 'Robert Chen',
-      email: 'robert.c@example.com',
-    },
-    createdAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-]
-
-function getCategoryValue(category: string): string {
-  const categoryMap: Record<string, string> = {
-    'Fashion': 'fashion',
-    'Food & Drink': 'food',
-    'Tech': 'tech',
-    'Home': 'home',
-    'Sports': 'sports',
-    'Transport': 'transport',
+interface ApiCampaign {
+  id: string
+  title: string
+  slug: string
+  description: string
+  category: string
+  status: string
+  signalScore: number
+  completenessScore: number
+  createdAt: string
+  creator: {
+    id: string
+    displayName: string
+    handle: string | null
   }
-  return categoryMap[category] || 'other'
+  targetedBrand: {
+    id: string
+    name: string
+    slug: string
+    logo: string | null
+  } | null
+  media: Array<{ url: string; type: string }>
+  _count: {
+    lobbies: number
+    follows: number
+  }
+  stats: {
+    supportCount: number
+    intentCount: number
+    estimatedDemand: number
+  }
+}
+
+function mapApiToCampaignCard(campaign: ApiCampaign): CampaignCardProps {
+  const lobbyCount = campaign._count.lobbies
+  // Estimate intensity distribution from available data
+  const high = campaign.stats.intentCount
+  const medium = campaign.stats.supportCount
+  const low = Math.max(0, lobbyCount - high - medium)
+
+  return {
+    id: campaign.id,
+    title: campaign.title,
+    slug: campaign.slug,
+    description: campaign.description,
+    category: campaign.category,
+    image: campaign.media?.[0]?.url || undefined,
+    lobbyCount,
+    intensityDistribution: { low, medium, high },
+    completenessScore: campaign.completenessScore,
+    status: campaign.status === 'LIVE' ? 'active' : campaign.status.toLowerCase(),
+    creator: {
+      id: campaign.creator.id,
+      displayName: campaign.creator.displayName,
+      email: '',
+    },
+    brand: campaign.targetedBrand
+      ? { id: campaign.targetedBrand.id, name: campaign.targetedBrand.name }
+      : undefined,
+    createdAt: campaign.createdAt,
+  }
 }
 
 export default function CampaignsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('trending')
   const [searchQuery, setSearchQuery] = useState('')
-  const [displayCount, setDisplayCount] = useState(9)
+  const [campaigns, setCampaigns] = useState<CampaignCardProps[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasMore, setHasMore] = useState(false)
 
-  const filteredCampaigns = DEMO_CAMPAIGNS.filter((campaign) => {
-    const matchesCategory =
-      selectedCategory === 'all' || getCategoryValue(campaign.category) === selectedCategory
-    const matchesSearch =
-      campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaign.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+  const fetchCampaigns = useCallback(async (pageNum: number, append: boolean = false) => {
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams({
+        sort: sortBy,
+        page: String(pageNum),
+        limit: '12',
+      })
+      if (selectedCategory !== 'all') params.set('category', selectedCategory)
+      if (searchQuery.trim()) params.set('query', searchQuery.trim())
 
-  const sortedCampaigns = [...filteredCampaigns].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      case 'lobbied':
-        return b.lobbyCount - a.lobbyCount
-      case 'nearly':
-        return b.completenessScore - a.completenessScore
-      case 'trending':
-      default:
-        const totalIntensityA =
-          a.intensityDistribution.low +
-          a.intensityDistribution.medium +
-          a.intensityDistribution.high
-        const totalIntensityB =
-          b.intensityDistribution.low +
-          b.intensityDistribution.medium +
-          b.intensityDistribution.high
-        const scoreA =
-          a.lobbyCount +
-          totalIntensityA * 2 +
-          a.completenessScore
-        const scoreB =
-          b.lobbyCount +
-          totalIntensityB * 2 +
-          b.completenessScore
-        return scoreB - scoreA
+      const res = await fetch(`/api/campaigns?${params}`)
+      const json = await res.json()
+
+      if (json.success && json.data) {
+        const mapped = json.data.items.map(mapApiToCampaignCard)
+        setCampaigns(prev => append ? [...prev, ...mapped] : mapped)
+        setTotal(json.data.total)
+        setHasMore(pageNum < json.data.totalPages)
+      } else {
+        if (!append) setCampaigns([])
+        setTotal(0)
+        setHasMore(false)
+      }
+    } catch {
+      if (!append) setCampaigns([])
+      setTotal(0)
+      setHasMore(false)
+    } finally {
+      setIsLoading(false)
     }
-  })
+  }, [sortBy, selectedCategory, searchQuery])
 
-  const displayedCampaigns = sortedCampaigns.slice(0, displayCount)
-  const hasMore = displayCount < sortedCampaigns.length
+  // Fetch on filter/sort changes
+  useEffect(() => {
+    setPage(1)
+    fetchCampaigns(1)
+  }, [fetchCampaigns])
+
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const loadMore = () => {
+    const nextPage = page + 1
+    setPage(nextPage)
+    fetchCampaigns(nextPage, true)
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -372,19 +223,25 @@ export default function CampaignsPage() {
         {/* Campaign Grid */}
         <main className="px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto py-12">
-            {displayedCampaigns.length === 0 ? (
+            {isLoading && campaigns.length === 0 ? (
+              <div className="text-center py-20">
+                <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
+                <p className="text-gray-600">Loading campaigns...</p>
+              </div>
+            ) : campaigns.length === 0 ? (
               <div className="text-center py-20">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search className="w-8 h-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  No campaigns found
+                  No campaigns yet
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Try adjusting your filters or create a new campaign
+                  Be the first to create a campaign and rally support for a product idea
                 </p>
                 <Link href="/campaigns/create">
-                  <Button variant="primary" size="lg">
+                  <Button variant="primary" size="lg" className="inline-flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
                     Create Campaign
                   </Button>
                 </Link>
@@ -393,13 +250,13 @@ export default function CampaignsPage() {
               <>
                 <div className="mb-6">
                   <p className="text-gray-600">
-                    Showing <span className="font-semibold">{displayedCampaigns.length}</span> of{' '}
-                    <span className="font-semibold">{sortedCampaigns.length}</span> campaigns
+                    Showing <span className="font-semibold">{campaigns.length}</span> of{' '}
+                    <span className="font-semibold">{total}</span> campaigns
                   </p>
                 </div>
 
                 <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6 mb-12">
-                  {displayedCampaigns.map((campaign) => (
+                  {campaigns.map((campaign) => (
                     <CampaignCard key={campaign.id} {...campaign} />
                   ))}
                 </div>
@@ -409,11 +266,16 @@ export default function CampaignsPage() {
                     <Button
                       variant="secondary"
                       size="lg"
-                      onClick={() => setDisplayCount((prev) => prev + 6)}
+                      onClick={loadMore}
+                      disabled={isLoading}
                       className="flex items-center gap-2"
                     >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="w-4 h-4" />
+                      )}
                       Load More Campaigns
-                      <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
                 )}

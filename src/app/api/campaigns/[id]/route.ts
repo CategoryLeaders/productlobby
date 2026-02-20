@@ -11,8 +11,10 @@ export async function GET(
   try {
     const { id } = params
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id },
+    // Support both UUID and slug-based lookup
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    const campaign = await prisma.campaign[isUuid ? 'findUnique' : 'findFirst']({
+      where: isUuid ? { id } : { slug: id },
       include: {
         creator: {
           select: {
@@ -76,7 +78,8 @@ export async function GET(
       )
     }
 
-    // Get lobby stats
+    // Get lobby stats (use resolved campaign.id for all queries)
+    const campaignId = campaign.id
     const [
       totalLobbies,
       pendingLobbies,
@@ -87,14 +90,14 @@ export async function GET(
       // Total verified lobbies
       prisma.lobby.count({
         where: {
-          campaignId: id,
+          campaignId,
           status: 'VERIFIED',
         },
       }),
       // Pending lobbies
       prisma.lobby.count({
         where: {
-          campaignId: id,
+          campaignId,
           status: 'PENDING',
         },
       }),
@@ -102,7 +105,7 @@ export async function GET(
       prisma.lobby.groupBy({
         by: ['intensity'],
         where: {
-          campaignId: id,
+          campaignId,
           status: 'VERIFIED',
         },
         _count: true,
@@ -110,7 +113,7 @@ export async function GET(
       // Recent lobbies
       prisma.lobby.findMany({
         where: {
-          campaignId: id,
+          campaignId,
           status: 'VERIFIED',
         },
         take: 5,
@@ -125,7 +128,7 @@ export async function GET(
       prisma.lobbyWishlist.findMany({
         where: {
           lobby: {
-            campaignId: id,
+            campaignId,
             status: 'VERIFIED',
           },
         },
