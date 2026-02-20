@@ -1,11 +1,75 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Users, Target, CreditCard, TrendingUp } from 'lucide-react'
+import { ArrowRight, Users, Target, CreditCard, TrendingUp, Loader2, AlertCircle } from 'lucide-react'
 import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
+import { CampaignCard, type CampaignCardProps } from '@/components/shared/campaign-card'
 
 export default function HomePage() {
+  const [trendingCampaigns, setTrendingCampaigns] = useState<CampaignCardProps[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchTrendingCampaigns = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const res = await fetch('/api/campaigns/trending?limit=6')
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch trending campaigns')
+        }
+
+        const data = await res.json()
+
+        // Map the API response to CampaignCardProps format
+        const mapped: CampaignCardProps[] = data.campaigns.map((campaign: any) => ({
+          id: campaign.id,
+          title: campaign.title,
+          slug: campaign.slug,
+          description: campaign.description,
+          category: campaign.category,
+          image: campaign.firstMediaImage?.url || undefined,
+          lobbyCount: campaign.verifiedLobbiesCount || 0,
+          intensityDistribution: {
+            low: campaign.lobbyStats?.intensityDistribution?.NEAT_IDEA || 0,
+            medium: campaign.lobbyStats?.intensityDistribution?.PROBABLY_BUY || 0,
+            high: campaign.lobbyStats?.intensityDistribution?.TAKE_MY_MONEY || 0,
+          },
+          completenessScore: campaign.completenessScore || 0,
+          status: 'active' as const,
+          creator: {
+            id: campaign.creator.id,
+            displayName: campaign.creator.displayName,
+            email: '',
+            avatar: campaign.creator.avatar || undefined,
+          },
+          brand: campaign.targetedBrand
+            ? {
+                id: campaign.targetedBrand.id,
+                name: campaign.targetedBrand.name,
+                logo: campaign.targetedBrand.logo || undefined,
+              }
+            : undefined,
+          createdAt: campaign.createdAt,
+        }))
+
+        setTrendingCampaigns(mapped)
+      } catch (err) {
+        console.error('Error fetching trending campaigns:', err)
+        setError('Unable to load trending campaigns. Please try again later.')
+        setTrendingCampaigns([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTrendingCampaigns()
+  }, [])
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -78,6 +142,61 @@ export default function HomePage() {
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Trending Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="mb-12">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">Trending Now</h2>
+              <p className="text-gray-600">The most popular campaigns gaining momentum</p>
+            </div>
+            <Link
+              href="/campaigns?sort=trending"
+              className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold transition"
+            >
+              View All
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600">Loading trending campaigns...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8">
+            <div className="flex items-center gap-3 text-red-800">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Could not load trending campaigns</p>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        ) : trendingCampaigns.length === 0 ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
+            <p className="text-gray-600">No campaigns yet. Be the first to create one!</p>
+            <Link
+              href="/campaigns/create"
+              className="mt-4 inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition font-semibold"
+            >
+              Create a Campaign
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
+            {trendingCampaigns.map((campaign) => (
+              <CampaignCard key={campaign.id} {...campaign} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Categories */}

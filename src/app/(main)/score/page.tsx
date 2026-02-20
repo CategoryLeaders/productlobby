@@ -1,43 +1,107 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { DashboardLayout, PageHeader } from '@/components/shared'
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Progress } from '@/components/ui'
-import { Copy, Share2, Link as LinkIcon } from 'lucide-react'
+import { Copy, Share2, Lock } from 'lucide-react'
 
-interface CampaignHeroStatus {
+interface Lobby {
   id: string
-  title: string
-  heroEarnings: number
+  campaign: {
+    id: string
+    title: string
+    slug: string
+    status: string
+    path: string
+    media: Array<{ order: number }>
+    targetedBrand: {
+      id: string
+      name: string
+      logo: string | null
+    }
+  }
+  preferences: Array<any>
+  wishlist: Array<{ id: string; text: string }>
 }
-
-const DEMO_HERO_CAMPAIGNS: CampaignHeroStatus[] = [
-  { id: 'nike-extended', title: 'Nike Extended Sizes', heroEarnings: 4.50 },
-  { id: 'sustainable-coffee', title: 'Sustainable Coffee Pods', heroEarnings: 5.20 },
-  { id: 'standing-desk', title: 'Ergonomic Standing Desk', heroEarnings: 2.70 },
-]
 
 export default function ScorePage() {
   const [copied, setCopied] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [lobbies, setLobbies] = useState<Lobby[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  const referralLink = 'https://productlobby.com/ref/alex_johnson_2024'
-  const score = 342
-  const topPercentage = 'Top 15%'
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/user/lobbies')
 
-  const scoreBreakdown = [
-    { label: 'Content Quality', points: 120, color: 'green' as const },
-    { label: 'Referrals', points: 85, color: 'violet' as const, note: '12 people joined via your links' },
-    { label: 'Comments', points: 67, color: 'lime' as const, note: '23 comments, 8 with engagement' },
-    { label: 'Advocacy', points: 70, color: 'violet' as const, note: 'Social shares, brand outreach' },
-  ]
+        if (response.status === 401) {
+          setIsAuthenticated(false)
+          setLobbies([])
+        } else if (response.ok) {
+          setIsAuthenticated(true)
+          const data = await response.json()
+          setLobbies(data.lobbies || [])
+        } else {
+          throw new Error('Failed to fetch user data')
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err)
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-  const totalEarnings = DEMO_HERO_CAMPAIGNS.reduce((sum, c) => sum + c.heroEarnings, 0)
+    fetchUserData()
+  }, [])
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(referralLink)
+  const handleCopyLink = (link: string) => {
+    navigator.clipboard.writeText(link)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="supporter">
+        <div className="space-y-8">
+          <PageHeader title="Your Contribution Score" />
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center text-gray-500">Loading your contribution data...</div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <DashboardLayout role="supporter">
+        <div className="space-y-8">
+          <PageHeader title="Your Contribution Score" />
+
+          <Card className="bg-gradient-to-br from-violet-50 to-white border border-violet-100">
+            <CardContent className="py-12">
+              <div className="text-center">
+                <Lock className="w-16 h-16 text-violet-400 mx-auto mb-4 opacity-50" />
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign in to see your score</h2>
+                <p className="text-gray-600 mb-6">Create an account to start contributing and earn points on campaigns</p>
+                <Link href="/auth/signin">
+                  <Button variant="accent">
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -45,126 +109,107 @@ export default function ScorePage() {
       <div className="space-y-8">
         <PageHeader title="Your Contribution Score" />
 
-        {/* Main Score Display */}
-        <Card className="bg-gradient-to-br from-violet-50 to-white border border-violet-100">
-          <CardContent className="py-12">
-            <div className="text-center">
-              <div className="text-6xl font-bold font-display text-violet-600 mb-3">{score}</div>
-              <Badge variant="default" size="md">
-                {topPercentage} contributor
-              </Badge>
-              <p className="text-gray-600 mt-4">You're a top contributor on {DEMO_HERO_CAMPAIGNS.length} campaigns</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Score Breakdown */}
-        <div>
-          <h2 className="text-2xl font-bold font-display text-foreground mb-4">Score Breakdown</h2>
-          <div className="grid gap-4">
-            {scoreBreakdown.map((item, idx) => (
-              <Card key={idx}>
-                <CardContent className="py-4 px-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-semibold text-foreground">{item.label}</p>
-                      {item.note && <p className="text-sm text-gray-600 mt-1">{item.note}</p>}
-                    </div>
-                    <span className="text-lg font-bold text-gray-700">{item.points} pts</span>
-                  </div>
-                  <Progress
-                    value={item.points}
-                    max={120}
-                    variant={item.color}
-                    animated={false}
-                  />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Hero Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Hero Status Campaigns</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {DEMO_HERO_CAMPAIGNS.map(campaign => (
-                <div key={campaign.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <Link
-                    href={`/campaigns/${campaign.id}`}
-                    className="text-sm font-medium text-foreground hover:text-green-700 transition-colors"
-                  >
-                    {campaign.title}
+        {lobbies.length === 0 ? (
+          <>
+            {/* No Activity State */}
+            <Card className="bg-gradient-to-br from-violet-50 to-white border border-violet-100">
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <div className="text-6xl font-bold font-display text-gray-300 mb-3">0</div>
+                  <Badge variant="secondary" size="md">
+                    No activity yet
+                  </Badge>
+                  <p className="text-gray-600 mt-4">Join a campaign to start earning contribution points</p>
+                  <Link href="/campaigns">
+                    <Button variant="accent" className="mt-6">
+                      Browse Campaigns
+                    </Button>
                   </Link>
-                  <Badge variant="green" size="sm">
-                    £{campaign.heroEarnings.toFixed(2)}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            {/* Main Activity Display */}
+            <Card className="bg-gradient-to-br from-violet-50 to-white border border-violet-100">
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">You're contributing to</p>
+                  <div className="text-4xl font-bold font-display text-violet-600 mb-3">{lobbies.length}</div>
+                  <Badge variant="default" size="md">
+                    Active {lobbies.length === 1 ? 'Campaign' : 'Campaigns'}
                   </Badge>
                 </div>
-              ))}
-              <div className="pt-3 border-t border-gray-200 mt-3">
-                <p className="text-sm text-gray-600">Total earned from Hero Pool</p>
-                <p className="text-2xl font-bold font-display text-green-600">£{totalEarnings.toFixed(2)}</p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Referral Link */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Referral Link</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p className="text-xs text-gray-600 mb-2">Share your unique referral link</p>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono text-gray-700 flex-1 truncate">
-                    {referralLink}
-                  </code>
-                  <button
-                    onClick={handleCopyLink}
-                    className="p-2 hover:bg-gray-200 rounded transition-colors"
-                    title="Copy link"
-                  >
-                    <Copy className="w-4 h-4 text-gray-600" />
-                  </button>
+            {/* Your Campaigns */}
+            <div>
+              <h2 className="text-2xl font-bold font-display text-foreground mb-4">Your Active Campaigns</h2>
+              <div className="grid gap-4">
+                {lobbies.map(lobby => (
+                  <Card key={lobby.id}>
+                    <CardContent className="py-4 px-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <Link
+                            href={`/campaigns/${lobby.campaign.slug}`}
+                            className="font-semibold text-foreground hover:text-violet-600 transition-colors"
+                          >
+                            {lobby.campaign.title}
+                          </Link>
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            <Badge variant="secondary" size="sm">{lobby.campaign.targetedBrand.name}</Badge>
+                            {lobby.preferences.length > 0 && (
+                              <Badge variant="lime" size="sm">{lobby.preferences.length} preferences</Badge>
+                            )}
+                            {lobby.wishlist.length > 0 && (
+                              <Badge variant="green" size="sm">{lobby.wishlist.length} wishes</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Referral Link Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Share Your Campaign</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-gray-600">Share one of your campaigns with others to grow your community</p>
+                <div className="space-y-2">
+                  {lobbies.slice(0, 3).map(lobby => {
+                    const referralLink = `${typeof window !== 'undefined' ? window.location.origin : ''}/campaigns/${lobby.campaign.slug}`
+                    return (
+                      <div key={lobby.id} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-600 mb-2">{lobby.campaign.title}</p>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-mono text-gray-700 flex-1 truncate">
+                            {referralLink}
+                          </code>
+                          <button
+                            onClick={() => handleCopyLink(referralLink)}
+                            className="p-2 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
+                            title="Copy link"
+                          >
+                            <Copy className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </div>
+                        {copied && <p className="text-xs text-green-600 mt-2">Copied!</p>}
+                      </div>
+                    )
+                  })}
                 </div>
-                {copied && <p className="text-xs text-green-600 mt-2">Copied!</p>}
-              </div>
-
-              <div className="bg-lime-50 p-4 rounded-lg border border-lime-200">
-                <p className="text-sm font-semibold text-lime-900 mb-2">Referral Stats</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-2xl font-bold text-lime-600">89</p>
-                    <p className="text-xs text-gray-600">Link clicks</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-lime-600">12</p>
-                    <p className="text-xs text-gray-600">Sign-ups</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="accent"
-                  size="sm"
-                  className="flex-1 gap-2"
-                  onClick={() => {
-                    const text = `Join ProductLobby and help shape the products you love! ${referralLink}`
-                    navigator.share?.({ text }) || navigator.clipboard.writeText(text)
-                  }}
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     </DashboardLayout>
   )
