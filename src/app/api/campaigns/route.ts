@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { CreateCampaignSchema, CampaignQuerySchema } from '@/types'
-import { generateFingerprint, slugify } from '@/lib/utils'
+import { slugify } from '@/lib/utils'
 
 // GET /api/campaigns - List campaigns with filtering
 export async function GET(request: NextRequest) {
@@ -137,23 +137,36 @@ export async function POST(request: NextRequest) {
 
     const data = result.data
 
-    // Generate fingerprint for deduplication
-    const fingerprint = generateFingerprint({
-      brandId: data.targetedBrandId || undefined,
-      template: data.template,
-      keywords: data.title.toLowerCase().split(/\s+/).slice(0, 5),
-    })
+    // Generate a unique slug from the title
+    const baseSlug = slugify(data.title)
+    // Add a short random suffix to avoid collisions
+    const slug = `${baseSlug}-${Date.now().toString(36).slice(-4)}`
 
-    // Check for similar campaigns
+    // Resolve targetBrand text to a brand ID if provided
+    let resolvedBrandId = data.targetedBrandId || null
+    if (!resolvedBrandId && data.targetBrand && data.targetBrand.trim()) {
+      // Try to find an existing brand by name
+      const existingBrand = await prisma.brand.findFirst({
+        where: { name: { equals: data.targetBrand.trim(), mode: 'insensitive' } },
+        select: { id: true },
+      })
+      if (existingBrand) {
+        resolvedBrandId = existingBrand.id
+      }
+      // If brand doesn't exist, we skip it for now — could auto-create later
+    }
+
+    // Check for similar campaigns by title (basic deduplication)
     const similarCampaigns = await prisma.campaign.findMany({
       where: {
-        fingerprintHash: fingerprint,
+        title: { equals: data.title, mode: 'insensitive' },
         status: 'LIVE',
       },
       take: 5,
       select: {
         id: true,
         title: true,
+        slug: true,
         _count: {
           select: { lobbies: true },
         },
@@ -175,19 +188,18 @@ export async function POST(request: NextRequest) {
       data: {
         creatorUserId: user.id,
         title: data.title,
+        slug,
         description: data.description,
         category: data.category,
-        template: data.template,
-        targetedBrandId: data.targetedBrandId,
+        targetedBrandId: resolvedBrandId,
         openToAlternatives: data.openToAlternatives,
         currency: data.currency,
-        fingerprintHash: fingerprint,
-        status: 'LIVE',
+        status: 'DRAFT',
         // Create media records if URLs provided
         ...(data.mediaUrls && data.mediaUrls.length > 0
           ? {
               media: {
-                create: data.mediaUrls.map((url, index) => ({
+                create: data.mediaUrls.map((url: string, index: number) => ({
                   kind: 'IMAGE' as const,
                   url,
                   order: index,

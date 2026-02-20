@@ -44,8 +44,9 @@ export const CreateCampaignSchema = z.object({
     'automotive',
     'other',
   ]),
-  template: CampaignTemplateEnum,
+  template: CampaignTemplateEnum.optional(), // Not stored in DB, kept for future use
   targetedBrandId: z.string().uuid().optional().nullable(),
+  targetBrand: z.string().optional(), // Accept free-text brand name from form
   openToAlternatives: z.boolean().default(false),
   currency: z.string().length(3).default('GBP'),
   mediaUrls: z.array(z.string().url()).max(10).optional(),

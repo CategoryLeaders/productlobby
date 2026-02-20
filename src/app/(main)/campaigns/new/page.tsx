@@ -36,6 +36,7 @@ export default function NewCampaignPage() {
   const [heroImage, setHeroImage] = useState<UploadedImage | null>(null)
   const [additionalImages, setAdditionalImages] = useState<UploadedImage[]>([])
   const [uploading, setUploading] = useState(false)
+  const [needsAuth, setNeedsAuth] = useState(false)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -128,9 +129,14 @@ export default function NewCampaignPage() {
           ...(mediaUrls.length > 0 ? { mediaUrls } : {}),
         }),
       })
+      if (res.status === 401) {
+        setNeedsAuth(true)
+        setLoading(false)
+        return
+      }
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to create campaign')
-      router.push(`/campaigns/${data.data.id}`)
+      router.push(`/campaigns/${data.data.slug || data.data.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -164,6 +170,15 @@ export default function NewCampaignPage() {
               Tell us what product or feature you want to exist. We&apos;ll help you rally support.
             </p>
           </div>
+
+          {needsAuth && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-center">
+              <p className="text-sm font-medium text-yellow-800 mb-2">You need to sign in to create a campaign</p>
+              <a href="/login" className="text-sm text-primary-600 hover:text-primary-700 font-medium underline">
+                Sign in or create an account
+              </a>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Campaign Type */}
