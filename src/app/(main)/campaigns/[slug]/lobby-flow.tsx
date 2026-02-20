@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ChevronRight, Mail, Chrome, Apple } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import {
   Modal,
   ModalContent,
@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ChipSelector, type ChipOption } from '@/components/ui/chip-selector'
 import { cn } from '@/lib/utils'
@@ -22,9 +21,18 @@ interface LobbyFlowProps {
   isOpen: boolean
   onClose: () => void
   campaignTitle: string
+  campaignId: string
 }
 
 type IntensityLevel = 'low' | 'medium' | 'high' | null
+
+type SubmitState = 'idle' | 'submitting' | 'success' | 'error' | 'duplicate' | 'auth_required'
+
+const INTENSITY_MAP: Record<string, string> = {
+  low: 'NEAT_IDEA',
+  medium: 'PROBABLY_BUY',
+  high: 'TAKE_MY_MONEY',
+}
 
 interface Preferences {
   size: string[]
@@ -105,6 +113,7 @@ export function LobbyFlow({
   isOpen,
   onClose,
   campaignTitle,
+  campaignId,
 }: LobbyFlowProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [intensity, setIntensity] = useState<IntensityLevel>(null)
@@ -116,6 +125,8 @@ export function LobbyFlow({
   })
   const [wishlistText, setWishlistText] = useState('')
   const [email, setEmail] = useState('')
+  const [submitState, setSubmitState] = useState<SubmitState>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleReset = () => {
     setCurrentStep(1)
@@ -123,6 +134,8 @@ export function LobbyFlow({
     setPreferences({ size: [], colours: [], priceRange: [], width: [] })
     setWishlistText('')
     setEmail('')
+    setSubmitState('idle')
+    setErrorMessage('')
   }
 
   const handleClose = () => {
@@ -138,15 +151,48 @@ export function LobbyFlow({
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSave = () => {
-    // In a real application, this would send the data to an API
-    console.log({
-      intensity,
-      preferences,
-      wishlistText,
-      email,
-    })
-    handleClose()
+  const handleSave = async () => {
+    if (!intensity) return
+
+    setSubmitState('submitting')
+    setErrorMessage('')
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/lobby`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intensity: INTENSITY_MAP[intensity],
+          wishlist: wishlistText.trim() || undefined,
+        }),
+      })
+
+      if (response.status === 401) {
+        setSubmitState('auth_required')
+        return
+      }
+
+      if (response.status === 409) {
+        setSubmitState('duplicate')
+        return
+      }
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to save your lobby')
+      }
+
+      setSubmitState('success')
+      // Auto-close after success
+      setTimeout(() => {
+        handleClose()
+        // Refresh the page to show updated stats
+        window.location.reload()
+      }, 2000)
+    } catch (err: any) {
+      setSubmitState('error')
+      setErrorMessage(err.message || 'Something went wrong. Please try again.')
+    }
   }
 
   const getIntensityLabel = (level: IntensityLevel) => {
@@ -394,108 +440,143 @@ export function LobbyFlow({
         {currentStep === 4 && (
           <>
             <ModalHeader>
-              <ModalTitle className="text-2xl">Save your lobby & preferences</ModalTitle>
-              <p className="text-sm text-gray-600 mt-2">
-                We'll notify you when Nike responds to this campaign
-              </p>
+              <ModalTitle className="text-2xl">
+                {submitState === 'success'
+                  ? 'Lobby saved!'
+                  : submitState === 'duplicate'
+                    ? 'Already lobbied'
+                    : submitState === 'auth_required'
+                      ? 'Sign in to lobby'
+                      : 'Save your lobby & preferences'}
+              </ModalTitle>
+              {submitState === 'idle' && (
+                <p className="text-sm text-gray-600 mt-2">
+                  We'll notify you when the brand responds to this campaign
+                </p>
+              )}
             </ModalHeader>
             <ModalBody className="space-y-6">
-              {/* Summary */}
-              <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 space-y-4">
-                <h4 className="font-medium text-foreground text-sm">What you're saving</h4>
+              {/* Success State */}
+              {submitState === 'success' && (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <p className="text-lg font-medium text-foreground mb-2">Your lobby has been saved!</p>
+                  <p className="text-sm text-gray-600">Thanks for supporting this campaign. We'll keep you updated.</p>
+                </div>
+              )}
 
-                {/* Intensity */}
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{getIntensityEmoji(intensity)}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {getIntensityLabel(intensity)}
+              {/* Duplicate State */}
+              {submitState === 'duplicate' && (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">✋</div>
+                  <p className="text-lg font-medium text-foreground mb-2">You've already lobbied this campaign</p>
+                  <p className="text-sm text-gray-600">Your support is already counted. Share the campaign to rally more people!</p>
+                </div>
+              )}
+
+              {/* Auth Required State */}
+              {submitState === 'auth_required' && (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">🔐</div>
+                  <p className="text-lg font-medium text-foreground mb-2">You need to sign in first</p>
+                  <p className="text-sm text-gray-600 mb-6">Create an account or sign in to save your lobby.</p>
+                  <a href="/login">
+                    <Button variant="primary" size="lg">
+                      Sign in / Sign up
+                    </Button>
+                  </a>
+                </div>
+              )}
+
+              {/* Error State */}
+              {submitState === 'error' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-red-700 font-medium">{errorMessage}</p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => setSubmitState('idle')}
+                  >
+                    Try again
+                  </Button>
+                </div>
+              )}
+
+              {/* Normal idle/submitting state */}
+              {(submitState === 'idle' || submitState === 'submitting') && (
+                <>
+                  {/* Summary */}
+                  <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 space-y-4">
+                    <h4 className="font-medium text-foreground text-sm">What you're saving</h4>
+
+                    {/* Intensity */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{getIntensityEmoji(intensity)}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">
+                          {getIntensityLabel(intensity)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Preferences Count */}
+                    {(preferences.size.length > 0 ||
+                      preferences.colours.length > 0 ||
+                      preferences.priceRange.length > 0 ||
+                      preferences.width.length > 0) && (
+                        <div className="text-sm text-gray-600">
+                          <p className="font-medium text-foreground mb-1">Preferences</p>
+                          <p className="text-xs">
+                            {preferences.size.length} size
+                            {preferences.colours.length > 0 && ` · ${preferences.colours.length} colours`}
+                            {preferences.priceRange.length > 0 && ` · Price range`}
+                            {preferences.width.length > 0 && ` · ${preferences.width.length} width`}
+                          </p>
+                        </div>
+                      )}
+
+                    {/* Wishlist Preview */}
+                    {wishlistText.trim() && (
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium text-foreground mb-1">Wishlist</p>
+                        <p className="text-xs line-clamp-2 italic">"{wishlistText}"</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Privacy Note */}
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">Your lobby counts</span> once you verify your email. We'll send a quick confirmation.
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">Your preferences are anonymised.</span> Brands see aggregated data only.
                     </p>
                   </div>
-                </div>
-
-                {/* Preferences Count */}
-                {(preferences.size.length > 0 ||
-                  preferences.colours.length > 0 ||
-                  preferences.priceRange.length > 0 ||
-                  preferences.width.length > 0) && (
-                    <div className="text-sm text-gray-600">
-                      <p className="font-medium text-foreground mb-1">Preferences</p>
-                      <p className="text-xs">
-                        {preferences.size.length} size
-                        {preferences.colours.length > 0 && ` · ${preferences.colours.length} colours`}
-                        {preferences.priceRange.length > 0 && ` · Price range`}
-                        {preferences.width.length > 0 && ` · ${preferences.width.length} width`}
-                      </p>
-                    </div>
-                  )}
-
-                {/* Wishlist Preview */}
-                {wishlistText.trim() && (
-                  <div className="text-sm text-gray-600">
-                    <p className="font-medium text-foreground mb-1">Wishlist</p>
-                    <p className="text-xs line-clamp-2 italic">"{wishlistText}"</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Email Input */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Email Address
-                </label>
-                <Input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-
-              {/* Social Auth */}
-              <div>
-                <p className="text-sm font-medium text-foreground mb-3">Or continue with</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="flex items-center justify-center gap-2"
-                  >
-                    <Chrome className="w-4 h-4" />
-                    Google
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="flex items-center justify-center gap-2"
-                  >
-                    <Apple className="w-4 h-4" />
-                    Apple
-                  </Button>
-                </div>
-              </div>
-
-              {/* Privacy Note */}
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Your lobby counts</span> once you verify your email. We'll send a quick confirmation.
-                </p>
-                <p className="text-xs text-gray-600">
-                  <span className="font-medium">Your preferences are anonymised.</span> Brands see aggregated data only.
-                </p>
-              </div>
+                </>
+              )}
             </ModalBody>
             <ModalFooter>
-              <Button variant="ghost" onClick={handlePrevious}>
-                Back
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleSave}
-                disabled={!email}
-              >
-                Save My Lobby
-              </Button>
+              {(submitState === 'idle' || submitState === 'submitting') && (
+                <>
+                  <Button variant="ghost" onClick={handlePrevious} disabled={submitState === 'submitting'}>
+                    Back
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleSave}
+                    disabled={submitState === 'submitting'}
+                  >
+                    {submitState === 'submitting' ? 'Saving...' : 'Save My Lobby'}
+                  </Button>
+                </>
+              )}
+              {(submitState === 'success' || submitState === 'duplicate') && (
+                <Button variant="primary" onClick={handleClose}>
+                  Close
+                </Button>
+              )}
             </ModalFooter>
           </>
         )}

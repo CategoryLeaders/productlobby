@@ -821,6 +821,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
         isOpen={isLobbyFlowOpen}
         onClose={() => setIsLobbyFlowOpen(false)}
         campaignTitle={campaign?.title || 'Campaign'}
+        campaignId={campaign?.id || ''}
       />
     </div>
   )
