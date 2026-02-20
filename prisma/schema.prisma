@@ -123,6 +123,8 @@ enum BrandStatus {
   UNCLAIMED
   CLAIMED
   VERIFIED
+
+  @@map("brand_status")
 }
 
 model BrandTeam {
@@ -141,6 +143,8 @@ enum TeamRole {
   OWNER
   ADMIN
   MEMBER
+
+  @@map("team_role")
 }
 
 model BrandVerification {
@@ -159,12 +163,16 @@ model BrandVerification {
 enum VerificationMethod {
   EMAIL_DOMAIN
   DNS_TXT
+
+  @@map("verification_method")
 }
 
 enum VerificationStatus {
   PENDING
   VERIFIED
   FAILED
+
+  @@map("verification_status")
 }
 
 // ============================================================================
@@ -220,12 +228,16 @@ enum CampaignStatus {
   LIVE
   PAUSED
   CLOSED
+
+  @@map("campaign_status")
 }
 
 enum CampaignPath {
   LOBBYING
   PATH_A
   PATH_B
+
+  @@map("campaign_path")
 }
 
 model CampaignMedia {
@@ -245,6 +257,8 @@ model CampaignMedia {
 enum MediaKind {
   IMAGE
   VIDEO
+
+  @@map("media_kind")
 }
 
 model CampaignPreferenceField {
@@ -272,6 +286,8 @@ enum FieldType {
   MULTI_SELECT
   NUMBER
   RANGE
+
+  @@map("field_type")
 }
 
 model CampaignUpdate {
@@ -319,11 +335,15 @@ enum LobbyIntensity {
   NEAT_IDEA
   PROBABLY_BUY
   TAKE_MY_MONEY
+
+  @@map("lobby_intensity")
 }
 
 enum LobbyStatus {
   PENDING
   VERIFIED
+
+  @@map("lobby_status")
 }
 
 model LobbyPreference {
@@ -377,6 +397,8 @@ enum BrandResponseType {
   STATUS_UPDATE
   COMMENT
   ANNOUNCEMENT
+
+  @@map("brand_response_type")
 }
 
 model Poll {
@@ -399,6 +421,8 @@ model Poll {
 enum PollStatus {
   ACTIVE
   CLOSED
+
+  @@map("poll_status")
 }
 
 model PollOption {
@@ -462,6 +486,8 @@ enum OfferStatus {
   SUCCESSFUL
   FAILED
   CANCELLED
+
+  @@map("offer_status")
 }
 
 model Order {
@@ -493,6 +519,8 @@ enum OrderStatus {
   PAID
   REFUNDED
   CANCELLED
+
+  @@map("order_status")
 }
 
 model Payment {
@@ -515,6 +543,8 @@ enum PaymentStatus {
   SUCCEEDED
   REFUNDED
   CHARGEBACK
+
+  @@map("payment_status")
 }
 
 // ============================================================================
@@ -549,6 +579,8 @@ enum PayoutStatus {
   PENDING
   PAID
   FAILED
+
+  @@map("payout_status")
 }
 
 model CreatorReward {
@@ -594,6 +626,8 @@ model HeroReward {
 enum RewardStatus {
   PENDING
   PAID
+
+  @@map("reward_status")
 }
 
 // ============================================================================
@@ -638,6 +672,8 @@ enum ContributionEventType {
   COMMENT_ENGAGEMENT
   SOCIAL_SHARE
   BRAND_OUTREACH
+
+  @@map("contribution_event_type")
 }
 
 model ReferralLink {
@@ -684,6 +720,8 @@ enum TargetType {
   BRAND_RESPONSE
   BRAND
   USER
+
+  @@map("target_type")
 }
 
 enum ReportStatus {
@@ -691,6 +729,8 @@ enum ReportStatus {
   INVESTIGATING
   RESOLVED
   DISMISSED
+
+  @@map("report_status")
 }
 
 model ModerationAction {
@@ -714,6 +754,8 @@ enum ModerationType {
   WARN
   SHADOWBAN
   RESTORE
+
+  @@map("moderation_type")
 }
 
 model Notification {
