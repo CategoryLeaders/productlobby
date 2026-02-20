@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 const sections = [
   { title: '1. Acceptance of Terms', body: 'By accessing or using ProductLobby ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Platform. We reserve the right to update these terms at any time, and continued use of the Platform constitutes acceptance of any changes.' },
@@ -20,7 +21,7 @@ export default function TermsPage() {
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold text-primary-600">ProductLobby</Link>
+            <Link href="/"><Logo size="md" /></Link>
             <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
               <ArrowLeft className="w-4 h-4 mr-2" />Home
             </Link>
