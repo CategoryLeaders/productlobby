@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://productlobby.vercel.app'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (!GOOGLE_CLIENT_ID) {
     return NextResponse.json(
       { success: false, error: 'Google OAuth is not configured' },
@@ -22,6 +22,18 @@ export async function GET() {
     maxAge: 600, // 10 minutes
     path: '/',
   })
+
+  // Store redirect path if provided
+  const redirect = request.nextUrl.searchParams.get('redirect')
+  if (redirect) {
+    cookieStore.set('oauth_redirect', redirect, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 600,
+      path: '/',
+    })
+  }
 
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,

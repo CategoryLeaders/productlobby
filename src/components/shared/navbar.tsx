@@ -91,7 +91,7 @@ export const Navbar: React.FC = () => {
                     Log In
                   </Button>
                 </Link>
-                <Link href="/campaigns/create">
+                <Link href="/campaigns/new">
                   <Button
                     variant="primary"
                     size="md"

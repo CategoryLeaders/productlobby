@@ -67,7 +67,11 @@ function LoginContent() {
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = '/api/auth/google'
+    const redirect = searchParams.get('redirect')
+    const url = redirect
+      ? `/api/auth/google?redirect=${encodeURIComponent(redirect)}`
+      : '/api/auth/google'
+    window.location.href = url
   }
 
   if (sent) {

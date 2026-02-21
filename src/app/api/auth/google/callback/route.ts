@@ -176,8 +176,13 @@ export async function GET(request: NextRequest) {
     // Create session
     await createSession(userId)
 
-    // Redirect to campaigns page
-    return NextResponse.redirect(`${APP_URL}/campaigns`)
+    // Check for redirect cookie (set when user was redirected to login from a protected page)
+    const redirectPath = cookieStore.get('oauth_redirect')?.value
+    cookieStore.delete('oauth_redirect')
+
+    // Redirect to saved path or campaigns page
+    const redirectTo = redirectPath && redirectPath.startsWith('/') ? redirectPath : '/campaigns'
+    return NextResponse.redirect(`${APP_URL}${redirectTo}`)
   } catch (error) {
     console.error('Google OAuth callback error:', error)
     return NextResponse.redirect(`${APP_URL}/login?error=oauth_server_error`)
