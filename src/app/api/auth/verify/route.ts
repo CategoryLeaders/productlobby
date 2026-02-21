@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { verifyMagicLink } from '@/lib/auth'
+import { rateLimit, getClientIP } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 verify attempts per IP per 15 minutes
+    const ip = getClientIP(request)
+    const ipLimit = rateLimit(`verify:ip:${ip}`, {
+      limit: 10,
+      windowSeconds: 15 * 60,
+    })
+
+    if (!ipLimit.success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many attempts. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const { token } = body
 
@@ -25,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Create and set session cookie
     const { createSession } = await import('@/lib/auth')
-    const sessionToken = await createSession(user.id)
+    await createSession(user.id)
 
     return NextResponse.json({
       success: true,

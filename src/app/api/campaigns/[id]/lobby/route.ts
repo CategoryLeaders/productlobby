@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { rateLimit, getClientIP } from '@/lib/rate-limit'
 
 // POST /api/campaigns/[id]/lobby - Create a lobby
 export async function POST(
@@ -13,6 +14,19 @@ export async function POST(
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    // Rate limit: 20 lobby actions per user per hour
+    const userLimit = rateLimit(`lobby:user:${user.id}`, {
+      limit: 20,
+      windowSeconds: 60 * 60,
+    })
+
+    if (!userLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many lobby actions. Please try again later.' },
+        { status: 429 }
       )
     }
 

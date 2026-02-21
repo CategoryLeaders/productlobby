@@ -2,11 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createMagicLink } from '@/lib/auth'
 import { sendMagicLinkEmail } from '@/lib/email'
 import { MagicLinkSchema } from '@/types'
+import { rateLimit, getClientIP } from '@/lib/rate-limit'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://productlobby.vercel.app'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 magic link requests per IP per 15 minutes
+    const ip = getClientIP(request)
+    const ipLimit = rateLimit(`magic-link:ip:${ip}`, {
+      limit: 5,
+      windowSeconds: 15 * 60,
+    })
+
+    if (!ipLimit.success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const result = MagicLinkSchema.safeParse(body)
 
@@ -18,6 +33,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { email } = result.data
+
+    // Rate limit per email: 3 requests per 10 minutes
+    const emailLimit = rateLimit(`magic-link:email:${email}`, {
+      limit: 3,
+      windowSeconds: 10 * 60,
+    })
+
+    if (!emailLimit.success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests for this email. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     const token = await createMagicLink(email)
 
     // If Resend is configured, send the email normally
