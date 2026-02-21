@@ -28,9 +28,49 @@ const baloo2 = Baloo_2({
 })
 
 export const metadata: Metadata = {
-  title: 'ProductLobby — Your Ideas, Their Products',
+  title: {
+    default: 'ProductLobby — Your Ideas, Their Products',
+    template: '%s | ProductLobby',
+  },
   description: 'Lobby for the products and features you want. Aggregate demand, influence brands, and turn your ideas into reality on ProductLobby.',
-  keywords: ['product requests', 'demand aggregation', 'crowdfunding', 'brand engagement'],
+  keywords: ['product requests', 'demand aggregation', 'crowdfunding', 'brand engagement', 'product lobby', 'feature requests'],
+  metadataBase: new URL('https://productlobby.vercel.app'),
+  openGraph: {
+    type: 'website',
+    locale: 'en_GB',
+    siteName: 'ProductLobby',
+    title: 'ProductLobby — Your Ideas, Their Products',
+    description: 'Lobby for the products and features you want. Aggregate demand, influence brands, and turn your ideas into reality.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'ProductLobby — Your Ideas, Their Products',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ProductLobby — Your Ideas, Their Products',
+    description: 'Lobby for the products and features you want. Aggregate demand, influence brands, and turn your ideas into reality.',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({

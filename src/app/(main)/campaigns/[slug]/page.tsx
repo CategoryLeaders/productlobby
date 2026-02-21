@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { LobbyFlow } from './lobby-flow'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
+import { CampaignJsonLd } from '@/components/shared/json-ld'
 
 interface CampaignDetailPageProps {
   params: {
@@ -243,6 +244,14 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <CampaignJsonLd
+        title={campaign.title}
+        description={campaign.description.slice(0, 200)}
+        url={`https://productlobby.vercel.app/campaigns/${campaign.slug}`}
+        dateCreated={campaign.createdAt}
+        creator={campaign.creator.displayName}
+        lobbyCount={lobbyCount}
+      />
       <Navbar />
 
       <main className="flex-1">

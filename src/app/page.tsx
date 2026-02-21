@@ -6,6 +6,7 @@ import { ArrowRight, Users, Target, CreditCard, TrendingUp, Loader2, AlertCircle
 import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
 import { CampaignCard, type CampaignCardProps } from '@/components/shared/campaign-card'
+import { WebsiteJsonLd, OrganizationJsonLd } from '@/components/shared/json-ld'
 
 export default function HomePage() {
   const [trendingCampaigns, setTrendingCampaigns] = useState<CampaignCardProps[]>([])
@@ -72,6 +73,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <WebsiteJsonLd />
+      <OrganizationJsonLd />
       <Navbar />
 
       {/* Hero Section */}
