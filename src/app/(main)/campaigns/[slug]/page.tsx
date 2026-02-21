@@ -132,6 +132,54 @@ const ErrorPage = ({ message }: { message: string }) => (
   </div>
 )
 
+function SimilarCampaigns({ category, currentSlug }: { category: string; currentSlug: string }) {
+  const [similar, setSimilar] = useState<Array<{ title: string; slug: string; lobbyCount: number }>>([])
+
+  useEffect(() => {
+    const fetchSimilar = async () => {
+      try {
+        const res = await fetch(`/api/campaigns?category=${encodeURIComponent(category)}&limit=4`)
+        if (!res.ok) return
+        const data = await res.json()
+        const items = (data.data?.items || [])
+          .filter((c: any) => c.slug !== currentSlug)
+          .slice(0, 3)
+          .map((c: any) => ({
+            title: c.title,
+            slug: c.slug,
+            lobbyCount: c.verifiedLobbiesCount || 0,
+          }))
+        setSimilar(items)
+      } catch {
+        // silently fail
+      }
+    }
+    fetchSimilar()
+  }, [category, currentSlug])
+
+  if (similar.length === 0) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Similar Campaigns</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {similar.map((item) => (
+          <Link key={item.slug} href={`/campaigns/${item.slug}`} className="block">
+            <div className="bg-gray-50 hover:bg-violet-50 rounded-lg p-3 transition-colors cursor-pointer">
+              <p className="font-medium text-foreground text-sm line-clamp-2">
+                {item.title}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">{formatNumber(item.lobbyCount)} lobbies</p>
+            </div>
+          </Link>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function CampaignDetailPage({ params }: CampaignDetailPageProps) {
   const [campaign, setCampaign] = useState<ApiCampaign | null>(null)
   const [loading, setLoading] = useState(true)
@@ -185,9 +233,9 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
   }
 
   const totalLobbies = intensityDistribution.low + intensityDistribution.medium + intensityDistribution.high
-  const lowPercent = (intensityDistribution.low / totalLobbies) * 100
-  const mediumPercent = (intensityDistribution.medium / totalLobbies) * 100
-  const highPercent = (intensityDistribution.high / totalLobbies) * 100
+  const lowPercent = totalLobbies > 0 ? (intensityDistribution.low / totalLobbies) * 100 : 0
+  const mediumPercent = totalLobbies > 0 ? (intensityDistribution.medium / totalLobbies) * 100 : 0
+  const highPercent = totalLobbies > 0 ? (intensityDistribution.high / totalLobbies) * 100 : 0
 
   const creatorInitials = getCreatorInitials(campaign.creator.displayName)
 
@@ -275,10 +323,18 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
           <div className="max-w-7xl mx-auto px-4 py-8">
             {/* Hero Image */}
             <div className="w-full h-96 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg mb-8 flex items-center justify-center overflow-hidden">
-              <div className="text-center">
-                <div className="text-8xl mb-4">{brand.logo}</div>
-                <p className="text-violet-600 text-lg font-display font-semibold">Campaign Hero</p>
-              </div>
+              {campaign.media.length > 0 && campaign.media[0].type.startsWith('image') ? (
+                <img
+                  src={campaign.media[0].url}
+                  alt={campaign.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center">
+                  <div className="text-8xl mb-4">{brand.logo || '📦'}</div>
+                  <p className="text-violet-600 text-lg font-display font-semibold">{brand.name}</p>
+                </div>
+              )}
             </div>
 
             {/* Title & Meta */}
@@ -485,10 +541,10 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       </div>
 
                       <div>
-                        <h3 className="font-display font-semibold text-lg text-foreground mb-3">Creator's Pitch</h3>
+                        <h3 className="font-display font-semibold text-lg text-foreground mb-3">Why This Matters</h3>
                         <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
                           <p className="text-gray-700 italic">
-                            "{campaign.description}"
+                            "This product should exist. Help me prove to {brand.name} that the demand is real."
                           </p>
                           <p className="text-sm text-gray-600 mt-3">— {campaign.creator.displayName}, Campaign Creator</p>
                         </div>
@@ -702,6 +758,11 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       variant="secondary"
                       size="md"
                       className="w-full justify-center gap-2"
+                      onClick={() => {
+                        const text = encodeURIComponent(`Check out "${campaign.title}" on ProductLobby!`)
+                        const url = encodeURIComponent(window.location.href)
+                        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
+                      }}
                     >
                       <Twitter className="w-4 h-4" />
                       Twitter / X
@@ -710,6 +771,10 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       variant="secondary"
                       size="md"
                       className="w-full justify-center gap-2"
+                      onClick={() => {
+                        const url = encodeURIComponent(window.location.href)
+                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
+                      }}
                     >
                       <Facebook className="w-4 h-4" />
                       Facebook
@@ -718,6 +783,10 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       variant="secondary"
                       size="md"
                       className="w-full justify-center gap-2"
+                      onClick={() => {
+                        const text = encodeURIComponent(`Check out "${campaign.title}" on ProductLobby! ${window.location.href}`)
+                        window.open(`https://wa.me/?text=${text}`, '_blank')
+                      }}
                     >
                       <MessageCircle className="w-4 h-4" />
                       WhatsApp
@@ -726,6 +795,11 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       variant="secondary"
                       size="md"
                       className="w-full justify-center gap-2"
+                      onClick={() => {
+                        const subject = encodeURIComponent(`Check out this campaign: ${campaign.title}`)
+                        const body = encodeURIComponent(`I found this great campaign on ProductLobby:\n\n${campaign.title}\n${campaign.description.slice(0, 200)}\n\n${window.location.href}`)
+                        window.open(`mailto:?subject=${subject}&body=${body}`)
+                      }}
                     >
                       <Mail className="w-4 h-4" />
                       Email
@@ -800,23 +874,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                 </Card>
 
                 {/* Similar Campaigns */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Similar Campaigns</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <Link key={i} href="/campaigns" className="block">
-                        <div className="bg-gray-50 hover:bg-violet-50 rounded-lg p-3 transition-colors cursor-pointer">
-                          <p className="font-medium text-foreground text-sm line-clamp-2">
-                            Similar Campaign {i}
-                          </p>
-                          <p className="text-xs text-gray-600 mt-1">1,200+ lobbies</p>
-                        </div>
-                      </Link>
-                    ))}
-                  </CardContent>
-                </Card>
+                <SimilarCampaigns category={campaign.category} currentSlug={campaign.slug} />
               </div>
             </div>
           </div>
