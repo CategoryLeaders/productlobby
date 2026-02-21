@@ -42,6 +42,7 @@ model User {
   magicLinks             MagicLink[]
   phoneVerifications     PhoneVerification[]
   sessions               Session[]
+  oauthAccounts          OAuthAccount[]
   creatorRewards         CreatorReward[]
   heroRewards            HeroReward[]
   referralLinks          ReferralLink[]
@@ -90,6 +91,23 @@ model Session {
 
   @@index([token])
   @@map("sessions")
+}
+
+model OAuthAccount {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String   // "google", "apple"
+  providerAccountId String @map("provider_account_id")
+  accessToken  String?  @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 // ============================================================================
