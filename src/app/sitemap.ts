@@ -1,37 +1,73 @@
 import { MetadataRoute } from 'next'
 import { prisma } from '@/lib/db'
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://productlobby.vercel.app'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://productlobby.vercel.app'
 
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: baseUrl,
+      url: BASE_URL,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: `${baseUrl}/campaigns`,
+      url: `${BASE_URL}/campaigns`,
       lastModified: new Date(),
       changeFrequency: 'hourly',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/campaigns/new`,
+      url: `${BASE_URL}/how-it-works`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/leaderboard`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/score`,
+      url: `${BASE_URL}/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/brands`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/success-stories`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/login`,
+      url: `${BASE_URL}/terms`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/login`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_URL}/signup`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.5,
@@ -48,8 +84,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       take: 1000,
     })
 
-    campaignPages = campaigns.map((campaign) => ({
-      url: `${baseUrl}/campaigns/${campaign.slug}`,
+    campaignPages = campaigns.map((campaign: { slug: string; updatedAt: Date }) => ({
+      url: `${BASE_URL}/campaigns/${campaign.slug}`,
       lastModified: campaign.updatedAt,
       changeFrequency: 'daily' as const,
       priority: 0.8,
@@ -67,8 +103,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       take: 500,
     })
 
-    brandPages = brands.map((brand) => ({
-      url: `${baseUrl}/brand/${brand.slug}`,
+    brandPages = brands.map((brand: { slug: string; updatedAt: Date }) => ({
+      url: `${BASE_URL}/brands/${brand.slug}`,
       lastModified: brand.updatedAt,
       changeFrequency: 'weekly' as const,
       priority: 0.7,

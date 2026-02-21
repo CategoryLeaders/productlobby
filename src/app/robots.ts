@@ -1,14 +1,24 @@
 import { MetadataRoute } from 'next'
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://productlobby.vercel.app'
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/dashboard/', '/admin/'],
+        disallow: [
+          '/api/',
+          '/dashboard/',
+          '/brand/',
+          '/admin/',
+          '/settings/',
+          '/verify',
+          '/profile',
+        ],
       },
     ],
-    sitemap: 'https://productlobby.vercel.app/sitemap.xml',
+    sitemap: `${BASE_URL}/sitemap.xml`,
   }
 }
