@@ -7,11 +7,10 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const limit = Math.min(parseInt(searchParams.get('limit') || '6'), 50)
 
+    // First try campaigns with signal scores, then fall back to those with lobby activity
     const campaigns = await prisma.campaign.findMany({
       where: {
-        signalScore: {
-          not: null,
-        },
+        status: 'LIVE',
       },
       orderBy: [
         { signalScore: { sort: 'desc', nulls: 'last' } },
