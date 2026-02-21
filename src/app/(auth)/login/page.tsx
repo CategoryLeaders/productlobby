@@ -31,6 +31,12 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to send magic link')
       }
 
+      // If email isn't configured, redirect directly via the magic link
+      if (data.mode === 'direct' && data.magicLink) {
+        window.location.href = data.magicLink
+        return
+      }
+
       setSent(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -148,7 +154,7 @@ export default function LoginPage() {
           {/* Footer */}
           <p className="text-center text-sm text-gray-600 mt-6">
             Don't have an account?{' '}
-            <Link href="/auth/signup" className="text-violet-600 font-medium hover:text-violet-700 transition-colors">
+            <Link href="/signup" className="text-violet-600 font-medium hover:text-violet-700 transition-colors">
               Sign up
             </Link>
           </p>

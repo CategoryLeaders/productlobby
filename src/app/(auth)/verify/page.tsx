@@ -84,7 +84,7 @@ function VerifyContent() {
             </div>
             <h1 className="text-2xl font-bold font-display text-foreground mb-2">Verification Failed</h1>
             <p className="text-gray-600 mb-6">{error}</p>
-            <Link href="/auth/login">
+            <Link href="/login">
               <Button className="w-full">
                 Try Again
               </Button>

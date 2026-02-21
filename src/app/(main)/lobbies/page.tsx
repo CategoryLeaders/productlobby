@@ -126,7 +126,7 @@ function LoginPrompt() {
           Sign in to track the campaigns you&apos;ve lobbied for and see their progress.
         </p>
         <div className="flex gap-3 justify-center">
-          <Link href="/auth/login">
+          <Link href="/login">
             <Button variant="primary" size="md" className="gap-2">
               <LogIn className="w-4 h-4" />
               Log In

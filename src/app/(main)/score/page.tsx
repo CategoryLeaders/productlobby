@@ -91,7 +91,7 @@ export default function ScorePage() {
                 <Lock className="w-16 h-16 text-violet-400 mx-auto mb-4 opacity-50" />
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign in to see your score</h2>
                 <p className="text-gray-600 mb-6">Create an account to start contributing and earn points on campaigns</p>
-                <Link href="/auth/signin">
+                <Link href="/login">
                   <Button variant="accent">
                     Sign In
                   </Button>
