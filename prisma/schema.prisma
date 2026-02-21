@@ -31,6 +31,7 @@ model User {
   // Relations
   campaigns              Campaign[]
   lobbies                Lobby[]
+  pledges                Pledge[]
   orders                 Order[]
   brandTeams             BrandTeam[]
   brandResponses         BrandResponse[]
@@ -203,6 +204,7 @@ model Campaign {
   media               CampaignMedia[]
   preferenceFields    CampaignPreferenceField[]
   lobbies             Lobby[]
+  pledges             Pledge[]
   updates             CampaignUpdate[]
   brandResponses      BrandResponse[]
   polls               Poll[]
@@ -369,6 +371,39 @@ model LobbyWishlist {
 
   @@index([lobbyId])
   @@map("lobby_wishlists")
+}
+
+// ============================================================================
+// PLEDGES (Financial Commitment)
+// ============================================================================
+
+model Pledge {
+  id            String     @id @default(uuid())
+  campaignId    String     @map("campaign_id")
+  campaign      Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId        String     @map("user_id")
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pledgeType    PledgeType @map("pledge_type")
+  priceCeiling  Decimal?   @map("price_ceiling") @db.Decimal(10, 2)
+  timeframeDays Int?       @map("timeframe_days")
+  region        String?    @db.VarChar(50)
+  options       Json?
+  isPrivate     Boolean    @default(false) @map("is_private")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@unique([campaignId, userId, pledgeType])
+  @@index([campaignId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("pledges")
+}
+
+enum PledgeType {
+  SUPPORT
+  INTENT
+
+  @@map("pledge_type")
 }
 
 // ============================================================================
