@@ -6,15 +6,21 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2, Target, Sparkles, Upload, X } from 'lucide-react'
 
 const CATEGORIES = [
-  { value: 'apparel', label: 'Apparel' },
-  { value: 'tech', label: 'Tech' },
-  { value: 'audio', label: 'Audio' },
-  { value: 'wearables', label: 'Wearables' },
-  { value: 'home', label: 'Home' },
-  { value: 'sports', label: 'Sports' },
-  { value: 'automotive', label: 'Automotive' },
-  { value: 'other', label: 'Other' },
+  { value: 'apparel', label: 'Apparel', emoji: '\uD83D\uDC55' },
+  { value: 'tech', label: 'Tech', emoji: '\uD83D\uDCBB' },
+  { value: 'audio', label: 'Audio', emoji: '\uD83C\uDFA7' },
+  { value: 'wearables', label: 'Wearables', emoji: '\u231A' },
+  { value: 'home', label: 'Home', emoji: '\uD83C\uDFE0' },
+  { value: 'sports', label: 'Sports', emoji: '\u26BD' },
+  { value: 'automotive', label: 'Automotive', emoji: '\uD83D\uDE97' },
+  { value: 'food_drink', label: 'Food & Drink', emoji: '\uD83C\uDF54' },
+  { value: 'beauty', label: 'Beauty', emoji: '\uD83D\uDC84' },
+  { value: 'gaming', label: 'Gaming', emoji: '\uD83C\uDFAE' },
+  { value: 'pets', label: 'Pets', emoji: '\uD83D\uDC3E' },
+  { value: 'other', label: 'Other', emoji: '\u2728' },
 ]
+
+const MAX_DESCRIPTION_LENGTH = 1000
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
 const MAX_FILE_SIZE = 4.5 * 1024 * 1024
@@ -244,12 +250,30 @@ export default function NewCampaignPage() {
               <textarea
                 id="description"
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => {
+                  if (e.target.value.length <= MAX_DESCRIPTION_LENGTH) {
+                    setForm({ ...form, description: e.target.value })
+                  }
+                }}
                 placeholder="Describe what you want and why. Be specific about the product, feature, or variant you'd like to see."
                 required
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"
               />
+              <div className="flex justify-between mt-1.5">
+                <p className="text-xs text-gray-400">
+                  Tip: Be specific — campaigns with detailed descriptions get 3x more lobbies.
+                </p>
+                <span className={`text-xs font-medium ${
+                  form.description.length > MAX_DESCRIPTION_LENGTH * 0.9
+                    ? 'text-red-500'
+                    : form.description.length > MAX_DESCRIPTION_LENGTH * 0.7
+                    ? 'text-yellow-500'
+                    : 'text-gray-400'
+                }`}>
+                  {form.description.length}/{MAX_DESCRIPTION_LENGTH}
+                </span>
+              </div>
             </div>
 
             {/* Image Upload */}
@@ -359,40 +383,46 @@ export default function NewCampaignPage() {
               )}
             </div>
 
-            {/* Category & Brand */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
-                </label>
-                <select
-                  id="category"
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
-                >
-                  <option value="">Select category</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Category
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, category: cat.value })}
+                    className={`px-3.5 py-2 rounded-full text-sm font-medium border transition ${
+                      form.category === cat.value
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="mr-1.5">{cat.emoji}</span>
+                    {cat.label}
+                  </button>
+                ))}
               </div>
-              <div>
-                <label htmlFor="targetBrand" className="block text-sm font-medium text-gray-700 mb-1">
-                  Target Brand
-                </label>
-                <input
-                  type="text"
-                  id="targetBrand"
-                  value={form.targetBrand}
-                  onChange={(e) => setForm({ ...form, targetBrand: e.target.value })}
-                  placeholder="e.g. Nike, Apple, Sony"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
-                />
-              </div>
+            </div>
+
+            {/* Target Brand */}
+            <div>
+              <label htmlFor="targetBrand" className="block text-sm font-medium text-gray-700 mb-1">
+                Target Brand <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                id="targetBrand"
+                value={form.targetBrand}
+                onChange={(e) => setForm({ ...form, targetBrand: e.target.value })}
+                placeholder="e.g. Nike, Apple, Sony"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                Which brand should make this? Leave blank if you&apos;re open to any.
+              </p>
             </div>
 
             {error && (
