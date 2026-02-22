@@ -20,6 +20,7 @@ import { CampaignConfidenceScore } from '@/components/campaigns/campaign-confide
 import { PollCreationForm } from '@/components/campaigns/poll-creation-form'
 import { CampaignPollsFeed } from '@/components/campaigns/campaign-polls-feed'
 import CreatorAnalyticsDashboard from '@/components/campaigns/creator-analytics-dashboard'
+import { QASection } from '@/components/shared/qa-section'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
 import { getCurrentUser } from '@/lib/auth'
@@ -550,6 +551,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     <TabsTrigger value="preferences">Preferences</TabsTrigger>
                     <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
                     <TabsTrigger value="updates">Updates</TabsTrigger>
+                    <TabsTrigger value="qa">Q&A</TabsTrigger>
                     <TabsTrigger value="response">Brand Response</TabsTrigger>
                   </TabsList>
 
@@ -757,7 +759,16 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     <CampaignUpdatesFeed campaignId={campaign?.id || ''} key={updateRefresh} />
                   </TabsContent>
 
-                  {/* Tab 5: Brand Response */}
+                  {/* Tab 5: Q&A */}
+                  <TabsContent value="qa" className="py-8">
+                    <QASection
+                      campaignId={campaign?.id || ''}
+                      isCreator={!!(user && campaign && user.id === campaign.creator.id)}
+                      isLoggedIn={!!user}
+                    />
+                  </TabsContent>
+
+                  {/* Tab 6: Brand Response */}
                   <TabsContent value="response" className="py-8">
                     <div className="text-center py-12">
                       <div className="mb-4">
