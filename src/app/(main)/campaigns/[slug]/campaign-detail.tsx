@@ -15,6 +15,7 @@ import { SocialLinks } from '@/components/shared/social-links'
 import { LobbyFlow } from './lobby-flow'
 import { CampaignUpdatesFeed } from '@/components/campaigns/campaign-updates-feed'
 import { UpdateCreationForm } from '@/components/campaigns/update-creation-form'
+import { CampaignMilestones } from '@/components/campaigns/campaign-milestones'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
 import { getCurrentUser } from '@/lib/auth'
@@ -23,6 +24,14 @@ interface CampaignDetailPageProps {
   params: {
     slug: string
   }
+}
+
+interface Milestone {
+  id: string
+  title: string
+  description?: string
+  isComplete: boolean
+  completedAt?: string | null
 }
 
 interface ApiCampaign {
@@ -36,6 +45,7 @@ interface ApiCampaign {
   completenessScore: number
   createdAt: string
   updatedAt: string
+  milestones?: Milestone[] | any
   creator: {
     id: string
     displayName: string
@@ -466,10 +476,25 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                 </div>
               </div>
 
-              {/* Milestone Progress */}
+              {/* Campaign Milestones */}
+              {campaign.milestones && (
+                <div className="mt-8">
+                  <CampaignMilestones
+                    milestones={
+                      typeof campaign.milestones === 'string'
+                        ? JSON.parse(campaign.milestones)
+                        : campaign.milestones
+                    }
+                    campaignId={campaign.id}
+                    isCreator={user?.id === campaign.creator.id}
+                  />
+                </div>
+              )}
+
+              {/* Lobby Milestone Progress */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-foreground">Next milestone: 5,000 lobbies</p>
+                  <p className="text-sm font-medium text-foreground">Next lobby milestone: 5,000 lobbies</p>
                   <p className="text-sm text-gray-600">{lobbyCount} of 5,000</p>
                 </div>
                 <Progress value={(lobbyCount / 5000) * 100} className="h-2" />

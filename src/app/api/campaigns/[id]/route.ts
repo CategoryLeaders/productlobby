@@ -73,6 +73,7 @@ export async function GET(
           },
         },
       },
+      // milestones is a JSON field, no special include needed
     })
 
     if (!campaign) {

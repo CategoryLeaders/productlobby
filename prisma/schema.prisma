@@ -241,6 +241,7 @@ model Campaign {
   pitchSummary        String?        @map("pitch_summary")
   inspiration         String?
   problemSolved       String?        @map("problem_solved")
+  milestones          Json?          @default("[]")
   suggestedPrice      Decimal?       @map("suggested_price") @db.Decimal(10,2)
   priceRangeMin       Decimal?       @map("price_range_min") @db.Decimal(10,2)
   priceRangeMax       Decimal?       @map("price_range_max") @db.Decimal(10,2)
