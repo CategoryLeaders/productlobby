@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { CreateCampaignSchema, CampaignQuerySchema } from '@/types'
 import { slugify } from '@/lib/utils'
 
-// GET /api/campaigns - List campaigns with filtering
+// GET /api/campaigns - List campaigns with advanced filtering
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -19,31 +19,52 @@ export async function GET(request: NextRequest) {
       limit: searchParams.get('limit') || 20,
     })
 
-    const where: any = {
-      status: query.status || 'LIVE',
+    const where: any = {}
+
+    // Status filter: default to LIVE only if not specified
+    if (query.status === 'all') {
+      // Include all statuses
+    } else if (query.status) {
+      where.status = query.status
+    } else {
+      where.status = 'LIVE'
     }
 
+    // Full-text search: title + description (case-insensitive, partial match)
     if (query.query) {
+      const searchTerm = query.query.trim()
       where.OR = [
-        { title: { contains: query.query, mode: 'insensitive' } },
-        { description: { contains: query.query, mode: 'insensitive' } },
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } },
       ]
     }
 
-    if (query.category) {
+    // Category filter
+    if (query.category && query.category !== 'all') {
       where.category = query.category
     }
 
+    // Brand filter
     if (query.brandId) {
       where.targetedBrandId = query.brandId
     }
 
-    const orderBy: any =
-      query.sort === 'newest'
-        ? { createdAt: 'desc' }
-        : query.sort === 'signal'
-        ? { signalScore: 'desc' }
-        : [{ signalScore: 'desc' }, { createdAt: 'desc' }]
+    // Sort options: trending (signal score), newest, oldest, most lobbied (lobby count)
+    const orderBy: any = (() => {
+      switch (query.sort) {
+        case 'newest':
+          return { createdAt: 'desc' }
+        case 'oldest':
+          return { createdAt: 'asc' }
+        case 'signal':
+          // Most lobbied
+          return [{ _count: { lobbies: 'desc' } }, { createdAt: 'desc' }]
+        case 'trending':
+        default:
+          // Default: trending (signal score + recency)
+          return [{ signalScore: 'desc' }, { createdAt: 'desc' }]
+      }
+    })()
 
     const [campaigns, total] = await Promise.all([
       prisma.campaign.findMany({

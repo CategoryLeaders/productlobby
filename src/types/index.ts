@@ -58,8 +58,8 @@ export const CampaignQuerySchema = z.object({
   query: z.string().optional(),
   category: z.string().optional(),
   brandId: z.string().uuid().optional(),
-  status: z.enum(['LIVE', 'PAUSED', 'CLOSED']).optional(),
-  sort: z.enum(['newest', 'trending', 'signal']).default('trending'),
+  status: z.enum(['LIVE', 'PAUSED', 'CLOSED', 'all']).optional(),
+  sort: z.enum(['newest', 'trending', 'signal', 'oldest']).default('trending'),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 })
