@@ -1,4 +1,5 @@
 import OnboardingCheck from '@/components/onboarding-check'
+import VerificationBanner from '@/components/auth/verification-banner'
 
 export default function MainLayout({
   children,
@@ -8,6 +9,7 @@ export default function MainLayout({
   return (
     <>
       <OnboardingCheck />
+      <VerificationBanner />
       {children}
     </>
   )

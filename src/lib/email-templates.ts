@@ -231,6 +231,49 @@ export function magicLinkTemplate(magicLinkUrl: string): string {
   return baseTemplate(content, 'Sign in to ProductLobby')
 }
 
+// Email verification template
+export function emailVerificationTemplate(verificationLink: string, displayName: string): string {
+  const name = displayName.split(' ')[0] // Get first name
+  const content = `
+    <h2>Verify your email address</h2>
+
+    <p>
+      Hi ${name},
+    </p>
+
+    <p>
+      Click the button below to verify your email address and unlock all ProductLobby features.
+    </p>
+
+    <div style="text-align: center;">
+      <a href="${verificationLink}" class="button">Verify Email</a>
+    </div>
+
+    <p style="font-size: 13px; color: #6b7280;">
+      Or copy and paste this link into your browser:<br>
+      <code style="word-break: break-all; background-color: #f3f4f6; padding: 8px 12px; border-radius: 4px; font-size: 12px;">${verificationLink}</code>
+    </p>
+
+    <div class="highlight-box">
+      <h3 style="color: #1f2937; margin-top: 0;">Why verify your email?</h3>
+      <ul style="color: #4b5563; margin: 12px 0; padding-left: 20px;">
+        <li>Create and manage campaigns</li>
+        <li>Make pledges and support products</li>
+        <li>Receive important updates and notifications</li>
+        <li>Access exclusive creator rewards</li>
+      </ul>
+    </div>
+
+    <hr class="divider">
+
+    <p style="font-size: 13px; color: #6b7280;">
+      This link will expire in 24 hours. If you didn't create a ProductLobby account, you can safely ignore this email.
+    </p>
+  `
+
+  return baseTemplate(content, 'Verify your email - ProductLobby')
+}
+
 // Brand signal notification template
 export function brandSignalTemplate({
   campaignTitle,

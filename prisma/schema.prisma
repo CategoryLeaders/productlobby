@@ -48,6 +48,7 @@ model User {
   reports                Report[]                @relation("reporter")
   moderationActions      ModerationAction[]      @relation("admin")
   magicLinks             MagicLink[]
+  verificationTokens     VerificationToken[]
   phoneVerifications     PhoneVerification[]
   sessions               Session[]
   oauthAccounts          OAuthAccount[]
@@ -86,6 +87,19 @@ model MagicLink {
 
   @@index([token])
   @@map("magic_links")
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@map("verification_tokens")
 }
 
 model PhoneVerification {
