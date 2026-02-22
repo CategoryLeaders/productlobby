@@ -124,6 +124,7 @@ export function LobbyFlow({
     width: [],
   })
   const [wishlistText, setWishlistText] = useState('')
+  const [reasonText, setReasonText] = useState('')
   const [email, setEmail] = useState('')
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -133,6 +134,7 @@ export function LobbyFlow({
     setIntensity(null)
     setPreferences({ size: [], colours: [], priceRange: [], width: [] })
     setWishlistText('')
+    setReasonText('')
     setEmail('')
     setSubmitState('idle')
     setErrorMessage('')
@@ -144,7 +146,7 @@ export function LobbyFlow({
   }
 
   const handleNext = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 4))
+    setCurrentStep((prev) => Math.min(prev + 1, 5))
   }
 
   const handlePrevious = () => {
@@ -164,6 +166,7 @@ export function LobbyFlow({
         body: JSON.stringify({
           intensity: INTENSITY_MAP[intensity],
           wishlist: wishlistText.trim() || undefined,
+          reason: reasonText.trim() || undefined,
         }),
       })
 
@@ -215,7 +218,7 @@ export function LobbyFlow({
         {/* Progress Indicator */}
         <div className="px-6 pt-6">
           <div className="flex justify-center gap-2">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3, 4, 5].map((step) => (
               <button
                 key={step}
                 onClick={() => currentStep >= step && setCurrentStep(step)}
@@ -436,8 +439,53 @@ export function LobbyFlow({
           </>
         )}
 
-        {/* Step 4: Save & Sign Up */}
+        {/* Step 4: Why this product matters (Reason) */}
         {currentStep === 4 && (
+          <>
+            <ModalHeader>
+              <ModalTitle className="text-2xl">Why do you want this product?</ModalTitle>
+              <p className="text-sm text-gray-600 mt-2">
+                Share why this product matters to you (optional)
+              </p>
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <div>
+                  <Textarea
+                    placeholder="e.g., It would solve my daily problem with..., I've been looking for this because..., My friends would love this because..."
+                    value={reasonText}
+                    onChange={(e) => setReasonText(e.target.value)}
+                    className="min-h-32"
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <p className="text-xs text-gray-600">Your reason helps the brand understand customer motivations</p>
+                    <span className="text-xs text-gray-600">
+                      {reasonText.length}/280
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" onClick={handlePrevious}>
+                Back
+              </Button>
+              <div className="flex-1"></div>
+              <button
+                onClick={handleNext}
+                className="text-violet-600 hover:text-violet-700 text-sm font-medium"
+              >
+                Skip
+              </button>
+              <Button variant="primary" onClick={handleNext}>
+                Continue
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+
+        {/* Step 5: Save & Sign Up */}
+        {currentStep === 5 && (
           <>
             <ModalHeader>
               <ModalTitle className="text-2xl">
@@ -541,6 +589,14 @@ export function LobbyFlow({
                       <div className="text-sm text-gray-600">
                         <p className="font-medium text-foreground mb-1">Wishlist</p>
                         <p className="text-xs line-clamp-2 italic">"{wishlistText}"</p>
+                      </div>
+                    )}
+
+                    {/* Reason Preview */}
+                    {reasonText.trim() && (
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium text-foreground mb-1">Why this product matters</p>
+                        <p className="text-xs line-clamp-2 italic">"{reasonText}"</p>
                       </div>
                     )}
                   </div>

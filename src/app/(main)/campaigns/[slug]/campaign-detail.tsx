@@ -21,6 +21,7 @@ import { DemandSignalDisplay } from '@/components/campaigns/demand-signal-displa
 import { PollCreationForm } from '@/components/campaigns/poll-creation-form'
 import { CampaignPollsFeed } from '@/components/campaigns/campaign-polls-feed'
 import CreatorAnalyticsDashboard from '@/components/campaigns/creator-analytics-dashboard'
+import { LobbyReasonsDisplay } from '@/components/campaigns/lobby-reasons-display'
 import { QASection } from '@/components/shared/qa-section'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
@@ -507,6 +508,13 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
               {campaign && (
                 <div className="mt-8">
                   <DemandSignalDisplay campaignId={campaign.id} />
+                </div>
+              )}
+
+              {/* Lobby Reasons Display */}
+              {campaign && (
+                <div className="mt-8">
+                  <LobbyReasonsDisplay campaignId={campaign.id} />
                 </div>
               )}
 

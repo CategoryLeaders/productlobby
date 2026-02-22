@@ -33,12 +33,27 @@ export async function POST(
 
     const { id: campaignId } = params
     const body = await request.json()
-    const { intensity, preferences, wishlist } = body
+    const { intensity, preferences, wishlist, reason } = body
 
     // Validate intensity
     if (!intensity || !['NEAT_IDEA', 'PROBABLY_BUY', 'TAKE_MY_MONEY'].includes(intensity)) {
       return NextResponse.json(
         { error: 'Invalid intensity. Must be NEAT_IDEA, PROBABLY_BUY, or TAKE_MY_MONEY' },
+        { status: 400 }
+      )
+    }
+
+    // Validate reason if provided (max 280 characters)
+    if (reason && typeof reason !== 'string') {
+      return NextResponse.json(
+        { error: 'Reason must be a string' },
+        { status: 400 }
+      )
+    }
+
+    if (reason && reason.length > 280) {
+      return NextResponse.json(
+        { error: 'Reason must be 280 characters or fewer' },
         { status: 400 }
       )
     }
@@ -85,6 +100,7 @@ export async function POST(
         campaignId,
         userId: user.id,
         intensity,
+        reason: reason?.trim() || undefined,
         status,
         preferences: preferences
           ? {
