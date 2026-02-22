@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { notifyNewUpdate } from '@/lib/notifications'
 
 // POST /api/campaigns/[id]/updates - Create campaign update
 export async function POST(
@@ -79,6 +80,9 @@ export async function POST(
         },
       },
     })
+
+    // Notify all campaign followers of the new update
+    await notifyNewUpdate(campaignId, title)
 
     return NextResponse.json(update, { status: 201 })
   } catch (error) {

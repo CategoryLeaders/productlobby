@@ -53,6 +53,8 @@ model User {
   favourites             Favourite[]
   comments               Comment[]
   notificationPreference NotificationPreference?
+  creatorPolls    CreatorPoll[]  @relation("creatorPolls")
+  creatorPollVotes CreatorPollVote[] @relation("creatorPollVotes")
 
   @@map("users")
 }
@@ -230,6 +232,7 @@ model Campaign {
   updates             CampaignUpdate[]
   brandResponses      BrandResponse[]
   polls               Poll[]
+  creatorPolls        CreatorPoll[]
   offers              Offer[]
   follows             Follow[]
   creatorRewards      CreatorReward[]
@@ -917,4 +920,79 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
+}
+
+// ============================================================================
+// CREATOR POLLS (Preference Data Collection)
+// ============================================================================
+
+model CreatorPoll {
+  id           String           @id @default(uuid())
+  campaignId   String           @map("campaign_id")
+  campaign     Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creatorId    String           @map("creator_id")
+  creator      User             @relation("creatorPolls", fields: [creatorId], references: [id], onDelete: Cascade)
+  question     String
+  description  String?
+  pollType     CreatorPollType  @map("poll_type")
+  maxSelections Int             @default(1) @map("max_selections")
+  status       CreatorPollStatus @default(ACTIVE)
+  closesAt     DateTime?        @map("closes_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  options  CreatorPollOption[]
+  votes    CreatorPollVote[]
+
+  @@index([campaignId])
+  @@index([creatorId])
+  @@index([status])
+  @@map("creator_polls")
+}
+
+enum CreatorPollType {
+  SINGLE_SELECT
+  MULTI_SELECT
+  RANKED
+
+  @@map("creator_poll_type")
+}
+
+enum CreatorPollStatus {
+  ACTIVE
+  CLOSED
+  DRAFT
+
+  @@map("creator_poll_status")
+}
+
+model CreatorPollOption {
+  id        String   @id @default(uuid())
+  pollId    String   @map("poll_id")
+  poll      CreatorPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  votes CreatorPollVote[]
+
+  @@index([pollId])
+  @@map("creator_poll_options")
+}
+
+model CreatorPollVote {
+  id        String   @id @default(uuid())
+  pollId    String   @map("poll_id")
+  poll      CreatorPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String   @map("option_id")
+  option    CreatorPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation("creatorPollVotes", fields: [userId], references: [id], onDelete: Cascade)
+  rank      Int?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([pollId, userId, optionId])
+  @@index([pollId])
+  @@index([userId])
+  @@map("creator_poll_votes")
 }
