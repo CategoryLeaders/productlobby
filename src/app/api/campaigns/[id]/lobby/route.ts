@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { rateLimit, getClientIP } from '@/lib/rate-limit'
+import { notifyNewLobby } from '@/lib/notifications'
 
 // POST /api/campaigns/[id]/lobby - Create a lobby
 export async function POST(
@@ -161,6 +162,9 @@ export async function POST(
     if (contributionEvents.length > 0) {
       await Promise.all(contributionEvents)
     }
+
+    // Notify campaign creator (non-blocking)
+    notifyNewLobby(campaignId, user.displayName || 'Someone', intensity).catch(() => {})
 
     return NextResponse.json(lobby, { status: 201 })
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { notifyNewComment, notifyCommentReply } from '@/lib/notifications'
 
 // Rate limiting: max 10 comments per hour per user per campaign
 const RATE_LIMIT_COMMENTS = 10
@@ -162,7 +163,7 @@ export async function POST(
     // Check campaign exists
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { id: true },
+      select: { id: true, slug: true },
     })
 
     if (!campaign) {
@@ -184,10 +185,11 @@ export async function POST(
     }
 
     // If replying to a comment, verify parent comment exists
+    let parentComment = null
     if (parentId) {
-      const parentComment = await prisma.comment.findUnique({
+      parentComment = await prisma.comment.findUnique({
         where: { id: parentId },
-        select: { id: true, campaignId: true },
+        select: { id: true, campaignId: true, userId: true },
       })
 
       if (!parentComment) {
@@ -234,6 +236,15 @@ export async function POST(
         },
       },
     })
+
+    // Send notifications (non-blocking)
+    if (parentId && parentComment) {
+      // Notify parent comment author of reply
+      notifyCommentReply(parentComment.userId, comment.user.displayName, campaign.slug).catch(() => {})
+    } else {
+      // Notify campaign creator of new comment
+      notifyNewComment(campaignId, comment.user.displayName, trimmedContent).catch(() => {})
+    }
 
     return NextResponse.json(comment, { status: 201 })
   } catch (error) {

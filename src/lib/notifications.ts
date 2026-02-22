@@ -10,6 +10,9 @@ export type NotificationType =
   | 'milestone'
   | 'new_follower'
   | 'lobby_upgrade'
+  | 'new_lobby'
+  | 'new_comment'
+  | 'question_answered'
 
 export interface CreateNotificationOptions {
   userId: string
@@ -325,5 +328,86 @@ export async function notifyNewFollower(
     })
   } catch (error) {
     console.error('Failed to notify new follower:', error)
+  }
+}
+
+/**
+ * Notify campaign creator when someone lobbies their campaign
+ */
+export async function notifyNewLobby(
+  campaignId: string,
+  lobbyerName: string,
+  intensity: string
+): Promise<void> {
+  try {
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { title: true, slug: true, creatorUserId: true },
+    })
+
+    if (!campaign) return
+
+    const intensityLabel = intensity === 'TAKE_MY_MONEY' ? 'wants to take your money!' :
+      intensity === 'PROBABLY_BUY' ? 'would probably buy' : 'thinks it\'s a neat idea'
+
+    await createNotification({
+      userId: campaign.creatorUserId,
+      type: 'new_lobby',
+      title: 'New lobby on your campaign',
+      message: `${lobbyerName} ${intensityLabel} for "${campaign.title}"`,
+      linkUrl: `/campaigns/${campaign.slug}`,
+    })
+  } catch (error) {
+    console.error('Failed to notify new lobby:', error)
+  }
+}
+
+/**
+ * Notify campaign creator when someone comments on their campaign
+ */
+export async function notifyNewComment(
+  campaignId: string,
+  commenterName: string,
+  commentSnippet: string
+): Promise<void> {
+  try {
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { title: true, slug: true, creatorUserId: true },
+    })
+
+    if (!campaign) return
+
+    await createNotification({
+      userId: campaign.creatorUserId,
+      type: 'new_comment',
+      title: 'New comment on your campaign',
+      message: `${commenterName}: ${commentSnippet.substring(0, 100)}`,
+      linkUrl: `/campaigns/${campaign.slug}#comments`,
+    })
+  } catch (error) {
+    console.error('Failed to notify new comment:', error)
+  }
+}
+
+/**
+ * Notify question asker when their question is answered
+ */
+export async function notifyQuestionAnswered(
+  questionAskerId: string,
+  campaignSlug: string,
+  campaignTitle: string,
+  answerSnippet: string
+): Promise<void> {
+  try {
+    await createNotification({
+      userId: questionAskerId,
+      type: 'question_answered',
+      title: 'Your question was answered',
+      message: `Your question on "${campaignTitle}" was answered: ${answerSnippet.substring(0, 100)}`,
+      linkUrl: `/campaigns/${campaignSlug}#qa`,
+    })
+  } catch (error) {
+    console.error('Failed to notify question answered:', error)
   }
 }

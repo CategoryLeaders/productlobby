@@ -10,6 +10,8 @@ import {
   Heart,
   Building2,
   X,
+  UserPlus,
+  HelpCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -29,6 +31,10 @@ const notificationIcons: Record<string, React.ReactNode> = {
   comment: <MessageCircle className="w-4 h-4" />,
   milestone: <Heart className="w-4 h-4" />,
   brand_response: <Building2 className="w-4 h-4" />,
+  new_lobby: <Heart className="w-4 h-4" />,
+  new_comment: <MessageCircle className="w-4 h-4" />,
+  question_answered: <HelpCircle className="w-4 h-4" />,
+  new_follower: <UserPlus className="w-4 h-4" />,
   general: <Bell className="w-4 h-4" />,
 }
 

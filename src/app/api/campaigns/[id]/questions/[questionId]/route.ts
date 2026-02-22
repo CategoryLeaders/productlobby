@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { notifyQuestionAnswered } from '@/lib/notifications'
 
 // PATCH /api/campaigns/[id]/questions/[questionId] - Answer or update question
 export async function PATCH(
@@ -24,7 +25,7 @@ export async function PATCH(
       where: { id: questionId },
       include: {
         campaign: {
-          select: { creatorUserId: true },
+          select: { creatorUserId: true, slug: true, title: true },
         },
       },
     })
@@ -93,6 +94,16 @@ export async function PATCH(
           votes: true,
         },
       })
+
+      // Notify question asker (non-blocking)
+      if (question.userId !== user.id) {
+        notifyQuestionAnswered(
+          question.userId,
+          question.campaign.slug,
+          question.campaign.title,
+          answer
+        ).catch(() => {})
+      }
 
       return NextResponse.json({
         id: updatedQuestion.id,
