@@ -251,4 +251,135 @@
     @apply shadow-elevated;
   }
 
+  /* Mobile Safe Area Utilities - For notched devices */
+  .safe-top {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-left {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .safe-right {
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .safe-all {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  /* Touch-friendly tap target (min 44x44px) */
+  .touch-target {
+    @apply min-h-11 min-w-11;
+  }
+
+  /* Smooth scrolling */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  /* Disable scrolling */
+  .overflow-hidden-scroll {
+    overflow: hidden;
+  }
+
+  /* Touch action utilities */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  .touch-none {
+    touch-action: none;
+  }
+
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  /* Overscroll behavior (elastic/scroll effect) */
+  .overscroll-auto {
+    overscroll-behavior: auto;
+  }
+
+  .overscroll-contain {
+    overscroll-behavior: contain;
+  }
+
+  .overscroll-none {
+    overscroll-behavior: none;
+  }
+
+  /* Pull-to-refresh hint on iOS */
+  .pull-refresh {
+    position: relative;
+  }
+
+  .pull-refresh::before {
+    content: '⬇ Pull to refresh';
+    position: absolute;
+    top: -2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    color: hsl(var(--color-gray-500));
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  /* Mobile-first container queries helper */
+  @supports (container-type: inline-size) {
+    .container-responsive {
+      container-type: inline-size;
+    }
+  }
+
+  /* Prevent zoom on mobile input focus */
+  @media (max-width: 640px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Mobile text size utilities */
+  .text-mobile-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-mobile-base {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-mobile-lg {
+    @apply text-base sm:text-lg;
+  }
+
+  /* Mobile padding utilities */
+  .px-mobile {
+    @apply px-3 sm:px-4;
+  }
+
+  .py-mobile {
+    @apply py-2 sm:py-3;
+  }
+
+  .p-mobile {
+    @apply p-3 sm:p-4;
+  }
+
 }

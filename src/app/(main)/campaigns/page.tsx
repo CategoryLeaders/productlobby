@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, ArrowRight, Loader2, Plus } from 'lucide-react'
+import { Search, ArrowRight, Loader2, Plus, X } from 'lucide-react'
 import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { CampaignCard, type CampaignCardProps } from '@/components/shared/campaign-card'
+import { ResponsiveCampaignCard } from '@/components/shared/responsive-campaign-card'
 
 const CATEGORIES = [
   { value: 'all', label: 'All' },
@@ -99,6 +100,7 @@ export default function CampaignsPage() {
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [hasMore, setHasMore] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
   const fetchCampaigns = useCallback(async (pageNum: number, append: boolean = false) => {
     setIsLoading(true)
@@ -167,54 +169,73 @@ export default function CampaignsPage() {
           </div>
         </div>
 
-        {/* Filter Bar */}
-        <div className="px-4 sm:px-6 lg:px-8 bg-gray-50 border-b border-gray-200">
-          <div className="max-w-7xl mx-auto py-6">
-            <div className="flex flex-col gap-6">
+        {/* Filter Bar - Sticky and Mobile Responsive */}
+        <div className="sticky top-16 sm:top-20 bg-gray-50 border-b border-gray-200 z-30">
+          <div className="px-3 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto py-3 sm:py-6">
               {/* Search Input */}
-              <div className="relative">
+              <div className="relative mb-3 sm:mb-6">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search campaigns..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm"
                 />
               </div>
 
-              {/* Category Chips */}
-              <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((category) => (
-                  <button
-                    key={category.value}
-                    onClick={() => setSelectedCategory(category.value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      selectedCategory === category.value
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-white border border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {category.label}
-                  </button>
-                ))}
+              {/* Filter Toggle Button - Mobile Only */}
+              <div className="md:hidden mb-3">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                </button>
               </div>
 
-              {/* Sort Options */}
-              <div className="flex gap-2">
-                {SORT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setSortBy(option.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      sortBy === option.value
-                        ? 'bg-violet-100 text-violet-700 border border-violet-300'
-                        : 'bg-white border border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              {/* Filters Container - Collapsible on Mobile */}
+              <div
+                className={`flex flex-col gap-3 sm:gap-6 transition-all duration-300 overflow-hidden ${
+                  showFilters ? 'max-h-96' : 'max-h-0 md:max-h-96'
+                } md:max-h-none`}
+              >
+                {/* Category Chips - Scrollable on Mobile */}
+                <div className="overflow-x-auto pb-2 -mx-3 sm:mx-0 px-3 sm:px-0">
+                  <div className="flex flex-nowrap gap-2 min-w-min sm:flex-wrap">
+                    {CATEGORIES.map((category) => (
+                      <button
+                        key={category.value}
+                        onClick={() => setSelectedCategory(category.value)}
+                        className={`whitespace-nowrap px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors flex-shrink-0 ${
+                          selectedCategory === category.value
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        {category.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort Options */}
+                <div className="flex flex-wrap gap-2">
+                  {SORT_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setSortBy(option.value)}
+                      className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                        sortBy === option.value
+                          ? 'bg-violet-100 text-violet-700 border border-violet-300'
+                          : 'bg-white border border-gray-300 text-gray-700 hover:border-gray-400'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -255,9 +276,9 @@ export default function CampaignsPage() {
                   </p>
                 </div>
 
-                <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6 mb-12">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-12">
                   {campaigns.map((campaign) => (
-                    <CampaignCard key={campaign.id} {...campaign} />
+                    <ResponsiveCampaignCard key={campaign.id} {...campaign} />
                   ))}
                 </div>
 

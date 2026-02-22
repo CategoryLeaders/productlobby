@@ -60,6 +60,9 @@ model User {
   questions Question[] @relation("questions")
   answers Question[] @relation("answers")
   questionVotes QuestionVote[]
+  surveys Survey[] @relation("surveys")
+  surveyResponses SurveyResponse[]
+  creatorRevenue CreatorRevenue?
 
   @@map("users")
 }
@@ -145,6 +148,7 @@ model Brand {
   polls          Poll[]
   offers         Offer[]
   payouts        Payout[]
+  surveys        Survey[]
 
   @@map("brands")
 }
@@ -259,6 +263,8 @@ model Campaign {
   variants            CampaignVariant[]
   competitors         CompetitorExample[]
   outreachQueue       OutreachQueue[]
+  surveys             Survey[]
+  revenueBreakdowns   RevenueBreakdown[]
 
   @@unique([slug])
   @@index([status])
@@ -1191,4 +1197,199 @@ model OutreachTemplate {
 
   @@index([tier])
   @@map("outreach_templates")
+}
+
+// ============================================================================
+// SURVEYS
+// ============================================================================
+
+model Survey {
+  id                String           @id @default(uuid())
+  campaignId        String           @map("campaign_id")
+  campaign          Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  brandId           String           @map("brand_id")
+  brand             Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  creatorUserId     String           @map("creator_user_id")
+  creator           User             @relation("surveys", fields: [creatorUserId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  surveyType        SurveyType       @map("survey_type")
+  status            SurveyStatus     @default(DRAFT)
+  isAnonymous       Boolean          @default(false) @map("is_anonymous")
+  responseCount     Int              @default(0) @map("response_count")
+  completionRate    Float?           @map("completion_rate")
+  publishedAt       DateTime?        @map("published_at")
+  closedAt          DateTime?        @map("closed_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  questions       SurveyQuestion[]
+  responses       SurveyResponse[]
+
+  @@index([campaignId])
+  @@index([brandId])
+  @@index([status])
+  @@map("surveys")
+}
+
+enum SurveyType {
+  QUICK_POLL
+  DETAILED_SURVEY
+  NPS_SURVEY
+  FEATURE_PRIORITY
+
+  @@map("survey_type")
+}
+
+enum SurveyStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+
+  @@map("survey_status")
+}
+
+model SurveyQuestion {
+  id            String           @id @default(uuid())
+  surveyId      String           @map("survey_id")
+  survey        Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  question      String
+  description   String?
+  questionType  QuestionType     @map("question_type")
+  options       Json?            // For multiple_choice and ranking
+  minScale      Int?             @map("min_scale")  // For rating scales
+  maxScale      Int?             @map("max_scale")
+  minLabel      String?          @map("min_label")
+  maxLabel      String?          @map("max_label")
+  required      Boolean          @default(false)
+  order         Int              @default(0)
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  responses     SurveyAnswer[]
+
+  @@index([surveyId])
+  @@map("survey_questions")
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  RATING_SCALE
+  OPEN_TEXT
+  RANKING
+  MATRIX
+
+  @@map("question_type")
+}
+
+model SurveyResponse {
+  id            String           @id @default(uuid())
+  surveyId      String           @map("survey_id")
+  survey        Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  userId        String?          @map("user_id")
+  user          User?            @relation("surveyResponses", fields: [userId], references: [id], onDelete: SetNull)
+  lobbyIntensity LobbyIntensity?  @map("lobby_intensity")
+  completedAt   DateTime?        @map("completed_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  answers       SurveyAnswer[]
+
+  @@index([surveyId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("survey_responses")
+}
+
+model SurveyAnswer {
+  id              String           @id @default(uuid())
+  responseId      String           @map("response_id")
+  response        SurveyResponse   @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  questionId      String           @map("question_id")
+  question        SurveyQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer          String           // JSON-encoded answer
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  @@unique([responseId, questionId])
+  @@index([responseId])
+  @@index([questionId])
+  @@map("survey_answers")
+}
+
+// ============================================================================
+// CREATOR REVENUE
+// ============================================================================
+
+model CreatorRevenue {
+  id                    String         @id @default(uuid())
+  creatorUserId         String         @map("creator_user_id")
+  creator               User           @relation(fields: [creatorUserId], references: [id], onDelete: Cascade)
+  totalEarnings         Decimal        @default(0) @map("total_earnings") @db.Decimal(12, 2)
+  referralBonus         Decimal        @default(0) @map("referral_bonus") @db.Decimal(12, 2)
+  campaignSuccessFees   Decimal        @default(0) @map("campaign_success_fees") @db.Decimal(12, 2)
+  tipJarEarnings        Decimal        @default(0) @map("tip_jar_earnings") @db.Decimal(12, 2)
+  totalPaid             Decimal        @default(0) @map("total_paid") @db.Decimal(12, 2)
+  totalPending          Decimal        @default(0) @map("total_pending") @db.Decimal(12, 2)
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  createdAt             DateTime       @default(now()) @map("created_at")
+
+  payoutRequests        PayoutRequest[]
+  revenueBreakdowns     RevenueBreakdown[]
+
+  @@unique([creatorUserId])
+  @@map("creator_revenue")
+}
+
+model RevenueBreakdown {
+  id                String        @id @default(uuid())
+  creatorRevenueId  String        @map("creator_revenue_id")
+  creatorRevenue    CreatorRevenue @relation(fields: [creatorRevenueId], references: [id], onDelete: Cascade)
+  campaignId        String        @map("campaign_id")
+  campaign          Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  amount            Decimal       @db.Decimal(12, 2)
+  source            RevenueSource
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  @@index([creatorRevenueId])
+  @@index([campaignId])
+  @@map("revenue_breakdowns")
+}
+
+enum RevenueSource {
+  REFERRAL_BONUS
+  CAMPAIGN_SUCCESS
+  TIP_JAR
+
+  @@map("revenue_source")
+}
+
+model PayoutRequest {
+  id                String           @id @default(uuid())
+  creatorRevenueId  String           @map("creator_revenue_id")
+  creatorRevenue    CreatorRevenue   @relation(fields: [creatorRevenueId], references: [id], onDelete: Cascade)
+  amount            Decimal          @db.Decimal(12, 2)
+  status            PayoutRequestStatus @default(PENDING)
+  bankName          String?          @map("bank_name")
+  accountHolder     String?          @map("account_holder")
+  accountNumber     String?          @map("account_number") @db.VarChar(20)
+  sortCode          String?          @map("sort_code") @db.VarChar(10)
+  ibanCode          String?          @map("iban_code") @db.VarChar(34)
+  swiftCode         String?          @map("swift_code") @db.VarChar(11)
+  currency          String           @default("GBP")
+  requestedAt       DateTime         @default(now()) @map("requested_at")
+  processedAt       DateTime?        @map("processed_at")
+  completedAt       DateTime?        @map("completed_at")
+  notes             String?
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  @@index([creatorRevenueId])
+  @@index([status])
+  @@map("payout_requests")
+}
+
+enum PayoutRequestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("payout_request_status")
 }
