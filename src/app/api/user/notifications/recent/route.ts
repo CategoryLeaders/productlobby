@@ -6,15 +6,16 @@ import { prisma } from '@/lib/db'
  * GET /api/user/notifications/recent
  * Returns the last 5 notifications for the current user
  * Includes unread count in the response
+ * Returns empty array if user is not authenticated or if table doesn't exist
  */
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
+      return NextResponse.json({
+        notifications: [],
+        unreadCount: 0,
+      })
     }
 
     // Fetch last 5 notifications
@@ -38,9 +39,10 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('[GET /api/user/notifications/recent]', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch recent notifications' },
-      { status: 500 }
-    )
+    // Return empty array instead of error to gracefully handle table not existing
+    return NextResponse.json({
+      notifications: [],
+      unreadCount: 0,
+    })
   }
 }

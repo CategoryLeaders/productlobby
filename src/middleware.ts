@@ -15,6 +15,14 @@ const PROTECTED_ROUTES = [
 // Routes only accessible when NOT authenticated
 const AUTH_ROUTES = ['/login', '/signup']
 
+// Routes that should NOT redirect to onboarding
+const ONBOARDING_EXEMPT_ROUTES = [
+  '/onboarding',
+  '/api',
+  '/auth',
+  '/logout',
+]
+
 // Rate limiting store (in-memory)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 
@@ -69,6 +77,11 @@ export function middleware(request: NextRequest) {
 
   // Check if route is auth-only (login/signup)
   const isAuthRoute = AUTH_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  )
+
+  // Check if route is exempt from onboarding check
+  const isOnboardingExempt = ONBOARDING_EXEMPT_ROUTES.some((route) =>
     pathname.startsWith(route)
   )
 

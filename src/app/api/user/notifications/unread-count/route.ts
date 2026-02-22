@@ -5,14 +5,14 @@ import { prisma } from '@/lib/db'
 /**
  * GET /api/user/notifications/unread-count
  * Returns the count of unread notifications for the current user
+ * Returns 0 if user is not authenticated or if table doesn't exist
  */
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+        { count: 0 }
       )
     }
 
@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ count })
   } catch (error) {
     console.error('[GET /api/user/notifications/unread-count]', error)
+    // Return 0 instead of error to gracefully handle table not existing
     return NextResponse.json(
-      { error: 'Failed to get unread count' },
-      { status: 500 }
+      { count: 0 }
     )
   }
 }

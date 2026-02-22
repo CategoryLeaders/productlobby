@@ -24,6 +24,8 @@ export { BusinessCaseCard } from './business-case-card'
 export type { } from './business-case-card'
 export { EditProfileForm } from './edit-profile-form'
 export type { } from './edit-profile-form'
+export { AvatarUpload } from './avatar-upload'
+export type { } from './avatar-upload'
 export {
   Skeleton,
   CampaignCardSkeleton,

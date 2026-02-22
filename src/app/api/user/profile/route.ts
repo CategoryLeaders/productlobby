@@ -2,12 +2,58 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser, requireAuth } from '@/lib/auth'
 
+export async function GET(req: NextRequest) {
+  try {
+    const user = await requireAuth()
+
+    const profile = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        handle: true,
+        avatar: true,
+        bio: true,
+        location: true,
+        website: true,
+        interests: true,
+        emailVerified: true,
+      },
+    })
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      user: profile,
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    console.error('Error fetching user profile:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch user profile' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PATCH(req: NextRequest) {
   try {
     const user = await requireAuth()
 
     const body = await req.json()
-    const { displayName, bio, avatar, handle } = body
+    const { displayName, bio, avatar, handle, location, website, interests } = body
 
     // Validate inputs
     const errors: Record<string, string> = {}
@@ -28,8 +74,8 @@ export async function PATCH(req: NextRequest) {
       errors.bio = 'Bio must be a string'
     }
 
-    if (bio && bio.length > 300) {
-      errors.bio = 'Bio must be 300 characters or less'
+    if (bio && bio.length > 500) {
+      errors.bio = 'Bio must be 500 characters or less'
     }
 
     if (avatar !== undefined && typeof avatar !== 'string') {
@@ -42,6 +88,41 @@ export async function PATCH(req: NextRequest) {
         new URL(avatar)
       } catch {
         errors.avatar = 'Avatar must be a valid URL'
+      }
+    }
+
+    // Validate location
+    if (location !== undefined && typeof location !== 'string') {
+      errors.location = 'Location must be a string'
+    }
+
+    if (location && location.length > 100) {
+      errors.location = 'Location must be 100 characters or less'
+    }
+
+    // Validate website
+    if (website !== undefined && typeof website !== 'string') {
+      errors.website = 'Website must be a string'
+    }
+
+    if (website) {
+      try {
+        new URL(website)
+      } catch {
+        errors.website = 'Website must be a valid URL'
+      }
+    }
+
+    // Validate interests
+    if (interests !== undefined) {
+      if (!Array.isArray(interests)) {
+        errors.interests = 'Interests must be an array'
+      } else {
+        const validInterests = ['tech', 'home', 'health', 'food', 'fashion', 'sustainability', 'pets', 'kids', 'travel', 'fitness']
+        const invalidInterests = interests.filter((i) => !validInterests.includes(i))
+        if (invalidInterests.length > 0) {
+          errors.interests = 'Invalid interests selected'
+        }
       }
     }
 
@@ -92,6 +173,18 @@ export async function PATCH(req: NextRequest) {
       updateData.avatar = avatar || null
     }
 
+    if (location !== undefined) {
+      updateData.location = location || null
+    }
+
+    if (website !== undefined) {
+      updateData.website = website || null
+    }
+
+    if (interests !== undefined) {
+      updateData.interests = interests || []
+    }
+
     if (handle !== undefined) {
       updateData.handle = handle || null
     }
@@ -106,6 +199,9 @@ export async function PATCH(req: NextRequest) {
         handle: true,
         avatar: true,
         bio: true,
+        location: true,
+        website: true,
+        interests: true,
         emailVerified: true,
       },
     })
