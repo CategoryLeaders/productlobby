@@ -228,6 +228,10 @@ model Campaign {
   pitchSummary        String?        @map("pitch_summary")
   inspiration         String?
   problemSolved       String?        @map("problem_solved")
+  suggestedPrice      Decimal?       @map("suggested_price") @db.Decimal(10,2)
+  priceRangeMin       Decimal?       @map("price_range_min") @db.Decimal(10,2)
+  priceRangeMax       Decimal?       @map("price_range_max") @db.Decimal(10,2)
+  pricingModel        String?        @map("pricing_model") // ONE_TIME, SUBSCRIPTION, FREEMIUM, PAY_WHAT_YOU_WANT
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
@@ -250,6 +254,8 @@ model Campaign {
   favourites          Favourite[]
   comments            Comment[]
   questions           Question[]
+  variants            CampaignVariant[]
+  competitors         CompetitorExample[]
 
   @@unique([slug])
   @@index([status])
@@ -278,6 +284,39 @@ enum CampaignPath {
   @@map("campaign_path")
 }
 
+model CampaignVariant {
+  id          String   @id @default(uuid())
+  campaignId  String   @map("campaign_id")
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name        String   // e.g. "Size", "Color", "Material"
+  options     String[] // e.g. ["Small", "Medium", "Large"]
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([campaignId])
+  @@map("campaign_variants")
+}
+
+model CompetitorExample {
+  id           String   @id @default(uuid())
+  campaignId   String   @map("campaign_id")
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name         String                    // Product name
+  brand        String?                   // Brand/company name
+  url          String?                   // Link to product
+  imageUrl     String?  @map("image_url")
+  price        Decimal? @db.Decimal(10, 2)
+  currency     String   @default("GBP")
+  pros         String?                   // What's good about it
+  cons         String?                   // What's missing/wrong
+  whyNotEnough String?  @map("why_not_enough") // Why this doesn't solve the problem
+  order        Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([campaignId])
+  @@map("competitor_examples")
+}
+
 model CampaignMedia {
   id         String   @id @default(uuid())
   campaignId String   @map("campaign_id")
@@ -295,6 +334,8 @@ model CampaignMedia {
 enum MediaKind {
   IMAGE
   VIDEO
+  SKETCH
+  MOCKUP
 
   @@map("media_kind")
 }
