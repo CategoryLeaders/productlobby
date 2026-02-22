@@ -224,6 +224,10 @@ model Campaign {
   completenessScore   Int            @default(0) @map("completeness_score")
   signalScore         Float?         @map("signal_score")
   signalScoreUpdatedAt DateTime?     @map("signal_score_updated_at")
+  originStory         String?        @map("origin_story")
+  pitchSummary        String?        @map("pitch_summary")
+  inspiration         String?
+  problemSolved       String?        @map("problem_solved")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
