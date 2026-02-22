@@ -105,11 +105,15 @@ export async function PATCH(req: NextRequest) {
       errors.website = 'Website must be a string'
     }
 
-    if (website) {
-      try {
-        new URL(website)
-      } catch {
-        errors.website = 'Website must be a valid URL'
+    if (website && website.length > 255) {
+      errors.website = 'Website must be 255 characters or less'
+    }
+
+    // Accept domains with or without protocol (e.g. www.example.com, example.me, https://example.com)
+    if (website && !errors.website) {
+      const domainRegex = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
+      if (!domainRegex.test(website.trim())) {
+        errors.website = 'Please enter a valid website address'
       }
     }
 

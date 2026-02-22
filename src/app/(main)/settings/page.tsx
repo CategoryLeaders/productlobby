@@ -378,17 +378,17 @@ export default function SettingsPage() {
                     Website
                   </label>
                   <Input
-                    type="url"
+                    type="text"
                     value={website}
                     onChange={(e) => {
                       setWebsite(e.target.value)
                       setErrors({ ...errors, website: undefined })
                     }}
-                    placeholder="https://example.com"
+                    placeholder="www.example.com"
                     maxLength={255}
                     disabled={saving}
                   />
-                  <p className="text-gray-600 text-xs mt-1">Optional - must be a valid URL</p>
+                  <p className="text-gray-600 text-xs mt-1">Optional</p>
                   {errors.website && (
                     <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
