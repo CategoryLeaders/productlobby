@@ -49,6 +49,7 @@ model User {
   contributionEvents     ContributionEvent[]
   notifications          Notification[]
   campaignUpdates        CampaignUpdate[]
+  favourites             Favourite[]
 
   @@map("users")
 }
@@ -232,6 +233,7 @@ model Campaign {
   heroRewards         HeroReward[]
   contributionEvents  ContributionEvent[]
   referralLinks       ReferralLink[]
+  favourites          Favourite[]
 
   @@unique([slug])
   @@index([status])
@@ -745,6 +747,25 @@ model ReferralLink {
   @@index([userId])
   @@index([campaignId])
   @@map("referral_links")
+}
+
+// ============================================================================
+// FAVOURITES
+// ============================================================================
+
+model Favourite {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  campaignId String   @map("campaign_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, campaignId])
+  @@index([userId])
+  @@index([campaignId])
+  @@map("favourites")
 }
 
 // ============================================================================
