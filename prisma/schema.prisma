@@ -61,7 +61,7 @@ model User {
   answers Question[] @relation("answers")
   questionVotes QuestionVote[]
   surveys Survey[] @relation("surveys")
-  surveyResponses SurveyResponse[]
+  surveyResponses SurveyResponse[] @relation("surveyResponses")
   creatorRevenue CreatorRevenue?
 
   @@map("users")
@@ -912,14 +912,18 @@ model Comment {
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
-  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies    Comment[] @relation("CommentReplies")
+  updateId   String?   @map("update_id")
+
+  campaign   Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent     Comment?        @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    Comment[]       @relation("CommentReplies")
+  update     CampaignUpdate? @relation(fields: [updateId], references: [id], onDelete: Cascade)
 
   @@index([campaignId, createdAt])
   @@index([userId])
   @@index([parentId])
+  @@index([updateId])
   @@map("comments")
 }
 
