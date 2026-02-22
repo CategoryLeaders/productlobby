@@ -25,6 +25,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       targetedBrand: {
         select: { name: true },
       },
+      _count: {
+        lobbies: true,
+      },
     },
   })
 
@@ -39,11 +42,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? campaign.description.slice(0, 157) + '...'
     : campaign.description
 
+  const brandName = campaign.targetedBrand?.name || 'Brand'
   const brandSuffix = campaign.targetedBrand
     ? ` — targeted at ${campaign.targetedBrand.name}`
     : ''
+  const lobbyCount = campaign._count?.lobbies || 0
 
-  const ogImage = campaign.media[0]?.url || 'https://productlobby.vercel.app/og-default.png'
+  // Generate dynamic OG image URL
+  const ogImageParams = new URLSearchParams({
+    title: campaign.title,
+    brand: brandName,
+    lobbies: String(lobbyCount),
+    category: campaign.category || 'Other',
+  })
+  const dynamicOgImage = `https://www.productlobby.com/api/og?${ogImageParams.toString()}`
+
+  // Fallback to user-uploaded image if available
+  const userImage = campaign.media[0]?.url
+  const ogImage = userImage || dynamicOgImage
 
   return {
     title: campaign.title,
@@ -51,7 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: campaign.title,
       description: `${description}${brandSuffix}`,
-      url: `https://productlobby.vercel.app/campaigns/${campaign.slug}`,
+      url: `https://www.productlobby.com/campaigns/${campaign.slug}`,
       type: 'article',
       images: [
         {
@@ -67,6 +83,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: campaign.title,
       description: `${description}${brandSuffix}`,
       images: [ogImage],
+      creator: '@ProductLobby',
     },
   }
 }
