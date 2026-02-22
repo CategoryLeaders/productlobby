@@ -1,108 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
-import { notifyNewUpdate } from '@/lib/notifications'
+import { notifySubscribers } from '@/lib/update-notifications'
 
-// POST /api/campaigns/[id]/updates - Create campaign update
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const { id: campaignId } = params
-    const body = await request.json()
-    const { title, content } = body
-
-    // Validation
-    if (!title || typeof title !== 'string' || title.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Content is required' },
-        { status: 400 }
-      )
-    }
-
-    // Get campaign and verify ownership
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: { creatorUserId: true },
-    })
-
-    if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      )
-    }
-
-    if (campaign.creatorUserId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized - only campaign creator can post updates' },
-        { status: 403 }
-      )
-    }
-
-    // Create update
-    const update = await prisma.campaignUpdate.create({
-      data: {
-        campaignId,
-        title,
-        content,
-        creatorUserId: user.id,
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            displayName: true,
-            avatar: true,
-          },
-        },
-        campaign: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
-    })
-
-    // Notify all campaign followers of the new update
-    await notifyNewUpdate(campaignId, title)
-
-    return NextResponse.json(update, { status: 201 })
-  } catch (error) {
-    console.error('[POST /api/campaigns/[id]/updates]', error)
-    return NextResponse.json(
-      { error: 'Failed to create update' },
-      { status: 500 }
-    )
+interface RouteParams {
+  params: {
+    id: string
   }
 }
 
-// GET /api/campaigns/[id]/updates - List campaign updates
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: campaignId } = params
+    const { searchParams } = new URL(request.url)
 
-    // Check if campaign exists
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const skip = (page - 1) * limit
+
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
       select: { id: true },
@@ -110,33 +25,226 @@ export async function GET(
 
     if (!campaign) {
       return NextResponse.json(
-        { error: 'Campaign not found' },
+        { success: false, error: 'Campaign not found' },
         { status: 404 }
       )
     }
 
     const updates = await prisma.campaignUpdate.findMany({
       where: { campaignId },
-      orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        updateType: true,
+        media: {
+          select: {
+            id: true,
+            url: true,
+            altText: true,
+          },
+        },
+        createdAt: true,
         creator: {
           select: {
             id: true,
-            displayName: true,
-            avatar: true,
+          },
+        },
+        reactions: {
+          select: {
+            type: true,
+            userId: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    })
+
+    const totalCount = await prisma.campaignUpdate.count({
+      where: { campaignId },
+    })
+
+    const user = await getCurrentUser()
+
+    const formattedUpdates = await Promise.all(
+      updates.map(async (update) => {
+        const brand = await prisma.brand.findFirst({
+          where: {
+            campaigns: {
+              some: { id: campaignId },
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+            status: true,
+          },
+        })
+
+        const userReaction = user
+          ? update.reactions.find((r: any) => r.userId === user.id)?.type
+          : undefined
+
+        return {
+          id: update.id,
+          title: update.title,
+          content: update.content,
+          updateType: update.updateType || 'ANNOUNCEMENT',
+          images: update.media || [],
+          createdAt: update.createdAt,
+          brandName: brand?.name || 'Unknown Brand',
+          brandLogo: brand?.logo,
+          brandVerified: brand?.status === 'VERIFIED',
+          likeCount: update.reactions.length,
+          commentCount: update._count.comments,
+          userReaction: userReaction as
+            | 'thumbsUp'
+            | 'heart'
+            | 'celebrate'
+            | undefined,
+        }
+      })
+    )
+
+    return NextResponse.json({
+      success: true,
+      data: formattedUpdates,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit),
+      },
+    })
+  } catch (error) {
+    console.error('Error fetching campaign updates:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch updates' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { id: campaignId } = params
+    const body = await request.json()
+    const {
+      title,
+      content,
+      updateType,
+      images,
+      notifySubscribers: shouldNotify = true,
+      scheduledFor,
+    } = body
+
+    if (!title || !content || !updateType) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: {
+        id: true,
+        title: true,
+        targetedBrand: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
           },
         },
       },
     })
 
+    if (!campaign) {
+      return NextResponse.json(
+        { success: false, error: 'Campaign not found' },
+        { status: 404 }
+      )
+    }
+
+    const isBrandMember = await prisma.brandTeam.findFirst({
+      where: {
+        brandId: campaign.targetedBrand?.id,
+        userId: user.id,
+      },
+    })
+
+    if (!isBrandMember) {
+      return NextResponse.json(
+        { success: false, error: 'Only brand members can post updates' },
+        { status: 403 }
+      )
+    }
+
+    const update = await prisma.campaignUpdate.create({
+      data: {
+        campaignId,
+        creatorUserId: user.id,
+        title,
+        content,
+        updateType,
+        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+        media: {
+          create: (images || []).map((img: any, index: number) => ({
+            url: img.url,
+            altText: img.altText,
+            kind: 'IMAGE',
+            order: index,
+          })),
+        },
+      },
+      include: {
+        media: true,
+      },
+    })
+
+    if (shouldNotify && !scheduledFor) {
+      await notifySubscribers(campaignId, update.id, {
+        campaignTitle: campaign.title,
+        brandName: campaign.targetedBrand?.name || 'Brand',
+        brandLogo: campaign.targetedBrand?.logo,
+        updateTitle: title,
+        updateType,
+        content,
+      })
+    }
+
     return NextResponse.json({
-      updates,
-      total: updates.length,
+      success: true,
+      data: {
+        id: update.id,
+        title: update.title,
+        content: update.content,
+        updateType: update.updateType,
+        createdAt: update.createdAt,
+        images: update.media,
+      },
     })
   } catch (error) {
-    console.error('[GET /api/campaigns/[id]/updates]', error)
+    console.error('Error creating campaign update:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch updates' },
+      { success: false, error: 'Failed to create update' },
       { status: 500 }
     )
   }

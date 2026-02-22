@@ -30,6 +30,7 @@ model User {
 
   // Relations
   campaigns              Campaign[]
+  campaignDrafts         CampaignDraft?
   lobbies                Lobby[]
   pledges                Pledge[]
   orders                 Order[]
@@ -50,6 +51,7 @@ model User {
   contributionEvents     ContributionEvent[]
   notifications          Notification[]
   campaignUpdates        CampaignUpdate[]
+  updateReactions        UpdateReaction[]
   favourites             Favourite[]
   comments               Comment[]
   notificationPreference NotificationPreference?
@@ -256,6 +258,7 @@ model Campaign {
   questions           Question[]
   variants            CampaignVariant[]
   competitors         CompetitorExample[]
+  outreachQueue       OutreachQueue[]
 
   @@unique([slug])
   @@index([status])
@@ -282,6 +285,18 @@ enum CampaignPath {
   PATH_B
 
   @@map("campaign_path")
+}
+
+model CampaignDraft {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  formData  Json
+  savedAt   DateTime @default(now()) @map("saved_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("campaign_drafts")
 }
 
 model CampaignVariant {
@@ -377,11 +392,45 @@ model CampaignUpdate {
   creator    User     @relation(fields: [creatorUserId], references: [id], onDelete: Cascade)
   title      String
   content    String
+  updateType String?  @default("ANNOUNCEMENT") @map("update_type")
+  media      UpdateMedia[]
+  reactions  UpdateReaction[]
+  comments   Comment[]
+  scheduledFor DateTime? @map("scheduled_for")
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([campaignId])
   @@index([creatorUserId])
   @@map("campaign_updates")
+}
+
+model UpdateMedia {
+  id         String   @id @default(uuid())
+  updateId   String   @map("update_id")
+  update     CampaignUpdate @relation(fields: [updateId], references: [id], onDelete: Cascade)
+  kind       MediaKind
+  url        String
+  altText    String?  @map("alt_text")
+  order      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([updateId])
+  @@map("update_media")
+}
+
+model UpdateReaction {
+  id         String   @id @default(uuid())
+  updateId   String   @map("update_id")
+  update     CampaignUpdate @relation(fields: [updateId], references: [id], onDelete: Cascade)
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([updateId, userId])
+  @@index([updateId])
+  @@index([userId])
+  @@map("update_reactions")
 }
 
 // ============================================================================
@@ -1091,4 +1140,55 @@ model QuestionVote {
 
   @@id([questionId, userId])
   @@map("question_votes")
+}
+
+// ============================================================================
+// BRAND OUTREACH & AUTOMATION
+// ============================================================================
+
+model OutreachQueue {
+  id            String   @id @default(uuid())
+  campaignId    String   @map("campaign_id")
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  brandEmail    String   @map("brand_email")
+  brandName     String   @map("brand_name")
+  subject       String
+  htmlContent   String   @map("html_content")
+  plainTextContent String @map("plain_text_content")
+  status        OutreachStatus @default(PENDING)
+  sentAt        DateTime? @map("sent_at")
+  openedAt      DateTime? @map("opened_at")
+  respondedAt   DateTime? @map("responded_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([campaignId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("outreach_queue")
+}
+
+enum OutreachStatus {
+  PENDING
+  SENT
+  FAILED
+  OPENED
+  RESPONDED
+
+  @@map("outreach_status")
+}
+
+model OutreachTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  subject   String
+  htmlBody  String   @map("html_body")
+  textBody  String   @map("text_body")
+  variables Json?
+  tier      String // BRONZE, SILVER, GOLD, PLATINUM
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tier])
+  @@map("outreach_templates")
 }

@@ -119,6 +119,17 @@ export function middleware(request: NextRequest) {
 
   response.headers.set('Content-Security-Policy', cspHeader)
 
+  // Public API v1 routes - CORS for external consumers
+  if (pathname.startsWith('/api/v1/')) {
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
+    response.headers.set(
+      'Access-Control-Allow-Headers',
+      'Content-Type, X-API-Key'
+    )
+    response.headers.set('Access-Control-Max-Age', '86400')
+  }
+
   // CORS headers (for API routes)
   if (pathname.startsWith('/api/')) {
     const origin = request.headers.get('origin')
@@ -134,7 +145,7 @@ export function middleware(request: NextRequest) {
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
       response.headers.set(
         'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-CSRF-Token'
+        'Content-Type, Authorization, X-CSRF-Token, X-API-Key'
       )
       response.headers.set('Access-Control-Allow-Credentials', 'true')
       response.headers.set('Access-Control-Max-Age', '86400')
