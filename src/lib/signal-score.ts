@@ -10,6 +10,12 @@ interface SignalScoreInputs {
   intentLast7Days: number
   intentPrev7Days: number
   fraudRiskScore: number
+  // Lobby intensity breakdown
+  neatIdeaCount: number
+  probablyBuyCount: number
+  takeMyMoneyCount: number
+  // Campaign completeness (0-100)
+  completenessScore: number
 }
 
 interface SignalScoreResult {
@@ -17,7 +23,11 @@ interface SignalScoreResult {
   inputs: SignalScoreInputs
   demandValue: number
   momentum: number
+  lobbyConviction: number
   tier: 'low' | 'medium' | 'high' | 'very_high'
+  // Revenue projection for brands
+  projectedRevenue: number
+  projectedCustomers: number
 }
 
 // Calculate Signal Score for a campaign
@@ -35,6 +45,23 @@ export async function calculateSignalScore(campaignId: string): Promise<SignalSc
       },
     },
   })
+
+  // Fetch lobby data (intensity breakdown)
+  const lobbies = await prisma.lobby.findMany({
+    where: { campaignId, status: 'VERIFIED' },
+    select: { intensity: true },
+  })
+
+  // Fetch campaign completeness
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { completenessScore: true },
+  })
+
+  // Lobby intensity counts
+  const neatIdeaCount = lobbies.filter((l: typeof lobbies[0]) => l.intensity === 'NEAT_IDEA').length
+  const probablyBuyCount = lobbies.filter((l: typeof lobbies[0]) => l.intensity === 'PROBABLY_BUY').length
+  const takeMyMoneyCount = lobbies.filter((l: typeof lobbies[0]) => l.intensity === 'TAKE_MY_MONEY').length
 
   // Support pledges
   const supportPledges = pledges.filter((p: typeof pledges[0]) => p.pledgeType === 'SUPPORT')
@@ -78,10 +105,28 @@ export async function calculateSignalScore(campaignId: string): Promise<SignalSc
     intentLast7Days,
     intentPrev7Days,
     fraudRiskScore,
+    neatIdeaCount,
+    probablyBuyCount,
+    takeMyMoneyCount,
+    completenessScore: campaign?.completenessScore ?? 0,
   }
 
   return computeSignalScore(inputs)
 }
+
+// Lobby intensity weights — "Take My Money" is 5x stronger signal than "Neat Idea"
+const INTENSITY_WEIGHTS = {
+  NEAT_IDEA: 1,
+  PROBABLY_BUY: 3,
+  TAKE_MY_MONEY: 5,
+} as const
+
+// Assumed conversion rates by intensity tier (for brand revenue projections)
+const CONVERSION_RATES = {
+  NEAT_IDEA: 0.05,       // 5% — browser, low commitment
+  PROBABLY_BUY: 0.25,    // 25% — likely to convert
+  TAKE_MY_MONEY: 0.65,   // 65% — strong buying signal
+} as const
 
 // Pure computation function (can be used for testing/simulation)
 export function computeSignalScore(inputs: SignalScoreInputs): SignalScoreResult {
@@ -93,10 +138,23 @@ export function computeSignalScore(inputs: SignalScoreInputs): SignalScoreResult
     intentLast7Days,
     intentPrev7Days,
     fraudRiskScore,
+    neatIdeaCount,
+    probablyBuyCount,
+    takeMyMoneyCount,
+    completenessScore,
   } = inputs
 
   // Weighted intent (phone verified adds weight)
   const weightedIntent = intentCount + 0.2 * intentPhoneVerifiedCount
+
+  // Lobby conviction score — weighted by intensity
+  // Ranges 0-5 (average weight across all lobbies)
+  const totalLobbies = neatIdeaCount + probablyBuyCount + takeMyMoneyCount
+  const lobbyConviction = totalLobbies > 0
+    ? (neatIdeaCount * INTENSITY_WEIGHTS.NEAT_IDEA +
+       probablyBuyCount * INTENSITY_WEIGHTS.PROBABLY_BUY +
+       takeMyMoneyCount * INTENSITY_WEIGHTS.TAKE_MY_MONEY) / totalLobbies
+    : 0
 
   // Demand value estimate
   const demandValue = weightedIntent * medianPriceCeiling
@@ -108,15 +166,32 @@ export function computeSignalScore(inputs: SignalScoreInputs): SignalScoreResult
     2
   )
 
-  // Score formula
-  const scoreRaw =
-    18 * Math.log10(1 + demandValue) +
-    8 * Math.log10(1 + weightedIntent) +
-    3 * Math.log10(1 + supportCount) +
-    6 * momentum -
-    20 * fraudRiskScore
+  // Completeness bonus — well-specified campaigns signal higher quality
+  // Ranges 0-1 (normalised from 0-100 score)
+  const completenessMultiplier = 1 + (completenessScore / 100) * 0.3
+
+  // Score formula — now includes lobby conviction and completeness
+  const scoreRaw = (
+    18 * Math.log10(1 + demandValue) +          // Revenue potential (largest weight)
+    8 * Math.log10(1 + weightedIntent) +         // Raw intent volume
+    3 * Math.log10(1 + supportCount) +           // Community support
+    5 * Math.log10(1 + totalLobbies) +           // Total lobby reach
+    4 * lobbyConviction +                        // Quality of buying signals
+    6 * momentum -                               // Growth trajectory
+    20 * fraudRiskScore                          // Fraud penalty
+  ) * completenessMultiplier
 
   const score = clamp(Math.round(scoreRaw * 10) / 10, 0, 100)
+
+  // Revenue projection for brands
+  // "If we build this, how much revenue could we expect?"
+  const projectedCustomers = Math.round(
+    neatIdeaCount * CONVERSION_RATES.NEAT_IDEA +
+    probablyBuyCount * CONVERSION_RATES.PROBABLY_BUY +
+    takeMyMoneyCount * CONVERSION_RATES.TAKE_MY_MONEY +
+    intentCount * 0.4 // Intent pledges at ~40% conversion
+  )
+  const projectedRevenue = Math.round(projectedCustomers * medianPriceCeiling)
 
   // Determine tier
   let tier: 'low' | 'medium' | 'high' | 'very_high'
@@ -130,9 +205,14 @@ export function computeSignalScore(inputs: SignalScoreInputs): SignalScoreResult
     inputs,
     demandValue,
     momentum,
+    lobbyConviction,
     tier,
+    projectedRevenue,
+    projectedCustomers,
   }
 }
+
+export { INTENSITY_WEIGHTS, CONVERSION_RATES }
 
 // Get score thresholds
 export const SIGNAL_THRESHOLDS = {
