@@ -17,6 +17,10 @@ export async function GET(req: NextRequest) {
         bio: true,
         location: true,
         website: true,
+        twitterHandle: true,
+        instagramHandle: true,
+        tiktokHandle: true,
+        linkedinHandle: true,
         interests: true,
         emailVerified: true,
       },
@@ -53,7 +57,7 @@ export async function PATCH(req: NextRequest) {
     const user = await requireAuth()
 
     const body = await req.json()
-    const { displayName, bio, avatar, handle, location, website, interests } = body
+    const { displayName, bio, avatar, handle, location, website, twitterHandle, instagramHandle, tiktokHandle, linkedinHandle, interests } = body
 
     // Validate inputs
     const errors: Record<string, string> = {}
@@ -114,6 +118,23 @@ export async function PATCH(req: NextRequest) {
       const domainRegex = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
       if (!domainRegex.test(website.trim())) {
         errors.website = 'Please enter a valid website address'
+      }
+    }
+
+    // Validate social handles (max 100 chars each, basic format)
+    const socialHandleFields = [
+      { key: 'twitterHandle', value: twitterHandle, label: 'X (Twitter) handle' },
+      { key: 'instagramHandle', value: instagramHandle, label: 'Instagram handle' },
+      { key: 'tiktokHandle', value: tiktokHandle, label: 'TikTok handle' },
+      { key: 'linkedinHandle', value: linkedinHandle, label: 'LinkedIn handle' },
+    ]
+
+    for (const field of socialHandleFields) {
+      if (field.value !== undefined && typeof field.value !== 'string') {
+        errors[field.key] = `${field.label} must be a string`
+      }
+      if (field.value && field.value.length > 100) {
+        errors[field.key] = `${field.label} must be 100 characters or less`
       }
     }
 
@@ -193,6 +214,22 @@ export async function PATCH(req: NextRequest) {
       updateData.handle = handle || null
     }
 
+    if (twitterHandle !== undefined) {
+      updateData.twitterHandle = twitterHandle || null
+    }
+
+    if (instagramHandle !== undefined) {
+      updateData.instagramHandle = instagramHandle || null
+    }
+
+    if (tiktokHandle !== undefined) {
+      updateData.tiktokHandle = tiktokHandle || null
+    }
+
+    if (linkedinHandle !== undefined) {
+      updateData.linkedinHandle = linkedinHandle || null
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: updateData,
@@ -205,6 +242,10 @@ export async function PATCH(req: NextRequest) {
         bio: true,
         location: true,
         website: true,
+        twitterHandle: true,
+        instagramHandle: true,
+        tiktokHandle: true,
+        linkedinHandle: true,
         interests: true,
         emailVerified: true,
       },

@@ -23,6 +23,10 @@ model User {
   bio               String?
   location          String?
   website           String?
+  twitterHandle     String?  @map("twitter_handle")
+  instagramHandle   String?  @map("instagram_handle")
+  tiktokHandle      String?  @map("tiktok_handle")
+  linkedinHandle    String?  @map("linkedin_handle")
   interests         String[] @default([])
   phoneE164         String?  @map("phone_e164")
   phoneVerified     Boolean  @default(false) @map("phone_verified")

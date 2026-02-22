@@ -16,6 +16,10 @@ interface UserProfile {
   avatar: string | null
   bio: string | null
   email: string
+  twitterHandle: string | null
+  instagramHandle: string | null
+  tiktokHandle: string | null
+  linkedinHandle: string | null
 }
 
 const INTERESTS = [
@@ -38,6 +42,10 @@ interface FormErrors {
   avatar?: string
   location?: string
   website?: string
+  twitterHandle?: string
+  instagramHandle?: string
+  tiktokHandle?: string
+  linkedinHandle?: string
   submit?: string
 }
 
@@ -54,6 +62,10 @@ export default function SettingsPage() {
   const [avatar, setAvatar] = useState('')
   const [location, setLocation] = useState('')
   const [website, setWebsite] = useState('')
+  const [twitterHandle, setTwitterHandle] = useState('')
+  const [instagramHandle, setInstagramHandle] = useState('')
+  const [tiktokHandle, setTiktokHandle] = useState('')
+  const [linkedinHandle, setLinkedinHandle] = useState('')
   const [interests, setInterests] = useState<string[]>([])
   const [handleCheckTimeout, setHandleCheckTimeout] = useState<NodeJS.Timeout | null>(null)
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null)
@@ -76,6 +88,10 @@ export default function SettingsPage() {
         setAvatar(data.user.avatar || '')
         setLocation(data.user.location || '')
         setWebsite(data.user.website || '')
+        setTwitterHandle(data.user.twitterHandle || '')
+        setInstagramHandle(data.user.instagramHandle || '')
+        setTiktokHandle(data.user.tiktokHandle || '')
+        setLinkedinHandle(data.user.linkedinHandle || '')
         setInterests(data.user.interests || [])
       } catch (err) {
         console.error('Error loading profile:', err)
@@ -150,6 +166,10 @@ export default function SettingsPage() {
           avatar: avatar || null,
           location: location || null,
           website: website || null,
+          twitterHandle: twitterHandle || null,
+          instagramHandle: instagramHandle || null,
+          tiktokHandle: tiktokHandle || null,
+          linkedinHandle: linkedinHandle || null,
           interests,
         }),
       })
@@ -393,6 +413,114 @@ export default function SettingsPage() {
                     <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
                       {errors.website}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Social Profiles Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Social Profiles</CardTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  Link your social accounts so your community can find you
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* X (Twitter) */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    X (Twitter)
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">@</div>
+                    <Input
+                      type="text"
+                      value={twitterHandle}
+                      onChange={(e) => setTwitterHandle(e.target.value.replace(/^@/, ''))}
+                      placeholder="username"
+                      maxLength={100}
+                      disabled={saving}
+                      className="pl-7"
+                    />
+                  </div>
+                  {errors.twitterHandle && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.twitterHandle}
+                    </p>
+                  )}
+                </div>
+
+                {/* Instagram */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Instagram
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">@</div>
+                    <Input
+                      type="text"
+                      value={instagramHandle}
+                      onChange={(e) => setInstagramHandle(e.target.value.replace(/^@/, ''))}
+                      placeholder="username"
+                      maxLength={100}
+                      disabled={saving}
+                      className="pl-7"
+                    />
+                  </div>
+                  {errors.instagramHandle && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.instagramHandle}
+                    </p>
+                  )}
+                </div>
+
+                {/* TikTok */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    TikTok
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">@</div>
+                    <Input
+                      type="text"
+                      value={tiktokHandle}
+                      onChange={(e) => setTiktokHandle(e.target.value.replace(/^@/, ''))}
+                      placeholder="username"
+                      maxLength={100}
+                      disabled={saving}
+                      className="pl-7"
+                    />
+                  </div>
+                  {errors.tiktokHandle && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.tiktokHandle}
+                    </p>
+                  )}
+                </div>
+
+                {/* LinkedIn */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    LinkedIn
+                  </label>
+                  <Input
+                    type="text"
+                    value={linkedinHandle}
+                    onChange={(e) => setLinkedinHandle(e.target.value)}
+                    placeholder="linkedin.com/in/username or username"
+                    maxLength={100}
+                    disabled={saving}
+                  />
+                  <p className="text-gray-600 text-xs mt-1">Your LinkedIn profile URL or username</p>
+                  {errors.linkedinHandle && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.linkedinHandle}
                     </p>
                   )}
                 </div>
