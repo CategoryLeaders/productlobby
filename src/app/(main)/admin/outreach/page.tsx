@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getCurrentUser } from '@/lib/auth'
 import Link from 'next/link'
 
 interface OutreachOpportunity {
@@ -60,13 +59,24 @@ export default function OutreachPage() {
 
   useEffect(() => {
     async function checkAdmin() {
-      const user = await getCurrentUser()
-      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-      if (user?.email === adminEmail) {
-        setIsAdmin(true)
-        fetchData()
-      } else {
-        setError('You do not have permission to access this page')
+      try {
+        const res = await fetch('/api/auth/me')
+        if (!res.ok) {
+          setError('You do not have permission to access this page')
+          setLoading(false)
+          return
+        }
+        const user = await res.json()
+        const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+        if (user?.email === adminEmail) {
+          setIsAdmin(true)
+          fetchData()
+        } else {
+          setError('You do not have permission to access this page')
+          setLoading(false)
+        }
+      } catch {
+        setError('Failed to verify permissions')
         setLoading(false)
       }
     }
