@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { CampaignUpdateCard } from './campaign-update-card'
-import { EmptyState } from './empty-state'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 
