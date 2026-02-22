@@ -17,6 +17,7 @@ import { LobbyFlow } from './lobby-flow'
 import { CampaignUpdatesFeed } from '@/components/campaigns/campaign-updates-feed'
 import { UpdateCreationForm } from '@/components/campaigns/update-creation-form'
 import { CampaignMilestones } from '@/components/campaigns/campaign-milestones'
+import { CampaignTimeline } from '@/components/campaigns/campaign-timeline'
 import { CampaignConfidenceScore } from '@/components/campaigns/campaign-confidence-score'
 import { DemandSignalDisplay } from '@/components/campaigns/demand-signal-display'
 import { PollCreationForm } from '@/components/campaigns/poll-creation-form'
@@ -773,6 +774,13 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         />
                       </>
                     )}
+                    <div className="mb-8">
+                      <h3 className="font-display font-semibold text-lg text-foreground mb-6">Campaign Timeline</h3>
+                      <CampaignTimeline
+                        campaignId={campaign?.id || ''}
+                        isCreator={!!(user && campaign && user.id === campaign.creator.id)}
+                      />
+                    </div>
                     <CampaignPollsFeed
                       campaignId={campaign?.id || ''}
                       currentUserId={user?.id || null}
