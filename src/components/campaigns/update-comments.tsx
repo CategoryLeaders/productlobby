@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Spinner } from '@/components/ui/spinner'
 import { Avatar } from '@/components/ui/avatar'
-import { CommentItem, type CommentData } from './comment-item'
-import { cn } from '@/lib/utils'
+import { CommentItem, type CommentData } from '../shared/comment-item'
+import { formatRelativeTime, cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
-interface CommentsSectionProps {
+interface UpdateCommentsProps {
   campaignId: string
+  updateId: string
   campaignCreatorId?: string
   currentUser?: {
     id: string
@@ -20,32 +20,27 @@ interface CommentsSectionProps {
   }
 }
 
-export const CommentsSection: React.FC<CommentsSectionProps> = ({
+export const UpdateComments: React.FC<UpdateCommentsProps> = ({
   campaignId,
+  updateId,
   campaignCreatorId,
   currentUser,
 }) => {
   const router = useRouter()
   const [comments, setComments] = useState<CommentData[]>([])
-  const [totalComments, setTotalComments] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newCommentContent, setNewCommentContent] = useState('')
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
-  const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set())
 
-  const limit = 10
-
-  // Fetch comments
-  const fetchComments = useCallback(async (pageNum: number = 1) => {
+  // Fetch comments for this specific update
+  const fetchComments = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
       const response = await fetch(
-        `/api/campaigns/${campaignId}/comments?page=${pageNum}&limit=${limit}&sort=newest`
+        `/api/campaigns/${campaignId}/comments?updateId=${updateId}`
       )
 
       if (!response.ok) {
@@ -53,21 +48,18 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       }
 
       const data = await response.json()
-      setComments(data.comments)
-      setTotalComments(data.total)
-      setPage(pageNum)
-      setHasMore(pageNum < data.pages)
+      setComments(data.comments || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       console.error('Error fetching comments:', err)
     } finally {
       setIsLoading(false)
     }
-  }, [campaignId, limit])
+  }, [campaignId, updateId])
 
   // Load initial comments
   useEffect(() => {
-    fetchComments(1)
+    fetchComments()
   }, [fetchComments])
 
   // Submit new comment
@@ -93,6 +85,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         },
         body: JSON.stringify({
           content: newCommentContent,
+          updateId,
         }),
       })
 
@@ -117,7 +110,6 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         },
         ...comments,
       ])
-      setTotalComments(totalComments + 1)
       setNewCommentContent('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to post comment')
@@ -177,7 +169,6 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
 
       // Remove from comments list
       setComments(comments.filter(c => c.id !== commentId))
-      setTotalComments(Math.max(0, totalComments - 1))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete comment')
       console.error('Error deleting comment:', err)
@@ -200,6 +191,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         body: JSON.stringify({
           content,
           parentId,
+          updateId,
         }),
       })
 
@@ -247,14 +239,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
     .slice(0, 2)
 
   return (
-    <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">
-          Comments ({totalComments})
-        </h2>
-      </div>
-
+    <div className="space-y-3 py-3 border-t border-gray-100">
       {/* New comment form */}
       {currentUser ? (
         <div className="flex gap-3">
@@ -262,7 +247,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             src={currentUser.avatar}
             alt={currentUser.displayName}
             initials={userInitials}
-            size="default"
+            size="sm"
           />
           <div className="flex-1 space-y-2">
             <Textarea
@@ -272,61 +257,62 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                 setError(null)
               }}
               placeholder="Share your thoughts..."
-              className="min-h-20 resize-none"
+              className="min-h-16 resize-none text-sm"
             />
             <div className="flex items-center justify-between">
               <div className="text-xs text-gray-500">
                 {newCommentContent.length}/2000
               </div>
               <Button
+                size="sm"
                 variant="primary"
                 onClick={handleSubmitComment}
                 disabled={!newCommentContent.trim() || isSubmitting}
                 className={cn(
-                  'bg-violet-600 hover:bg-violet-700 text-white',
+                  'bg-violet-600 hover:bg-violet-700 text-white text-xs',
                   !newCommentContent.trim() && 'opacity-50 cursor-not-allowed'
                 )}
               >
-                {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
-                Post Comment
+                {isSubmitting ? 'Posting...' : 'Post'}
               </Button>
             </div>
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-violet-50 border border-violet-200 rounded-lg text-center">
-          <p className="text-sm text-gray-700 mb-2">
-            Sign in to share your thoughts and participate in the discussion.
+        <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-center text-sm">
+          <p className="text-gray-700 mb-2">
+            Sign in to share your thoughts.
           </p>
           <Button
+            size="sm"
             variant="primary"
             onClick={() => router.push('/auth/login')}
           >
-            Sign In to Comment
+            Sign In
           </Button>
         </div>
       )}
 
       {/* Error message */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          {error}
         </div>
       )}
 
       {/* Comments list */}
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Spinner />
+        <div className="text-center py-4 text-sm text-gray-500">
+          Loading comments...
         </div>
       ) : comments.length === 0 ? (
-        <div className="py-8 text-center">
-          <p className="text-gray-500">No comments yet. Be the first to share!</p>
+        <div className="py-2 text-center text-sm text-gray-500">
+          No comments yet
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {comments.map((comment) => (
-            <div key={comment.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+            <div key={comment.id} className="pb-2 last:pb-0">
               <CommentItem
                 comment={{
                   ...comment,
@@ -340,27 +326,12 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   handleReplyComment(parentId, content)
                 }}
                 onToggleReplies={handleToggleReplies}
-                isLoadingReplies={loadingReplies.has(comment.id)}
                 showReplies={expandedReplies.has(comment.id)}
               />
             </div>
           ))}
-
-          {/* Load more button */}
-          {hasMore && (
-            <div className="pt-4 text-center">
-              <Button
-                variant="outline"
-                onClick={() => fetchComments(page + 1)}
-              >
-                Load More Comments
-              </Button>
-            </div>
-          )}
         </div>
       )}
     </div>
   )
 }
-
-// To integrate: import CommentsSection and add <CommentsSection campaignId={campaign.id} /> to the campaign detail page

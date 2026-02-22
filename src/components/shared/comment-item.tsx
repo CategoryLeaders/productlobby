@@ -30,7 +30,7 @@ export interface CommentItemProps {
   currentUserId?: string
   campaignCreatorId?: string
   isReply?: boolean
-  onReply?: (parentId: string) => void
+  onReply?: (parentId: string, content: string) => void
   onEdit?: (commentId: string, content: string) => void
   onDelete?: (commentId: string) => void
   onToggleReplies?: (commentId: string) => void
@@ -72,7 +72,7 @@ export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
 
     const handleReply = async () => {
       if (replyContent.trim()) {
-        await onReply?.(comment.id)
+        await onReply?.(comment.id, replyContent.trim())
         setReplyContent('')
         setIsReplying(false)
       }

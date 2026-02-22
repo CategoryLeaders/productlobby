@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Heart, Pin } from 'lucide-react'
+import { Heart, Pin, MessageCircle } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { renderWithMentions } from '@/lib/mentions'
+import { UpdateComments } from './update-comments'
 
 interface Update {
   id: string
@@ -71,6 +72,7 @@ export function CampaignUpdatesFeed({ campaignId, campaignCreatorId }: CampaignU
   const [hasMore, setHasMore] = useState(false)
   const [totalPages, setTotalPages] = useState(1)
   const [pinningId, setPinningId] = useState<string | null>(null)
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchUpdates(1)
@@ -270,15 +272,48 @@ export function CampaignUpdatesFeed({ campaignId, campaignCreatorId }: CampaignU
               </span>
             </button>
 
-            {update.commentCount > 0 && (
-              <button className="flex items-center gap-2 text-gray-600 hover:text-violet-600 transition-colors">
-                <span className="text-sm">{update.commentCount}</span>
-                <span className="text-sm text-gray-600">
-                  {update.commentCount === 1 ? 'comment' : 'comments'}
-                </span>
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setExpandedComments(prev => {
+                  const newSet = new Set(prev)
+                  if (newSet.has(update.id)) {
+                    newSet.delete(update.id)
+                  } else {
+                    newSet.add(update.id)
+                  }
+                  return newSet
+                })
+              }}
+              className="flex items-center gap-2 text-gray-600 hover:text-violet-600 transition-colors group"
+            >
+              <MessageCircle
+                className={cn(
+                  'w-5 h-5',
+                  expandedComments.has(update.id)
+                    ? 'fill-violet-200 text-violet-600'
+                    : 'group-hover:fill-violet-100'
+                )}
+              />
+              <span className="text-sm text-gray-600 group-hover:text-violet-600">
+                {update.commentCount > 0 && update.commentCount}
+              </span>
+            </button>
           </div>
+
+          {/* Comments section */}
+          {expandedComments.has(update.id) && (
+            <UpdateComments
+              campaignId={campaignId}
+              updateId={update.id}
+              campaignCreatorId={campaignCreatorId}
+              currentUser={user ? {
+                id: user.id,
+                displayName: user.displayName,
+                avatar: user.avatar,
+                handle: user.handle,
+              } : undefined}
+            />
+          )}
         </div>
       ))}
 

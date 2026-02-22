@@ -35,6 +35,7 @@ export async function GET(
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(20, parseInt(searchParams.get('limit') || '10'))
     const sort = searchParams.get('sort') || 'newest' // newest or oldest
+    const updateId = searchParams.get('updateId')
 
     // Check if campaign exists
     const campaign = await prisma.campaign.findUnique({
@@ -58,6 +59,7 @@ export async function GET(
         campaignId,
         parentId: null,
         status: 'VISIBLE',
+        ...(updateId ? { updateId } : {}),
       },
       orderBy: {
         createdAt: orderBy as 'asc' | 'desc',
@@ -97,6 +99,7 @@ export async function GET(
         campaignId,
         parentId: null,
         status: 'VISIBLE',
+        ...(updateId ? { updateId } : {}),
       },
     })
 
@@ -138,7 +141,7 @@ export async function POST(
 
     const { id: campaignId } = params
     const body = await request.json()
-    const { content, parentId } = body
+    const { content, parentId, updateId } = body
 
     // Validation
     if (!content || typeof content !== 'string') {
@@ -167,6 +170,17 @@ export async function POST(
         { error: 'Campaign not found' },
         { status: 404 }
       )
+    }
+
+    // If updateId provided, validate it exists and belongs to this campaign
+    if (updateId) {
+      const update = await prisma.campaignUpdate.findFirst({
+        where: { id: updateId, campaignId },
+        select: { id: true },
+      })
+      if (!update) {
+        return NextResponse.json({ error: 'Update not found' }, { status: 404 })
+      }
     }
 
     // If replying to a comment, verify parent comment exists
@@ -207,6 +221,7 @@ export async function POST(
         campaignId,
         userId: user.id,
         parentId: parentId || null,
+        updateId: updateId || null,
       },
       include: {
         user: {

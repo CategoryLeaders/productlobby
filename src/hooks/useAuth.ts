@@ -8,6 +8,7 @@ interface User {
   email: string
   displayName: string
   handle?: string
+  avatar?: string | null
   emailVerified: boolean
   phoneVerified: boolean
 }
