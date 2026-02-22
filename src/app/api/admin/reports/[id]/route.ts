@@ -25,6 +25,78 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+// PATCH /api/admin/reports/[id] - Update report status
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL
+    if (!adminEmail || user.email !== adminEmail) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { id } = await params
+
+    const report = await prisma.report.findUnique({
+      where: { id },
+    })
+
+    if (!report) {
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { status, action, notes } = body
+
+    const validStatuses = ['OPEN', 'INVESTIGATING', 'RESOLVED', 'DISMISSED']
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    }
+
+    // Update report
+    const updatedReport = await prisma.report.update({
+      where: { id },
+      data: {
+        status: status || report.status,
+        ...(status !== 'OPEN' && { resolvedAt: new Date() }),
+      },
+      include: {
+        reporter: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    // Create moderation action if provided
+    if (action) {
+      await prisma.moderationAction.create({
+        data: {
+          adminUserId: user.id,
+          action,
+          targetType: report.targetType,
+          targetId: report.targetId,
+          notes,
+        },
+      })
+    }
+
+    return NextResponse.json(updatedReport)
+  } catch (error) {
+    console.error('Update report error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 // POST /api/admin/reports/[id] - Take action on a report
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {

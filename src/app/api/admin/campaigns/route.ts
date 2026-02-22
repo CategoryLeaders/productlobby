@@ -25,35 +25,47 @@ export async function GET(request: NextRequest) {
       where.status = status
     }
 
-    const [reports, total] = await Promise.all([
-      prisma.report.findMany({
+    const [campaigns, total] = await Promise.all([
+      prisma.campaign.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { signalScore: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
-          reporter: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          status: true,
+          category: true,
+          signalScore: true,
+          createdAt: true,
+          creator: {
             select: {
               id: true,
               displayName: true,
               email: true,
-              avatar: true,
+            },
+          },
+          _count: {
+            select: {
+              lobbies: true,
+              pledges: true,
             },
           },
         },
       }),
-      prisma.report.count({ where }),
+      prisma.campaign.count({ where }),
     ])
 
     return NextResponse.json({
-      items: reports,
+      items: campaigns,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     })
   } catch (error) {
-    console.error('List reports error:', error)
+    console.error('List campaigns error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

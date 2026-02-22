@@ -16,44 +16,63 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const status = searchParams.get('status')
+    const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
 
     const where: any = {}
-    if (status) {
-      where.status = status
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { displayName: { contains: search, mode: 'insensitive' } },
+        { handle: { contains: search, mode: 'insensitive' } },
+      ]
     }
 
-    const [reports, total] = await Promise.all([
-      prisma.report.findMany({
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
-          reporter: {
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          handle: true,
+          avatar: true,
+          emailVerified: true,
+          phoneVerified: true,
+          contributionScore: true,
+          createdAt: true,
+          _count: {
             select: {
-              id: true,
-              displayName: true,
-              email: true,
-              avatar: true,
+              campaigns: true,
+              lobbies: true,
+              reports: true,
             },
           },
         },
       }),
-      prisma.report.count({ where }),
+      prisma.user.count({ where }),
     ])
 
+    const usersWithCounts = users.map((u) => ({
+      ...u,
+      campaignCount: u._count.campaigns,
+      lobbyCount: u._count.lobbies,
+      reportCount: u._count.reports,
+    }))
+
     return NextResponse.json({
-      items: reports,
+      items: usersWithCounts,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     })
   } catch (error) {
-    console.error('List reports error:', error)
+    console.error('List users error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
