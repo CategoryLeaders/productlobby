@@ -16,6 +16,7 @@ import { LobbyFlow } from './lobby-flow'
 import { CampaignUpdatesFeed } from '@/components/campaigns/campaign-updates-feed'
 import { UpdateCreationForm } from '@/components/campaigns/update-creation-form'
 import { CampaignMilestones } from '@/components/campaigns/campaign-milestones'
+import { CampaignConfidenceScore } from '@/components/campaigns/campaign-confidence-score'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
 import { getCurrentUser } from '@/lib/auth'
@@ -474,6 +475,11 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     ></div>
                   </div>
                 </div>
+              </div>
+
+              {/* Brand Confidence Score */}
+              <div className="mt-8">
+                <CampaignConfidenceScore campaignId={campaign.id} />
               </div>
 
               {/* Campaign Milestones */}
