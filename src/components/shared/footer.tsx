@@ -23,7 +23,7 @@ export const Footer: React.FC = () => {
     {
       title: 'Create',
       items: [
-        { label: 'Start a Campaign', href: '/campaigns/create' },
+        { label: 'Start a Campaign', href: '/campaigns/new' },
         { label: 'Creator Dashboard', href: '/dashboard' },
         { label: 'Brand Portal', href: '/brand' },
         { label: 'Lobbying Toolkit', href: '/toolkit' },

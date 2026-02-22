@@ -147,7 +147,7 @@ export default function HomePage() {
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-            <Link href="/campaigns/create">
+            <Link href="/campaigns/new">
               <Button variant="accent" size="lg" className="flex items-center justify-center gap-2">
                 Start a Campaign
                 <Lightbulb className="w-5 h-5" />
@@ -413,7 +413,7 @@ export default function HomePage() {
             <Card variant="highlighted">
               <CardContent className="py-12 text-center">
                 <p className="text-gray-700 font-medium mb-6">No campaigns yet. Be the first to create one!</p>
-                <Link href="/campaigns/create">
+                <Link href="/campaigns/new">
                   <Button variant="primary" size="lg" className="inline-flex items-center gap-2">
                     Create a Campaign
                     <ArrowRight className="w-5 h-5" />
@@ -445,7 +445,7 @@ export default function HomePage() {
           <p className="text-xl text-violet-100 mb-12 max-w-2xl mx-auto leading-relaxed">
             Join thousands of people who are tired of wishing for better products. Start demanding what you want today.
           </p>
-          <Link href="/campaigns/create">
+          <Link href="/campaigns/new">
             <Button
               variant="accent"
               size="lg"

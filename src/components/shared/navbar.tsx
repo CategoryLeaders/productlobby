@@ -213,7 +213,7 @@ export const Navbar: React.FC = () => {
                   Log In
                 </Link>
                 <Link
-                  href="/campaigns/create"
+                  href="/campaigns/new"
                   className="block px-4 py-2 text-white bg-violet-600 font-medium rounded-lg hover:bg-violet-700 transition-colors duration-200"
                   onClick={() => setMobileMenuOpen(false)}
                 >

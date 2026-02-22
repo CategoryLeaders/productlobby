@@ -98,7 +98,7 @@ export default function CampaignsPage() {
       <PageHeader
         title="My Campaigns"
         actions={
-          <Link href="/dashboard/campaigns/new">
+          <Link href="/campaigns/new">
             <Button variant="primary" size="lg">
               New Campaign
             </Button>
@@ -130,7 +130,7 @@ export default function CampaignsPage() {
           description={`You don't have any ${activeFilter !== 'All' ? activeFilter.toLowerCase() : ''} campaigns.`}
           action={{
             label: 'Create First Campaign',
-            onClick: () => window.location.href = '/dashboard/campaigns/new'
+            onClick: () => window.location.href = '/campaigns/new'
           }}
         />
       ) : (
@@ -217,7 +217,7 @@ export default function CampaignsPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Link href={`/dashboard/campaigns/${campaign.id}/edit`} className="flex-1">
+                  <Link href={`/campaigns/${campaign.slug}/edit`} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full">
                       Edit
                     </Button>

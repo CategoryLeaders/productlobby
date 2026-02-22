@@ -22,7 +22,7 @@ export default function ProfilePage() {
             router.push(`/profile/${user.handle}`)
           } else {
             // User doesn't have a handle, redirect to create one
-            router.push('/settings/profile')
+            router.push('/settings')
           }
         } else {
           // Not logged in, redirect to login

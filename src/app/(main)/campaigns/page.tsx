@@ -260,7 +260,7 @@ export default function CampaignsPage() {
                 <p className="text-gray-600 mb-6">
                   Be the first to create a campaign and rally support for a product idea
                 </p>
-                <Link href="/campaigns/create">
+                <Link href="/campaigns/new">
                   <Button variant="primary" size="lg" className="inline-flex items-center gap-2">
                     <Plus className="w-5 h-5" />
                     Create Campaign
