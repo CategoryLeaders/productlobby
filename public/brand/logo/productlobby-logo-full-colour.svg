@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" fill="none">
+  <!-- ProductLobby Full Logo — E1-B: People + Speech Bubble + Upvote Arrow -->
+  <!-- Icon -->
+  <g>
+    <!-- People — side figures -->
+    <circle cx="12" cy="28" r="4.5" fill="#7C3AED" opacity="0.6"/>
+    <path d="M5 40C5 35.58 8.13 32 12 32C15.87 32 19 35.58 19 40" stroke="#7C3AED" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+    <!-- People — center figure -->
+    <circle cx="24" cy="26" r="5.5" fill="#7C3AED" opacity="0.85"/>
+    <path d="M16 40C16 34.48 19.58 30 24 30C28.42 30 32 34.48 32 40" stroke="#7C3AED" stroke-width="2.5" opacity="0.85" stroke-linecap="round"/>
+    <!-- People — right figure -->
+    <circle cx="36" cy="28" r="4.5" fill="#7C3AED" opacity="0.6"/>
+    <path d="M29 40C29 35.58 32.13 32 36 32C39.87 32 43 35.58 43 40" stroke="#7C3AED" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+    <!-- Speech bubble -->
+    <path d="M12 1C11.45 1 11 1.45 11 2V14C11 14.55 11.45 15 12 15H15.5L12 20.5L24 17L36 20.5L32.5 15H36C36.55 15 37 14.55 37 14V2C37 1.45 36.55 1 36 1H12Z" fill="white" stroke="#7C3AED" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Upvote arrow -->
+    <path d="M24 13V5" stroke="#84CC16" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M19 8.5L24 3L29 8.5" stroke="#84CC16" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="52" y="34" font-family="'Baloo 2', cursive, system-ui, sans-serif" font-size="40" letter-spacing="-0.06em" fill="none">
+    <tspan font-weight="700" fill="#1a1a2e">product</tspan><tspan font-weight="800" fill="#7C3AED">lobby</tspan>
+  </text>
+</svg>

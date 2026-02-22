@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <!-- ProductLobby OG Image — 1200x630 for social sharing -->
+  <rect width="1200" height="630" fill="#FAFAFA"/>
+
+  <!-- Subtle violet gradient bar at top -->
+  <rect width="1200" height="4" fill="#7C3AED"/>
+
+  <!-- Centered logo lockup -->
+  <g transform="translate(340, 220)">
+    <!-- Icon at 120px -->
+    <g transform="scale(2.5)">
+      <circle cx="12" cy="28" r="4.5" fill="#7C3AED" opacity="0.6"/>
+      <path d="M5 40C5 35.58 8.13 32 12 32C15.87 32 19 35.58 19 40" stroke="#7C3AED" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+      <circle cx="24" cy="26" r="5.5" fill="#7C3AED" opacity="0.85"/>
+      <path d="M16 40C16 34.48 19.58 30 24 30C28.42 30 32 34.48 32 40" stroke="#7C3AED" stroke-width="2.5" opacity="0.85" stroke-linecap="round"/>
+      <circle cx="36" cy="28" r="4.5" fill="#7C3AED" opacity="0.6"/>
+      <path d="M29 40C29 35.58 32.13 32 36 32C39.87 32 43 35.58 43 40" stroke="#7C3AED" stroke-width="2.5" opacity="0.6" stroke-linecap="round"/>
+      <path d="M12 1C11.45 1 11 1.45 11 2V14C11 14.55 11.45 15 12 15H15.5L12 20.5L24 17L36 20.5L32.5 15H36C36.55 15 37 14.55 37 14V2C37 1.45 36.55 1 36 1H12Z" fill="white" stroke="#7C3AED" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M24 13V5" stroke="#84CC16" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M19 8.5L24 3L29 8.5" stroke="#84CC16" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <!-- Wordmark -->
+    <text x="135" y="80" font-family="'Baloo 2', cursive, system-ui, sans-serif" font-size="72" letter-spacing="-0.06em" fill="none">
+      <tspan font-weight="700" fill="#1a1a2e">product</tspan><tspan font-weight="800" fill="#7C3AED">lobby</tspan>
+    </text>
+  </g>
+
+  <!-- Tagline -->
+  <text x="600" y="400" text-anchor="middle" font-family="'Nunito', system-ui, sans-serif" font-size="24" font-weight="600" fill="#6b7280">Lobby for the products you want to exist</text>
+
+  <!-- URL -->
+  <text x="600" y="560" text-anchor="middle" font-family="'Nunito', system-ui, sans-serif" font-size="18" font-weight="500" fill="#7C3AED">www.productlobby.com</text>
+</svg>
