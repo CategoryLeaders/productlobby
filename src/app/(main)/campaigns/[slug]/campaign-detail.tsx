@@ -19,6 +19,7 @@ import { CampaignMilestones } from '@/components/campaigns/campaign-milestones'
 import { CampaignConfidenceScore } from '@/components/campaigns/campaign-confidence-score'
 import { PollCreationForm } from '@/components/campaigns/poll-creation-form'
 import { CampaignPollsFeed } from '@/components/campaigns/campaign-polls-feed'
+import CreatorAnalyticsDashboard from '@/components/campaigns/creator-analytics-dashboard'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
 import { getCurrentUser } from '@/lib/auth'
@@ -534,6 +535,13 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Creator Analytics Dashboard — only visible to campaign creator */}
+                {user && campaign && user.id === campaign.creator.id && (
+                  <div className="mb-8">
+                    <CreatorAnalyticsDashboard campaignId={campaign.id} />
+                  </div>
+                )}
 
                 {/* Tabs */}
                 <Tabs defaultValue="about" className="w-full">
