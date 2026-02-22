@@ -320,3 +320,116 @@ export function campaignUpdateTemplate({
     `Update: ${campaignTitle} - ${updateTitle}`
   )
 }
+
+// Email digest template
+export function digestEmailTemplate(data: {
+  userName: string
+  period: string // "Daily" or "Weekly"
+  notifications: Array<{ title: string; message: string; linkUrl: string }>
+  campaignUpdates: Array<{
+    campaignTitle: string
+    updateTitle: string
+    slug: string
+  }>
+  stats: {
+    newLobbies: number
+    newFollowers: number
+    campaignsFollowed: number
+  }
+}): string {
+  const { userName, period, notifications, campaignUpdates, stats } = data
+  const firstName = userName.split(' ')[0]
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const notificationsHtml =
+    notifications.length > 0
+      ? `
+    <div style="margin-bottom: 32px;">
+      <h3 style="color: #1f2937; margin-bottom: 16px;">Recent Notifications</h3>
+      ${notifications
+        .map(
+          (n) => `
+        <div style="background-color: #f9fafb; border-left: 4px solid #7c3aed; padding: 16px; margin-bottom: 12px; border-radius: 4px;">
+          <h4 style="color: #1f2937; margin: 0 0 8px 0; font-size: 15px;">${n.title}</h4>
+          <p style="color: #6b7280; margin: 0 0 12px 0; font-size: 14px;">${n.message}</p>
+          ${
+            n.linkUrl
+              ? `<a href="${n.linkUrl}" style="color: #7c3aed; text-decoration: none; font-weight: 600; font-size: 13px;">View →</a>`
+              : ''
+          }
+        </div>
+      `
+        )
+        .join('')}
+    </div>
+  `
+      : ''
+
+  const updatesHtml =
+    campaignUpdates.length > 0
+      ? `
+    <div style="margin-bottom: 32px;">
+      <h3 style="color: #1f2937; margin-bottom: 16px;">Campaign Updates</h3>
+      ${campaignUpdates
+        .map(
+          (u) => `
+        <div style="background-color: #f9fafb; border-left: 4px solid #84cc16; padding: 16px; margin-bottom: 12px; border-radius: 4px;">
+          <h4 style="color: #1f2937; margin: 0 0 4px 0; font-size: 15px;">${u.updateTitle}</h4>
+          <p style="color: #6b7280; margin: 0 0 12px 0; font-size: 14px;">${u.campaignTitle}</p>
+          <a href="${appUrl}/campaigns/${u.slug}" style="color: #84cc16; text-decoration: none; font-weight: 600; font-size: 13px;">Read Update →</a>
+        </div>
+      `
+        )
+        .join('')}
+    </div>
+  `
+      : ''
+
+  const statsHtml = `
+    <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="color: #1f2937; margin: 0 0 16px 0; font-size: 15px;">Your Activity</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: #7c3aed; margin-bottom: 4px;">${stats.newLobbies}</div>
+          <div style="font-size: 12px; color: #6b7280;">New Lobbies</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: #84cc16; margin-bottom: 4px;">${stats.campaignsFollowed}</div>
+          <div style="font-size: 12px; color: #6b7280;">Following</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: #7c3aed; margin-bottom: 4px;">${stats.newFollowers}</div>
+          <div style="font-size: 12px; color: #6b7280;">New Followers</div>
+        </div>
+      </div>
+    </div>
+  `
+
+  const content = `
+    <h2>Your ${period} Digest</h2>
+
+    <p style="color: #6b7280; margin-bottom: 24px;">
+      Hi ${firstName}, here's what's been happening with your ProductLobby account this ${period.toLowerCase()}.
+    </p>
+
+    ${statsHtml}
+
+    ${notificationsHtml}
+
+    ${updatesHtml}
+
+    <div style="text-align: center; margin-top: 32px;">
+      <a href="${appUrl}/dashboard" style="display: inline-block; background-color: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+        Go to Dashboard
+      </a>
+    </div>
+
+    <hr class="divider">
+
+    <p style="font-size: 13px; color: #6b7280;">
+      You can manage your notification preferences, including digest frequency, in your <a href="${appUrl}/settings/notifications" style="color: #7c3aed; text-decoration: none;">notification settings</a>.
+    </p>
+  `
+
+  return baseTemplate(content, `Your ${period} ProductLobby Digest`)
+}

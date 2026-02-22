@@ -52,6 +52,7 @@ model User {
   campaignUpdates        CampaignUpdate[]
   favourites             Favourite[]
   comments               Comment[]
+  notificationPreference NotificationPreference?
 
   @@map("users")
 }
@@ -894,4 +895,26 @@ model Notification {
   @@index([read])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// ============================================================================
+// NOTIFICATION PREFERENCES
+// ============================================================================
+
+model NotificationPreference {
+  id                    String   @id @default(uuid())
+  userId                String   @unique @map("user_id")
+  emailDigestFrequency  String   @default("WEEKLY") @map("email_digest_frequency")
+  emailCampaignUpdates  Boolean  @default(true) @map("email_campaign_updates")
+  emailBrandResponses   Boolean  @default(true) @map("email_brand_responses")
+  emailNewFollowers     Boolean  @default(false) @map("email_new_followers")
+  emailMilestones       Boolean  @default(true) @map("email_milestones")
+  pushEnabled           Boolean  @default(true) @map("push_enabled")
+  lastDigestSentAt      DateTime? @map("last_digest_sent_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
