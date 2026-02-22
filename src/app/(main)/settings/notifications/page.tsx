@@ -3,9 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Navbar from '@/components/navbar/Navbar'
-import Footer from '@/components/footer/Footer'
-import PageHeader from '@/components/PageHeader'
 import { toast } from 'sonner'
 
 interface NotificationPreferences {
@@ -114,56 +111,40 @@ export default function NotificationSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 bg-gray-50">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="animate-pulse space-y-4">
-              <div className="h-10 bg-gray-200 rounded w-1/3"></div>
-              <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-              <div className="space-y-4 mt-8">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-12 bg-gray-200 rounded"></div>
-                ))}
-              </div>
-            </div>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="animate-pulse space-y-4">
+          <div className="h-10 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+          <div className="space-y-4 mt-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
           </div>
-        </main>
-        <Footer />
+        </div>
       </div>
     )
   }
 
   if (!preferences) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 bg-gray-50">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-600 mb-4">
-                Failed to load notification preferences
-              </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="text-violet-600 hover:text-violet-700 font-semibold"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </main>
-        <Footer />
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <p className="text-gray-600 mb-4">
+            Failed to load notification preferences
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-violet-600 hover:text-violet-700 font-semibold"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-
-      <main className="flex-1 bg-gray-50">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           {/* Header */}
           <div className="mb-8">
             <Link
@@ -416,10 +397,6 @@ export default function NotificationSettingsPage() {
               </Link>
             </div>
           </div>
-        </div>
-      </main>
-
-      <Footer />
     </div>
   )
 }
