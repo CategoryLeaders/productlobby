@@ -17,6 +17,7 @@ import { CampaignUpdatesFeed } from '@/components/campaigns/campaign-updates-fee
 import { UpdateCreationForm } from '@/components/campaigns/update-creation-form'
 import { CampaignMilestones } from '@/components/campaigns/campaign-milestones'
 import { CampaignConfidenceScore } from '@/components/campaigns/campaign-confidence-score'
+import { DemandSignalDisplay } from '@/components/campaigns/demand-signal-display'
 import { PollCreationForm } from '@/components/campaigns/poll-creation-form'
 import { CampaignPollsFeed } from '@/components/campaigns/campaign-polls-feed'
 import CreatorAnalyticsDashboard from '@/components/campaigns/creator-analytics-dashboard'
@@ -499,6 +500,13 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     campaignId={campaign.id}
                     isCreator={user?.id === campaign.creator.id}
                   />
+                </div>
+              )}
+
+              {/* Demand Signal */}
+              {campaign && (
+                <div className="mt-8">
+                  <DemandSignalDisplay campaignId={campaign.id} />
                 </div>
               )}
 
