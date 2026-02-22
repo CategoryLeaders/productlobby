@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Tabs, TabsList
 import { Edit, Calendar, Award, Lock } from 'lucide-react'
 import { Badge as BadgeType } from '@/lib/badges'
 import { EditProfileForm } from '@/components/shared/edit-profile-form'
+import { SocialLinks } from '@/components/shared/social-links'
 import { formatDate, formatNumber } from '@/lib/utils'
 
 interface UserProfile {
@@ -19,6 +20,10 @@ interface UserProfile {
   contributionScore: number
   createdAt: string
   isOwnProfile: boolean
+  twitterHandle: string | null
+  instagramHandle: string | null
+  tiktokHandle: string | null
+  linkedinHandle: string | null
   stats: {
     campaignsCreated: number
     campaignsSupported: number
@@ -208,6 +213,19 @@ export default function UserProfilePage() {
                   <p className="text-gray-600 max-w-2xl mx-auto mb-6">
                     {profile.bio}
                   </p>
+                )}
+
+                {/* Social Links */}
+                {(profile.twitterHandle || profile.instagramHandle || profile.tiktokHandle || profile.linkedinHandle) && (
+                  <div className="mb-6">
+                    <SocialLinks
+                      twitterHandle={profile.twitterHandle}
+                      instagramHandle={profile.instagramHandle}
+                      tiktokHandle={profile.tiktokHandle}
+                      linkedinHandle={profile.linkedinHandle}
+                      size="md"
+                    />
+                  </div>
                 )}
 
                 {/* Contribution Score & Metadata */}

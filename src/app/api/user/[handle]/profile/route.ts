@@ -30,6 +30,10 @@ export async function GET(
         contributionScore: true,
         createdAt: true,
         emailVerified: true,
+        twitterHandle: true,
+        instagramHandle: true,
+        tiktokHandle: true,
+        linkedinHandle: true,
       },
     })
 
@@ -137,6 +141,10 @@ export async function GET(
       contributionScore: user.contributionScore,
       createdAt: user.createdAt,
       isOwnProfile,
+      twitterHandle: user.twitterHandle,
+      instagramHandle: user.instagramHandle,
+      tiktokHandle: user.tiktokHandle,
+      linkedinHandle: user.linkedinHandle,
       stats: {
         campaignsCreated,
         campaignsSupported: campaignsSupported.length,

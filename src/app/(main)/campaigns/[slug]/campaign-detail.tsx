@@ -11,6 +11,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { SocialLinks } from '@/components/shared/social-links'
 import { LobbyFlow } from './lobby-flow'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
@@ -36,6 +37,10 @@ interface ApiCampaign {
     id: string
     displayName: string
     avatar?: string
+    twitterHandle?: string
+    instagramHandle?: string
+    tiktokHandle?: string
+    linkedinHandle?: string
   }
   targetedBrand: {
     id: string
@@ -863,6 +868,17 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                         <p className="text-xs text-gray-600">Creator</p>
                       </div>
                     </div>
+                    {(campaign.creator.twitterHandle || campaign.creator.instagramHandle || campaign.creator.tiktokHandle || campaign.creator.linkedinHandle) && (
+                      <div className="flex justify-center pt-2">
+                        <SocialLinks
+                          twitterHandle={campaign.creator.twitterHandle}
+                          instagramHandle={campaign.creator.instagramHandle}
+                          tiktokHandle={campaign.creator.tiktokHandle}
+                          linkedinHandle={campaign.creator.linkedinHandle}
+                          size="sm"
+                        />
+                      </div>
+                    )}
                     <Button
                       variant="secondary"
                       size="md"

@@ -21,6 +21,10 @@ export async function GET(
             id: true,
             displayName: true,
             avatar: true,
+            twitterHandle: true,
+            instagramHandle: true,
+            tiktokHandle: true,
+            linkedinHandle: true,
           },
         },
         targetedBrand: {
@@ -342,6 +346,10 @@ export async function PATCH(
             id: true,
             displayName: true,
             avatar: true,
+            twitterHandle: true,
+            instagramHandle: true,
+            tiktokHandle: true,
+            linkedinHandle: true,
           },
         },
         targetedBrand: {
