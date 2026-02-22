@@ -1,15 +1,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Heart } from 'lucide-react'
+import { Heart, Pin } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Update {
   id: string
   title: string
   content: string
+  isPinned: boolean
   creatorName: string
   creatorAvatar?: string
   creatorHandle?: string
@@ -26,6 +28,7 @@ interface Update {
 
 interface CampaignUpdatesFeedProps {
   campaignId: string
+  campaignCreatorId?: string
 }
 
 const getRelativeTime = (dateString: string) => {
@@ -59,12 +62,14 @@ const UpdateSkeleton = () => (
   </div>
 )
 
-export function CampaignUpdatesFeed({ campaignId }: CampaignUpdatesFeedProps) {
+export function CampaignUpdatesFeed({ campaignId, campaignCreatorId }: CampaignUpdatesFeedProps) {
+  const { user } = useAuth()
   const [updates, setUpdates] = useState<Update[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
   const [totalPages, setTotalPages] = useState(1)
+  const [pinningId, setPinningId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchUpdates(1)
@@ -104,6 +109,41 @@ export function CampaignUpdatesFeed({ campaignId }: CampaignUpdatesFeedProps) {
     fetchUpdates(page + 1)
   }
 
+  const handlePinToggle = async (updateId: string, currentPinned: boolean) => {
+    try {
+      setPinningId(updateId)
+      const response = await fetch(
+        `/api/campaigns/${campaignId}/updates/${updateId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            isPinned: !currentPinned,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        console.error('Failed to update pin status')
+        return
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        // Update the local state
+        setUpdates((prev) =>
+          prev.map((u) => (u.id === updateId ? { ...u, isPinned: !currentPinned } : { ...u, isPinned: false }))
+        )
+      }
+    } catch (error) {
+      console.error('Error toggling pin:', error)
+    } finally {
+      setPinningId(null)
+    }
+  }
+
   if (loading && updates.length === 0) {
     return (
       <div className="space-y-6">
@@ -127,8 +167,19 @@ export function CampaignUpdatesFeed({ campaignId }: CampaignUpdatesFeedProps) {
       {updates.map((update) => (
         <div
           key={update.id}
-          className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+          className={cn(
+            "bg-white border rounded-lg p-6 hover:shadow-md transition-shadow",
+            update.isPinned ? "border-violet-300 bg-violet-50" : "border-gray-200"
+          )}
         >
+          {/* Pinned Badge */}
+          {update.isPinned && (
+            <div className="mb-3 inline-flex items-center gap-1 px-2 py-1 bg-violet-100 text-violet-700 text-xs font-medium rounded">
+              <Pin className="w-3 h-3" />
+              Pinned
+            </div>
+          )}
+
           {/* Header with creator info */}
           <div className="flex items-start gap-4 mb-4">
             <Avatar
@@ -153,6 +204,23 @@ export function CampaignUpdatesFeed({ campaignId }: CampaignUpdatesFeedProps) {
                 {getRelativeTime(update.createdAt)}
               </p>
             </div>
+            {user && user.id === campaignCreatorId && (
+              <button
+                onClick={() => handlePinToggle(update.id, update.isPinned)}
+                disabled={pinningId === update.id}
+                className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                title={update.isPinned ? 'Unpin update' : 'Pin update'}
+              >
+                <Pin
+                  className={cn(
+                    'w-5 h-5',
+                    update.isPinned
+                      ? 'fill-violet-600 text-violet-600'
+                      : 'text-gray-400 hover:text-gray-600'
+                  )}
+                />
+              </button>
+            )}
           </div>
 
           {/* Update content */}

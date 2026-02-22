@@ -37,6 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         title: true,
         content: true,
         updateType: true,
+        isPinned: true,
         media: {
           select: {
             id: true,
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
     })
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           title: update.title,
           content: update.content,
           updateType: update.updateType || 'ANNOUNCEMENT',
+          isPinned: update.isPinned,
           images: update.media || [],
           createdAt: update.createdAt,
           brandName: brand?.name || 'Unknown Brand',

@@ -406,6 +406,7 @@ model CampaignUpdate {
   title      String
   content    String
   updateType String?  @default("ANNOUNCEMENT") @map("update_type")
+  isPinned   Boolean  @default(false) @map("is_pinned")
   media      UpdateMedia[]
   reactions  UpdateReaction[]
   comments   Comment[]
