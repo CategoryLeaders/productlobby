@@ -350,8 +350,8 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
       <main className="flex-1">
         <div className="bg-white">
           {/* Breadcrumb */}
-          <div className="max-w-7xl mx-auto px-4 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2 text-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-gray-100">
+            <div className="flex items-center gap-2 text-xs sm:text-sm flex-wrap">
               <Link href="/" className="text-violet-600 hover:text-violet-700">
                 Home
               </Link>
@@ -365,9 +365,9 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
           </div>
 
           {/* Hero Section */}
-          <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             {/* Hero Image */}
-            <div className="w-full h-96 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg mb-8 flex items-center justify-center overflow-hidden">
+            <div className="w-full h-48 sm:h-64 lg:h-96 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg mb-6 sm:mb-8 flex items-center justify-center overflow-hidden">
               {campaign.media.length > 0 && campaign.media[0].type.startsWith('image') ? (
                 <img
                   src={campaign.media[0].url}
@@ -384,7 +384,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
             {/* Title & Meta */}
             <div className="mb-6">
-              <h1 className="font-display font-bold text-4xl text-foreground mb-4">
+              <h1 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl text-foreground mb-4">
                 {campaign.title}
               </h1>
 
@@ -419,8 +419,8 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
           {/* Stats Bar */}
           <div className="bg-white border-y border-gray-100">
-            <div className="max-w-7xl mx-auto px-4 py-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-8">
                 {/* Total Lobbies */}
                 <div>
                   <p className="text-gray-600 text-sm mb-2">Total Lobbies</p>
@@ -430,36 +430,36 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                 </div>
 
                 {/* Intensity Distribution */}
-                <div className="md:col-span-2">
+                <div className="sm:col-span-1 lg:col-span-2">
                   <p className="text-gray-600 text-sm mb-4">Intensity Distribution</p>
-                  <div className="flex items-end gap-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6">
                     {/* Green - Neat Idea */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-fit">
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="inline-block w-3 h-3 rounded-full bg-green-500"></span>
                         <span className="text-sm font-medium text-foreground">Neat Idea</span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">{intensityDistribution.low}</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{intensityDistribution.low}</p>
                       <p className="text-xs text-gray-600">{lowPercent.toFixed(0)}%</p>
                     </div>
 
                     {/* Yellow - I'd Probably Buy */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-fit">
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="inline-block w-3 h-3 rounded-full bg-yellow-400"></span>
                         <span className="text-sm font-medium text-foreground">I'd Probably Buy</span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">{intensityDistribution.medium}</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{intensityDistribution.medium}</p>
                       <p className="text-xs text-gray-600">{mediumPercent.toFixed(0)}%</p>
                     </div>
 
                     {/* Purple - Take My Money */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-fit">
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="inline-block w-3 h-3 rounded-full bg-violet-600"></span>
                         <span className="text-sm font-medium text-foreground">Take My Money!</span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">{intensityDistribution.high}</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{intensityDistribution.high}</p>
                       <p className="text-xs text-gray-600">{highPercent.toFixed(0)}%</p>
                     </div>
                   </div>
@@ -514,8 +514,8 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
           </div>
 
           {/* Main Content + Sidebar Layout */}
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               {/* Left Column - Main Content */}
               <div className="lg:col-span-2">
                 {/* Lobby Section */}
@@ -546,7 +546,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
                 {/* Tabs */}
                 <Tabs defaultValue="about" className="w-full">
-                  <TabsList className="border-b border-gray-200 mb-0 rounded-none">
+                  <TabsList className="border-b border-gray-200 mb-0 rounded-none overflow-x-auto flex-nowrap">
                     <TabsTrigger value="about">About</TabsTrigger>
                     <TabsTrigger value="preferences">Preferences</TabsTrigger>
                     <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
@@ -579,7 +579,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
                       <div>
                         <h3 className="font-display font-semibold text-lg text-foreground mb-4">Campaign Gallery</h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {campaign.media.slice(0, 4).map((media, i) => (
                             <div
                               key={media.url}

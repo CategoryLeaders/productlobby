@@ -132,11 +132,11 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-violet-50 via-white to-white">
         <FloatingShapes />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 text-center">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-display text-gray-900 mb-8 leading-tight">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 text-center">
+          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold font-display text-gray-900 mb-6 sm:mb-8 leading-tight">
             Lobby for the Products You Want to Exist
           </h1>
-          <p className="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto mb-12 font-sans leading-relaxed">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-700 max-w-3xl mx-auto mb-8 sm:mb-12 font-sans leading-relaxed">
             Turn product ideas into reality. Rally community support, build the business case, and get brands to
             actually make what you want.
           </p>
@@ -158,9 +158,9 @@ export default function HomePage() {
       </section>
 
       {/* Social Proof Bar */}
-      <section className="border-t border-b border-gray-200 bg-white py-12 lg:py-16">
+      <section className="border-t border-b border-gray-200 bg-white py-10 sm:py-12 lg:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid sm:grid-cols-3 gap-8 sm:gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
             <div className="text-center">
               <div className="text-4xl lg:text-5xl font-bold font-display text-violet-600 mb-2">
                 <CountUpNumber target={trendingCampaigns.length || 500} />+
@@ -185,14 +185,14 @@ export default function HomePage() {
 
       {/* How It Works */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-4">How It Works</h2>
-          <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-4">How It Works</h2>
+          <p className="text-base sm:text-lg text-gray-700 max-w-2xl mx-auto">
             From idea to reality in four simple steps.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {[
             {
               step: 1,
@@ -245,19 +245,19 @@ export default function HomePage() {
       </section>
 
       {/* For Supporters */}
-      <section className="bg-gradient-to-b from-violet-50 to-white py-20 lg:py-32">
+      <section className="bg-gradient-to-b from-violet-50 to-white py-16 sm:py-20 lg:py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12 sm:mb-16">
             <Badge variant="default" className="mb-4 inline-block">For Supporters</Badge>
-            <h2 className="text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-4">
               Make Your Voice Heard
             </h2>
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-gray-700 max-w-2xl mx-auto">
               Join a community that demands better products without the risk.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
                 title: 'Make Your Voice Heard',
@@ -288,19 +288,19 @@ export default function HomePage() {
 
       {/* For Brands */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 sm:mb-16">
           <Badge variant="default" className="mb-4 inline-block">For Brands</Badge>
-          <h2 className="text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-4">
             See Demand Before You Invest
           </h2>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div>
-            <h3 className="text-2xl lg:text-3xl font-bold font-display text-gray-900 mb-6">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-gray-900 mb-6">
               Verified demand. Real data. Lower risk.
             </h3>
-            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-700 mb-6 leading-relaxed">
               Stop guessing. ProductLobby shows you verified community demand before you commit to production. See
               exactly how many people will buy, at what price point, and when they want it.
             </p>
@@ -326,7 +326,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="bg-gradient-to-br from-violet-50 to-violet-100 rounded-xl border border-violet-200 p-8 lg:p-12">
+          <div className="bg-gradient-to-br from-violet-50 to-violet-100 rounded-xl border border-violet-200 p-6 sm:p-8 lg:p-12">
             <div className="space-y-6">
               <div>
                 <p className="text-sm font-semibold text-violet-700 uppercase tracking-wider mb-2">Projected Revenue</p>
@@ -374,12 +374,12 @@ export default function HomePage() {
       </section>
 
       {/* Trending Campaigns */}
-      <section className="bg-gray-50 py-20 lg:py-32">
+      <section className="bg-gray-50 py-16 sm:py-20 lg:py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-12">
             <div>
-              <h2 className="text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-2">Trending Now</h2>
-              <p className="text-lg text-gray-700">The hottest campaigns gaining momentum this week</p>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-gray-900 mb-2">Trending Now</h2>
+              <p className="text-base sm:text-lg text-gray-700">The hottest campaigns gaining momentum this week</p>
             </div>
             <Link
               href="/campaigns?sort=trending"
@@ -422,7 +422,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {trendingCampaigns.map((campaign) => (
                 <CampaignCard key={campaign.id} {...campaign} />
               ))}
@@ -439,10 +439,10 @@ export default function HomePage() {
         </div>
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl lg:text-5xl font-bold font-display text-white mb-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-white mb-6">
             Ready to Make Your Voice Heard?
           </h2>
-          <p className="text-xl text-violet-100 mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg lg:text-xl text-violet-100 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed">
             Join thousands of people who are tired of wishing for better products. Start demanding what you want today.
           </p>
           <Link href="/campaigns/new">
