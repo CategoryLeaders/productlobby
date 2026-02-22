@@ -1,58 +1,61 @@
 'use client'
 
 import React, { forwardRef } from 'react'
+import { Slot } from '@radix-ui/react-slot'
 import { cn } from '@/lib/utils'
 
-type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost' | 'destructive' | 'outline'
-type ButtonSize = 'sm' | 'md' | 'lg'
+type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost' | 'outline' | 'destructive'
+type ButtonSize = 'sm' | 'default' | 'lg'
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
   size?: ButtonSize
   loading?: boolean
-  disabled?: boolean
+  asChild?: boolean
 }
 
 const baseStyles =
-  'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]'
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-violet-600 text-white hover:bg-violet-700 focus:ring-violet-500 active:bg-violet-800',
+    'bg-violet-600 text-white hover:bg-violet-700',
   secondary:
-    'border border-foreground text-foreground hover:bg-foreground/5 focus:ring-violet-500 active:bg-foreground/10',
+    'bg-violet-100 text-violet-700 hover:bg-violet-200',
   accent:
-    'bg-lime-500 text-foreground hover:bg-lime-600 focus:ring-lime-500 active:bg-lime-700',
+    'bg-lime-500 text-slate-900 hover:bg-lime-600',
   ghost:
-    'bg-transparent text-foreground hover:bg-foreground/10 focus:ring-violet-500 active:bg-foreground/20',
-  destructive:
-    'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800',
+    'bg-transparent text-gray-700 hover:bg-gray-100',
   outline:
-    'border border-gray-300 text-foreground bg-white hover:bg-gray-50 focus:ring-violet-500 active:bg-gray-100',
+    'bg-transparent border border-violet-300 text-violet-600 hover:bg-violet-50',
+  destructive:
+    'bg-red-500 text-white hover:bg-red-600',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm gap-2 h-8',
-  md: 'px-4 py-2 text-base gap-2 h-10',
-  lg: 'px-6 py-3 text-lg gap-2.5 h-12',
+  sm: 'h-8 px-3 rounded-md text-sm',
+  default: 'h-10 px-5 rounded-lg text-sm',
+  lg: 'h-12 px-7 rounded-lg text-base',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       variant = 'primary',
-      size = 'md',
+      size = 'default',
       loading = false,
       disabled = false,
+      asChild = false,
       className,
       children,
       ...props
     },
     ref
   ) => {
+    const Comp = asChild ? Slot : 'button'
+
     return (
-      <button
+      <Comp
         ref={ref}
         disabled={disabled || loading}
         className={cn(
@@ -65,7 +68,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading && (
           <svg
-            className="animate-spin h-4 w-4"
+            className="animate-spin h-4 w-4 mr-2"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -86,7 +89,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </svg>
         )}
         {children}
-      </button>
+      </Comp>
     )
   }
 )

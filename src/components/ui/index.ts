@@ -39,6 +39,19 @@ export {
   type ModalProps,
 } from './modal'
 
+// Dialog Components (Radix UI)
+export {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  type DialogProps,
+} from './dialog'
+
 // Tabs Components
 export {
   Tabs,
@@ -47,6 +60,47 @@ export {
   TabsContent,
   type TabsProps,
 } from './tabs'
+
+// Select Components (Radix UI)
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+} from './select'
+
+// Tooltip Components (Radix UI)
+export {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from './tooltip'
+
+// Dropdown Menu Components (Radix UI)
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+} from './dropdown-menu'
+
+// Spinner Component
+export { Spinner, type SpinnerProps } from './spinner'
 
 // Chip Selector Component
 export { ChipSelector, type ChipSelectorProps, type ChipOption } from './chip-selector'

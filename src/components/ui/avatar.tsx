@@ -4,22 +4,19 @@ import React from 'react'
 import * as RadixAvatar from '@radix-ui/react-avatar'
 import { cn } from '@/lib/utils'
 
-type AvatarSize = 'sm' | 'md' | 'lg' | 'xl'
+type AvatarSize = 'sm' | 'default' | 'lg'
 
-export interface AvatarProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string
   alt?: string
   initials?: string
   size?: AvatarSize
-  fallbackClassName?: string
 }
 
 const sizeStyles: Record<AvatarSize, string> = {
   sm: 'h-8 w-8 text-xs',
-  md: 'h-10 w-10 text-sm',
-  lg: 'h-14 w-14 text-base',
-  xl: 'h-20 w-20 text-lg',
+  default: 'h-10 w-10 text-sm',
+  lg: 'h-12 w-12 text-base',
 }
 
 export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
@@ -28,9 +25,8 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       src,
       alt = 'Avatar',
       initials,
-      size = 'md',
+      size = 'default',
       className,
-      fallbackClassName,
       ...props
     },
     ref
@@ -53,10 +49,7 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
             />
           )}
           <RadixAvatar.Fallback
-            className={cn(
-              'flex items-center justify-center font-semibold text-violet-800 bg-violet-100',
-              fallbackClassName
-            )}
+            className="flex items-center justify-center font-semibold text-violet-700 bg-violet-100 h-full w-full"
             delayMs={600}
           >
             {initials || alt.charAt(0)}
@@ -68,3 +61,5 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 )
 
 Avatar.displayName = 'Avatar'
+
+export { RadixAvatar }

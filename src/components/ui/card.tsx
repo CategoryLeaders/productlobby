@@ -4,26 +4,29 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  hover?: boolean
+  variant?: 'default' | 'elevated' | 'highlighted' | 'interactive'
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   (
     {
+      variant = 'default',
       className,
-      hover = false,
       ...props
     },
     ref
   ) => {
+    const variantStyles = {
+      default: 'bg-white border border-gray-100 shadow-card rounded-lg',
+      elevated: 'bg-white shadow-elevated rounded-xl',
+      highlighted: 'bg-violet-50 border border-violet-200 rounded-lg',
+      interactive: 'bg-white border border-gray-100 shadow-card hover:shadow-card-hover transition-shadow cursor-pointer rounded-lg',
+    }
+
     return (
       <div
         ref={ref}
-        className={cn(
-          'bg-white border border-gray-200 rounded-lg transition-shadow duration-200',
-          hover ? 'shadow-card hover:shadow-card-hover' : 'shadow-card',
-          className
-        )}
+        className={cn(variantStyles[variant], className)}
         {...props}
       />
     )
@@ -43,7 +46,7 @@ export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<
     return (
       <div
         ref={ref}
-        className={cn('px-6 py-4 border-b border-gray-200', className)}
+        className={cn('p-6 pb-0', className)}
         {...props}
       />
     )
@@ -66,7 +69,7 @@ export const CardTitle = React.forwardRef<
     return (
       <h3
         ref={ref}
-        className={cn('text-lg font-semibold text-foreground', className)}
+        className={cn('text-lg font-semibold text-foreground font-display', className)}
         {...props}
       />
     )
@@ -109,7 +112,7 @@ export const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes
     return (
       <div
         ref={ref}
-        className={cn('px-6 py-4', className)}
+        className={cn('p-6', className)}
         {...props}
       />
     )
@@ -129,7 +132,7 @@ export const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<
     return (
       <div
         ref={ref}
-        className={cn('px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg', className)}
+        className={cn('p-6 pt-0', className)}
         {...props}
       />
     )

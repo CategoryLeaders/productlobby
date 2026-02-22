@@ -3,8 +3,7 @@
 import React, { forwardRef, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
-export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   error?: string
   helperText?: string
@@ -62,11 +61,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           disabled={disabled}
           className={cn(
-            'w-full px-3 py-2 rounded-lg border border-gray-300 text-foreground placeholder:text-gray-400 transition-colors duration-200 resize-none',
-            'focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent',
+            'w-full px-3.5 py-2.5 min-h-[80px] text-base border border-gray-300 text-foreground placeholder:text-gray-400 transition-colors duration-200 resize-none rounded-md',
+            'focus:outline-none focus:border-violet-600 focus:ring-3 focus:ring-violet-100',
             'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
             autoGrow && 'overflow-hidden',
-            error && 'border-red-500 focus:ring-red-500',
+            error && 'border-red-500 focus:ring-red-100 focus:border-red-500',
             className
           )}
           {...props}

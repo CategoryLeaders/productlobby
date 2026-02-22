@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
   description: 'Lobby for the products and features you want. Aggregate demand, influence brands, and turn your ideas into reality on ProductLobby.',
   keywords: ['product requests', 'demand aggregation', 'crowdfunding', 'brand engagement', 'product lobby', 'feature requests'],
-  metadataBase: new URL('https://productlobby.vercel.app'),
+  metadataBase: new URL('https://www.productlobby.com'),
   openGraph: {
     type: 'website',
     locale: 'en_GB',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     description: 'Lobby for the products and features you want. Aggregate demand, influence brands, and turn your ideas into reality.',
     images: [
       {
-        url: '/og-image.png',
+        url: '/brand/og/productlobby-og-1200x630.png',
         width: 1200,
         height: 630,
         alt: 'ProductLobby — Your Ideas, Their Products',
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'ProductLobby — Your Ideas, Their Products',
     description: 'Lobby for the products and features you want. Aggregate demand, influence brands, and turn your ideas into reality.',
-    images: ['/og-image.png'],
+    images: ['/brand/og/productlobby-og-1200x630.png'],
   },
   robots: {
     index: true,
@@ -68,8 +68,18 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/brand/icon/productlobby-favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/icon/productlobby-icon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/icon/productlobby-icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/brand/icon/apple-touch-icon-180x180.png',
+  },
+  manifest: '/manifest.json',
+  other: {
+    'theme-color': '#7C3AED',
+    'msapplication-TileColor': '#7C3AED',
   },
 }
 

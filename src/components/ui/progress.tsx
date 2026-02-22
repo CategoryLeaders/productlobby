@@ -4,22 +4,11 @@ import React from 'react'
 import * as RadixProgress from '@radix-ui/react-progress'
 import { cn } from '@/lib/utils'
 
-type ProgressVariant = 'violet' | 'lime' | 'green'
-
-export interface ProgressProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+export interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
   value: number
   max?: number
-  variant?: ProgressVariant
   label?: string
   showPercentage?: boolean
-  animated?: boolean
-}
-
-const variantStyles: Record<ProgressVariant, string> = {
-  violet: 'bg-violet-600',
-  lime: 'bg-lime-500',
-  green: 'bg-green-500',
 }
 
 export const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
@@ -27,10 +16,8 @@ export const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
     {
       value,
       max = 100,
-      variant = 'violet',
       label,
       showPercentage = false,
-      animated = true,
       className,
       ...props
     },
@@ -57,14 +44,10 @@ export const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         <RadixProgress.Root
           value={value}
           max={max}
-          className="w-full h-2 bg-gray-200 rounded-full overflow-hidden"
+          className="w-full bg-gray-100 h-2 rounded-full overflow-hidden"
         >
           <RadixProgress.Indicator
-            className={cn(
-              'h-full transition-all duration-300',
-              animated && 'animate-pulse-subtle',
-              variantStyles[variant]
-            )}
+            className="h-full bg-violet-600 rounded-full transition-all"
             style={{ width: `${percentage}%` }}
           />
         </RadixProgress.Root>
