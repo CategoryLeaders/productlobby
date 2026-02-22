@@ -57,6 +57,7 @@ interface ApiCampaign {
   creator: {
     id: string
     displayName: string
+    handle?: string
     avatar?: string
     twitterHandle?: string
     instagramHandle?: string
@@ -399,18 +400,22 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
               {/* Creator Info & Dates */}
               <div className="flex flex-col gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <Avatar
-                    src={campaign.creator.avatar}
-                    alt={campaign.creator.displayName}
-                    initials={creatorInitials}
-                    size="sm"
-                  />
-                  <div>
-                    <p className="font-medium text-foreground">{campaign.creator.displayName}</p>
-                    <p className="text-sm text-gray-600">Campaign Creator</p>
+                <Link href={campaign.creator.handle ? `/profile/${campaign.creator.handle}` : '#'}>
+                  <div className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <Avatar
+                      src={campaign.creator.avatar}
+                      alt={campaign.creator.displayName}
+                      initials={creatorInitials}
+                      size="sm"
+                    />
+                    <div>
+                      <p className="font-medium text-foreground text-violet-600 hover:text-violet-700">
+                        {campaign.creator.displayName}
+                      </p>
+                      <p className="text-sm text-gray-600">Campaign Creator</p>
+                    </div>
                   </div>
-                </div>
+                </Link>
 
                 <div className="flex gap-6 text-sm text-gray-600">
                   <span>Created {formatDate(campaign.createdAt)}</span>
@@ -862,7 +867,11 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       size="md"
                       className="w-full justify-center gap-2"
                       onClick={() => {
-                        navigator.clipboard.writeText(window.location.href)
+                        const shareUrl = new URL(window.location.href)
+                        shareUrl.searchParams.set('utm_source', 'campaign_share')
+                        shareUrl.searchParams.set('utm_medium', 'copy_link')
+                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
+                        navigator.clipboard.writeText(shareUrl.toString())
                       }}
                     >
                       <Share2 className="w-4 h-4" />
@@ -873,8 +882,12 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       size="md"
                       className="w-full justify-center gap-2"
                       onClick={() => {
-                        const text = encodeURIComponent(`Check out "${campaign.title}" on ProductLobby!`)
-                        const url = encodeURIComponent(window.location.href)
+                        const shareUrl = new URL(window.location.href)
+                        shareUrl.searchParams.set('utm_source', 'twitter')
+                        shareUrl.searchParams.set('utm_medium', 'social')
+                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
+                        const text = encodeURIComponent(`I just lobbied for "${campaign.title}" on ProductLobby 🎯\n\nJoin me in showing brands there's real demand for products people actually want!`)
+                        const url = encodeURIComponent(shareUrl.toString())
                         window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
                       }}
                     >
@@ -886,7 +899,11 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       size="md"
                       className="w-full justify-center gap-2"
                       onClick={() => {
-                        const url = encodeURIComponent(window.location.href)
+                        const shareUrl = new URL(window.location.href)
+                        shareUrl.searchParams.set('utm_source', 'facebook')
+                        shareUrl.searchParams.set('utm_medium', 'social')
+                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
+                        const url = encodeURIComponent(shareUrl.toString())
                         window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
                       }}
                     >
@@ -898,7 +915,27 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       size="md"
                       className="w-full justify-center gap-2"
                       onClick={() => {
-                        const text = encodeURIComponent(`Check out "${campaign.title}" on ProductLobby! ${window.location.href}`)
+                        const shareUrl = new URL(window.location.href)
+                        shareUrl.searchParams.set('utm_source', 'linkedin')
+                        shareUrl.searchParams.set('utm_medium', 'social')
+                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
+                        const text = encodeURIComponent(`I'm lobbying for "${campaign.title}" on ProductLobby. Check it out and add your voice!\n\n${shareUrl.toString()}`)
+                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl.toString())}`, '_blank')
+                      }}
+                    >
+                      <Megaphone className="w-4 h-4" />
+                      LinkedIn
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      className="w-full justify-center gap-2"
+                      onClick={() => {
+                        const shareUrl = new URL(window.location.href)
+                        shareUrl.searchParams.set('utm_source', 'whatsapp')
+                        shareUrl.searchParams.set('utm_medium', 'social')
+                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
+                        const text = encodeURIComponent(`Check out "${campaign.title}" on ProductLobby! 🎯\n\nAggregate demand. Influence brands.\n\n${shareUrl.toString()}`)
                         window.open(`https://wa.me/?text=${text}`, '_blank')
                       }}
                     >
@@ -910,8 +947,12 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                       size="md"
                       className="w-full justify-center gap-2"
                       onClick={() => {
+                        const shareUrl = new URL(window.location.href)
+                        shareUrl.searchParams.set('utm_source', 'email')
+                        shareUrl.searchParams.set('utm_medium', 'direct')
+                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
                         const subject = encodeURIComponent(`Check out this campaign: ${campaign.title}`)
-                        const body = encodeURIComponent(`I found this great campaign on ProductLobby:\n\n${campaign.title}\n${campaign.description.slice(0, 200)}\n\n${window.location.href}`)
+                        const body = encodeURIComponent(`I found this great campaign on ProductLobby:\n\n${campaign.title}\n${campaign.description.slice(0, 200)}...\n\nAggregate demand. Influence brands.\n\n${shareUrl.toString()}`)
                         window.open(`mailto:?subject=${subject}&body=${body}`)
                       }}
                     >

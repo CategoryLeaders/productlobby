@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
               id: true,
               displayName: true,
               handle: true,
+              avatar: true,
+              email: true,
             },
           },
           targetedBrand: {

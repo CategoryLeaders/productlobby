@@ -28,6 +28,7 @@ export interface CampaignCardProps {
   creator: {
     id: string
     displayName: string
+    handle?: string
     email: string
     avatar?: string
   }
@@ -185,20 +186,39 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
           </div>
 
           {/* Creator Info */}
-          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200">
-            <Avatar
-              src={creator.avatar}
-              alt={creator.displayName}
-              initials={creatorInitials}
-              size="sm"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {creator.displayName || creator.email}
-              </p>
-              <p className="text-xs text-gray-500">Creator</p>
+          {creator.handle ? (
+            <Link href={`/profile/${creator.handle}`}>
+              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 hover:opacity-80 transition-opacity cursor-pointer">
+                <Avatar
+                  src={creator.avatar}
+                  alt={creator.displayName}
+                  initials={creatorInitials}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-violet-600 truncate hover:text-violet-700">
+                    {creator.displayName || creator.email}
+                  </p>
+                  <p className="text-xs text-gray-500">Creator</p>
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200">
+              <Avatar
+                src={creator.avatar}
+                alt={creator.displayName}
+                initials={creatorInitials}
+                size="sm"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {creator.displayName || creator.email}
+                </p>
+                <p className="text-xs text-gray-500">Creator</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Brand Target (if any) */}
           {brand && (

@@ -20,6 +20,7 @@ export async function GET(
           select: {
             id: true,
             displayName: true,
+            handle: true,
             avatar: true,
             twitterHandle: true,
             instagramHandle: true,
@@ -346,6 +347,7 @@ export async function PATCH(
           select: {
             id: true,
             displayName: true,
+            handle: true,
             avatar: true,
             twitterHandle: true,
             instagramHandle: true,
