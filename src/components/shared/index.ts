@@ -20,6 +20,8 @@ export { SignalGauge } from './signal-gauge'
 export type { } from './signal-gauge'
 export { LobbyBreakdownBar } from './lobby-breakdown-bar'
 export type { } from './lobby-breakdown-bar'
+export { BusinessCaseCard } from './business-case-card'
+export type { } from './business-case-card'
 export { EditProfileForm } from './edit-profile-form'
 export type { } from './edit-profile-form'
 export {
