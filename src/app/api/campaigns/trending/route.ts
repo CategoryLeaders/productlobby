@@ -5,9 +5,10 @@ import { prisma } from '@/lib/db'
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const limit = Math.min(parseInt(searchParams.get('limit') || '6'), 50)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
 
-    // First try campaigns with signal scores, then fall back to those with lobby activity
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
     const campaigns = await prisma.campaign.findMany({
       where: {
         status: 'LIVE',
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
         { signalScore: { sort: 'desc', nulls: 'last' } },
         { createdAt: 'desc' },
       ],
-      take: limit,
+      take: limit * 2,
       include: {
         creator: {
           select: {
@@ -37,61 +38,53 @@ export async function GET(request: NextRequest) {
           take: 1,
           orderBy: { order: 'asc' },
         },
+        _count: {
+          select: {
+            lobbies: true,
+            follows: true,
+          },
+        },
       },
     })
 
-    // Get verified lobby counts for each campaign
-    const campaignsWithStats = await Promise.all(
-      campaigns.map(async (campaign: any) => {
-        const [verifiedLobbyCount, intensityDistribution] = await Promise.all([
-          prisma.lobby.count({
-            where: {
-              campaignId: campaign.id,
-              status: 'VERIFIED',
-            },
-          }),
-          prisma.lobby.groupBy({
-            by: ['intensity'],
-            where: {
-              campaignId: campaign.id,
-              status: 'VERIFIED',
-            },
-            _count: true,
-          }),
-        ])
-
-        // Build intensity distribution object
-        const intensityDistributionObject: Record<string, number> = {
-          NEAT_IDEA: 0,
-          PROBABLY_BUY: 0,
-          TAKE_MY_MONEY: 0,
-        }
-
-        intensityDistribution.forEach((item: any) => {
-          intensityDistributionObject[item.intensity] = item._count
-        })
+    const campaignsWithStats = campaigns
+      .map((campaign: any) => {
+        const signalScore = campaign.signalScore || 0
+        const lobbyCount = campaign._count?.lobbies || 0
+        const trendScore = signalScore * 0.6 + lobbyCount * 0.4
 
         return {
-          ...campaign,
-          verifiedLobbiesCount: verifiedLobbyCount,
-          lobbyStats: {
-            totalLobbies: verifiedLobbyCount,
-            intensityDistribution: intensityDistributionObject,
-          },
-          firstMediaImage: campaign.media[0] || null,
+          id: campaign.id,
+          title: campaign.title,
+          slug: campaign.slug,
+          description: campaign.description,
+          category: campaign.category,
+          signalScore: signalScore,
+          createdAt: campaign.createdAt,
+          updatedAt: campaign.updatedAt,
+          creator: campaign.creator,
+          targetedBrand: campaign.targetedBrand,
+          media: campaign.media,
+          lobbyCount: lobbyCount,
+          followCount: campaign._count?.follows || 0,
+          trendScore: trendScore,
+          image: campaign.media[0]?.url || null,
+          trendPercentage: Math.min(100, Math.round(signalScore * 1.2)) || 0,
         }
       })
-    )
+      .sort((a: any, b: any) => b.trendScore - a.trendScore)
+      .slice(0, limit)
 
     return NextResponse.json({
-      campaigns: campaignsWithStats,
+      success: true,
+      data: campaignsWithStats,
       total: campaignsWithStats.length,
       limit,
     })
   } catch (error) {
     console.error('[GET /api/campaigns/trending]', error)
     return NextResponse.json(
-      { error: 'Failed to fetch trending campaigns' },
+      { success: false, error: 'Failed to fetch trending campaigns' },
       { status: 500 }
     )
   }

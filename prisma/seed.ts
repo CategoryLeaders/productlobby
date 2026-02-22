@@ -1,0 +1,170 @@
+import { prisma } from '@/lib/db'
+import { seedCampaigns } from './seed-campaigns'
+
+async function main() {
+  try {
+    console.log('Starting database seed...')
+
+    // Clear existing data if needed (be careful with this!)
+    const clearData = process.env.SEED_CLEAR === 'true'
+    if (clearData) {
+      console.log('Clearing existing seed data...')
+      await prisma.comment.deleteMany({})
+      await prisma.share.deleteMany({})
+      await prisma.lobby.deleteMany({})
+      await prisma.campaign.deleteMany({})
+      await prisma.user.deleteMany({})
+      console.log('Cleared existing data')
+    }
+
+    // Create demo users
+    console.log('Creating demo users...')
+    const demoUsers = await Promise.all([
+      prisma.user.upsert({
+        where: { email: 'sarah@example.com' },
+        update: {},
+        create: {
+          email: 'sarah@example.com',
+          displayName: 'Sarah Chen',
+          handle: 'sarah_innovations',
+          bio: 'Product designer & sustainability advocate. Always looking for better solutions.',
+          emailVerified: true,
+          phoneVerified: false,
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'marcus@example.com' },
+        update: {},
+        create: {
+          email: 'marcus@example.com',
+          displayName: 'Marcus Williams',
+          handle: 'marcus_tech',
+          bio: 'Tech enthusiast and early adopter. Loves smart home products.',
+          emailVerified: true,
+          phoneVerified: false,
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'elena@example.com' },
+        update: {},
+        create: {
+          email: 'elena@example.com',
+          displayName: 'Elena Rodriguez',
+          handle: 'elena_wellness',
+          bio: 'Health coach focused on sustainable living and wellness.',
+          emailVerified: true,
+          phoneVerified: false,
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'james@example.com' },
+        update: {},
+        create: {
+          email: 'james@example.com',
+          displayName: 'James Liu',
+          handle: 'james_maker',
+          bio: 'DIY enthusiast and woodworker. Workshop organization is my passion.',
+          emailVerified: true,
+          phoneVerified: false,
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'amit@example.com' },
+        update: {},
+        create: {
+          email: 'amit@example.com',
+          displayName: 'Amit Patel',
+          handle: 'amit_travel',
+          bio: 'Frequent traveler looking for products that make trips easier.',
+          emailVerified: true,
+          phoneVerified: false,
+        },
+      }),
+    ])
+
+    console.log('Created 5 demo users')
+
+    // Create additional community members
+    console.log('Creating community members...')
+    const communityEmails = [
+      'alex@example.com',
+      'beth@example.com',
+      'carlos@example.com',
+      'diana@example.com',
+      'ethan@example.com',
+      'fiona@example.com',
+      'george@example.com',
+      'hannah@example.com',
+      'ivan@example.com',
+      'julia@example.com',
+    ]
+
+    const firstNames = [
+      'Alex',
+      'Beth',
+      'Carlos',
+      'Diana',
+      'Ethan',
+      'Fiona',
+      'George',
+      'Hannah',
+      'Ivan',
+      'Julia',
+    ]
+    const handles = [
+      'alex_advocate',
+      'beth_builder',
+      'carlos_creator',
+      'diana_designer',
+      'ethan_explorer',
+      'fiona_founder',
+      'george_green',
+      'hannah_hacker',
+      'ivan_innovator',
+      'julia_judge',
+    ]
+
+    const communityUsers = await Promise.all(
+      communityEmails.map((email, idx) =>
+        prisma.user.upsert({
+          where: { email },
+          update: {},
+          create: {
+            email,
+            displayName: firstNames[idx],
+            handle: handles[idx],
+            bio: 'Community member interested in innovative products',
+            emailVerified: true,
+            phoneVerified: false,
+          },
+        })
+      )
+    )
+
+    console.log('Created 10 community members')
+
+    // Seed campaigns with all users
+    const allUsers = [...demoUsers, ...communityUsers]
+    await seedCampaigns(demoUsers.map((u) => ({ id: u.id, handle: u.handle || u.displayName })))
+
+    console.log('Database seeding complete!')
+    console.log(`Total users: ${allUsers.length}`)
+
+    // Print summary
+    const campaignCount = await prisma.campaign.count()
+    const lobbyCount = await prisma.lobby.count()
+    const commentCount = await prisma.comment.count()
+
+    console.log('\nSeed Summary:')
+    console.log(`- Campaigns: ${campaignCount}`)
+    console.log(`- Lobbies: ${lobbyCount}`)
+    console.log(`- Comments: ${commentCount}`)
+  } catch (error) {
+    console.error('Seeding error:', error)
+    process.exit(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+main()

@@ -15,9 +15,52 @@ const PROTECTED_ROUTES = [
 // Routes only accessible when NOT authenticated
 const AUTH_ROUTES = ['/login', '/signup']
 
+// Rate limiting store (in-memory)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+
+const RATE_LIMIT_WINDOW_MS = 60000
+const RATE_LIMIT_MAX_REQUESTS = 100
+
+function getRateLimitKey(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown'
+  return ip
+}
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now()
+  const limit = rateLimitStore.get(key)
+
+  if (!limit || now > limit.resetTime) {
+    rateLimitStore.set(key, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS,
+    })
+    return true
+  }
+
+  if (limit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false
+  }
+
+  limit.count++
+  return true
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const sessionToken = request.cookies.get('session_token')?.value
+
+  // Rate limiting for API routes
+  if (pathname.startsWith('/api/')) {
+    const rateLimitKey = getRateLimitKey(request)
+    if (!checkRateLimit(rateLimitKey)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
+  }
 
   // Check if route requires authentication
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
@@ -41,18 +84,74 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/campaigns', request.url))
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+
+  // Add security headers
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=(), payment=()'
+  )
+  response.headers.set(
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains'
+  )
+
+  // Content Security Policy
+  const cspHeader = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.vercel-analytics.com https://va.vercel-analytics.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
+    "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com data:",
+    "img-src 'self' https: data:",
+    "media-src 'self' https:",
+    "connect-src 'self' https://api.productlobby.com https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://cdn.vercel-analytics.com https://va.vercel-analytics.com",
+    "frame-src 'self' https://js.stripe.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    'upgrade-insecure-requests',
+  ].join('; ')
+
+  response.headers.set('Content-Security-Policy', cspHeader)
+
+  // CORS headers (for API routes)
+  if (pathname.startsWith('/api/')) {
+    const origin = request.headers.get('origin')
+    const allowedOrigins = [
+      'https://www.productlobby.com',
+      'https://productlobby.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ]
+
+    if (origin && allowedOrigins.includes(origin)) {
+      response.headers.set('Access-Control-Allow-Origin', origin)
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-CSRF-Token'
+      )
+      response.headers.set('Access-Control-Allow-Credentials', 'true')
+      response.headers.set('Access-Control-Max-Age', '86400')
+    }
+  }
+
+  return response
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api routes
-     * - static files
-     * - images
-     * - favicon
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|og-image.png|apple-touch-icon.png).*)',
+    '/((?!_next/static|_next/image|favicon.ico|og-image.png|apple-touch-icon.png).*)',
   ],
 }

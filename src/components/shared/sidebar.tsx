@@ -39,9 +39,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
         ]
       case 'brand':
         return [
-          { label: 'Dashboard', href: '/brand', icon: Home },
-          { label: 'Campaigns', href: '/brand/campaigns', icon: Megaphone },
-          { label: 'Leaderboard', href: '/brand/leaderboard', icon: Trophy },
+          { label: 'Dashboard', href: '/brand/dashboard', icon: Home },
+          { label: 'Campaigns', href: '/brand/dashboard/campaigns', icon: Megaphone },
+          { label: 'Reports', href: '/brand/dashboard/reports', icon: BarChart3 },
           { label: 'Settings', href: '/brand/settings', icon: Settings },
         ]
       case 'supporter':
