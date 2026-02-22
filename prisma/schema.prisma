@@ -46,10 +46,12 @@ model User {
   creatorRewards         CreatorReward[]
   heroRewards            HeroReward[]
   referralLinks          ReferralLink[]
+  shares                 Share[]
   contributionEvents     ContributionEvent[]
   notifications          Notification[]
   campaignUpdates        CampaignUpdate[]
   favourites             Favourite[]
+  comments               Comment[]
 
   @@map("users")
 }
@@ -231,9 +233,11 @@ model Campaign {
   follows             Follow[]
   creatorRewards      CreatorReward[]
   heroRewards         HeroReward[]
+  shares              Share[]
   contributionEvents  ContributionEvent[]
   referralLinks       ReferralLink[]
   favourites          Favourite[]
+  comments            Comment[]
 
   @@unique([slug])
   @@index([status])
@@ -749,6 +753,24 @@ model ReferralLink {
   @@map("referral_links")
 }
 
+model Share {
+  id             String   @id @default(uuid())
+  campaignId     String   @map("campaign_id")
+  userId         String?  @map("user_id")
+  platform       String   // TWITTER, FACEBOOK, WHATSAPP, EMAIL, COPY_LINK, REFERRAL
+  referralCode   String?  @unique @map("referral_code")
+  clickCount     Int      @default(0) @map("click_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  campaign       Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([userId])
+  @@index([referralCode])
+  @@map("shares")
+}
+
 // ============================================================================
 // FAVOURITES
 // ============================================================================
@@ -766,6 +788,31 @@ model Favourite {
   @@index([userId])
   @@index([campaignId])
   @@map("favourites")
+}
+
+// ============================================================================
+// COMMENTS
+// ============================================================================
+
+model Comment {
+  id         String    @id @default(uuid())
+  content    String
+  campaignId String    @map("campaign_id")
+  userId     String    @map("user_id")
+  parentId   String?   @map("parent_id")
+  status     String    @default("VISIBLE") // VISIBLE, HIDDEN, FLAGGED
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    Comment[] @relation("CommentReplies")
+
+  @@index([campaignId, createdAt])
+  @@index([userId])
+  @@index([parentId])
+  @@map("comments")
 }
 
 // ============================================================================

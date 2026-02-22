@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/ui/logo'
+import { NotificationBell } from './notification-bell'
 import {
   Search,
   Menu,
   X,
-  Bell,
   User,
   ChevronDown,
   LogOut,
@@ -108,10 +108,7 @@ export const Navbar: React.FC = () => {
                 </button>
 
                 {/* Notification Bell */}
-                <button className="p-2 text-foreground hover:bg-gray-100 rounded-lg transition-colors duration-200 relative">
-                  <Bell size={20} />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
+                <NotificationBell />
 
                 {/* User Menu */}
                 <div ref={userMenuRef} className="relative">
