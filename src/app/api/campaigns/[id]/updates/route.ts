@@ -48,6 +48,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         creator: {
           select: {
             id: true,
+            displayName: true,
+            avatar: true,
+            handle: true,
           },
         },
         reactions: {
@@ -103,6 +106,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           brandName: brand?.name || 'Unknown Brand',
           brandLogo: brand?.logo,
           brandVerified: brand?.status === 'VERIFIED',
+          creatorName: update.creator.displayName,
+          creatorAvatar: update.creator.avatar,
+          creatorHandle: update.creator.handle,
           likeCount: update.reactions.length,
           commentCount: update._count.comments,
           userReaction: userReaction as
@@ -166,6 +172,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       select: {
         id: true,
         title: true,
+        creatorUserId: true,
         targetedBrand: {
           select: {
             id: true,
@@ -190,9 +197,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     })
 
-    if (!isBrandMember) {
+    const isCampaignCreator = campaign.creatorUserId === user.id
+
+    if (!isBrandMember && !isCampaignCreator) {
       return NextResponse.json(
-        { success: false, error: 'Only brand members can post updates' },
+        { success: false, error: 'Only brand members and campaign creator can post updates' },
         { status: 403 }
       )
     }

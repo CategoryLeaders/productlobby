@@ -13,8 +13,11 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { SocialLinks } from '@/components/shared/social-links'
 import { LobbyFlow } from './lobby-flow'
+import { CampaignUpdatesFeed } from '@/components/campaigns/campaign-updates-feed'
+import { UpdateCreationForm } from '@/components/campaigns/update-creation-form'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
+import { getCurrentUser } from '@/lib/auth'
 
 interface CampaignDetailPageProps {
   params: {
@@ -190,6 +193,9 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isLobbyFlowOpen, setIsLobbyFlowOpen] = useState(false)
+  const [user, setUser] = useState<any | null>(null)
+  const [userLoading, setUserLoading] = useState(true)
+  const [updateRefresh, setUpdateRefresh] = useState(0)
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -220,6 +226,24 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
     fetchCampaign()
   }, [params.slug])
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+        }
+      } catch (err) {
+        // User not logged in or error fetching user
+      } finally {
+        setUserLoading(false)
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   if (loading) {
     return <LoadingSpinner />
@@ -671,24 +695,13 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
                   {/* Tab 4: Updates */}
                   <TabsContent value="updates" className="py-8">
-                    {updates.length > 0 ? (
-                      <div className="space-y-6">
-                        {updates.map((update) => (
-                          <div key={update.id} className="border-l-4 border-violet-600 pl-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-display font-semibold text-foreground">{update.title}</h4>
-                              <span className="text-xs text-gray-500">{formatDate(update.date)}</span>
-                            </div>
-                            <p className="text-gray-700 mb-2">{update.content}</p>
-                            <p className="text-xs text-gray-600">By {update.author}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <p className="text-gray-600">No updates yet.</p>
-                      </div>
+                    {user && campaign && user.id === campaign.creator.id && (
+                      <UpdateCreationForm
+                        campaignId={campaign.id}
+                        onUpdatePublished={() => setUpdateRefresh((prev) => prev + 1)}
+                      />
                     )}
+                    <CampaignUpdatesFeed campaignId={campaign?.id || ''} key={updateRefresh} />
                   </TabsContent>
 
                   {/* Tab 5: Brand Response */}
