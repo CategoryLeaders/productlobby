@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
+import { renderWithMentions } from '@/lib/mentions'
 
 interface Update {
   id: string
@@ -226,7 +227,7 @@ export function CampaignUpdatesFeed({ campaignId, campaignCreatorId }: CampaignU
           {/* Update content */}
           <div className="mb-4">
             <h3 className="font-bold text-lg text-foreground mb-2">{update.title}</h3>
-            <p className="text-gray-700 leading-relaxed">{update.content}</p>
+            <p className="text-gray-700 leading-relaxed">{renderWithMentions(update.content)}</p>
           </div>
 
           {/* Images if any */}
