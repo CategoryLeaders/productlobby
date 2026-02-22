@@ -17,6 +17,8 @@ import { CampaignUpdatesFeed } from '@/components/campaigns/campaign-updates-fee
 import { UpdateCreationForm } from '@/components/campaigns/update-creation-form'
 import { CampaignMilestones } from '@/components/campaigns/campaign-milestones'
 import { CampaignConfidenceScore } from '@/components/campaigns/campaign-confidence-score'
+import { PollCreationForm } from '@/components/campaigns/poll-creation-form'
+import { CampaignPollsFeed } from '@/components/campaigns/campaign-polls-feed'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
 import { getCurrentUser } from '@/lib/auth'
@@ -207,6 +209,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
   const [user, setUser] = useState<any | null>(null)
   const [userLoading, setUserLoading] = useState(true)
   const [updateRefresh, setUpdateRefresh] = useState(0)
+  const [pollRefresh, setPollRefresh] = useState(0)
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -727,11 +730,22 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                   {/* Tab 4: Updates */}
                   <TabsContent value="updates" className="py-8">
                     {user && campaign && user.id === campaign.creator.id && (
-                      <UpdateCreationForm
-                        campaignId={campaign.id}
-                        onUpdatePublished={() => setUpdateRefresh((prev) => prev + 1)}
-                      />
+                      <>
+                        <UpdateCreationForm
+                          campaignId={campaign.id}
+                          onUpdatePublished={() => setUpdateRefresh((prev) => prev + 1)}
+                        />
+                        <PollCreationForm
+                          campaignId={campaign.id}
+                          onPollCreated={() => setPollRefresh((prev) => prev + 1)}
+                        />
+                      </>
                     )}
+                    <CampaignPollsFeed
+                      campaignId={campaign?.id || ''}
+                      currentUserId={user?.id || null}
+                      key={`polls-${pollRefresh}`}
+                    />
                     <CampaignUpdatesFeed campaignId={campaign?.id || ''} key={updateRefresh} />
                   </TabsContent>
 
