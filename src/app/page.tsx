@@ -7,6 +7,7 @@ import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
 import { CampaignCard, type CampaignCardProps } from '@/components/shared/campaign-card'
 import { WebsiteJsonLd, OrganizationJsonLd } from '@/components/shared/json-ld'
+import { Button } from '@/components/ui/button'
 
 export default function HomePage() {
   const [trendingCampaigns, setTrendingCampaigns] = useState<CampaignCardProps[]>([])
@@ -81,25 +82,23 @@ export default function HomePage() {
       <section className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 font-display">
           Turn Your Wish List Into
-          <span className="text-primary-600"> Real Products</span>
+          <span className="text-violet-600"> Real Products</span>
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
           ProductLobby lets you demand the products and features you want.
           Rally support, show buying intent, and get brands to actually listen.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/campaigns"
-            className="bg-primary-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary-700 transition flex items-center justify-center gap-2"
-          >
-            Explore Campaigns
-            <ArrowRight className="w-5 h-5" />
+          <Link href="/campaigns">
+            <Button variant="primary" size="lg" className="flex items-center justify-center gap-2">
+              Explore Campaigns
+              <ArrowRight className="w-5 h-5" />
+            </Button>
           </Link>
-          <Link
-            href="/campaigns/create"
-            className="border-2 border-primary-600 text-primary-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary-50 transition"
-          >
-            Create a Campaign
+          <Link href="/campaigns/create">
+            <Button variant="outline" size="lg">
+              Create a Campaign
+            </Button>
           </Link>
         </div>
       </section>
@@ -109,8 +108,8 @@ export default function HomePage() {
         <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
         <div className="grid md:grid-cols-4 gap-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Target className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Target className="w-8 h-8 text-violet-600" />
             </div>
             <h3 className="font-semibold text-lg mb-2">Create a Campaign</h3>
             <p className="text-gray-600">
@@ -118,8 +117,8 @@ export default function HomePage() {
             </p>
           </div>
           <div className="text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-violet-600" />
             </div>
             <h3 className="font-semibold text-lg mb-2">Gather Support</h3>
             <p className="text-gray-600">
@@ -127,8 +126,8 @@ export default function HomePage() {
             </p>
           </div>
           <div className="text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <TrendingUp className="w-8 h-8 text-violet-600" />
             </div>
             <h3 className="font-semibold text-lg mb-2">Brands Engage</h3>
             <p className="text-gray-600">
@@ -136,8 +135,8 @@ export default function HomePage() {
             </p>
           </div>
           <div className="text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CreditCard className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CreditCard className="w-8 h-8 text-violet-600" />
             </div>
             <h3 className="font-semibold text-lg mb-2">Binding Offers</h3>
             <p className="text-gray-600">
@@ -157,7 +156,7 @@ export default function HomePage() {
             </div>
             <Link
               href="/campaigns?sort=trending"
-              className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold transition"
+              className="flex items-center gap-2 text-violet-600 hover:text-violet-700 font-semibold transition"
             >
               View All
               <ArrowRight className="w-4 h-4" />
@@ -168,7 +167,7 @@ export default function HomePage() {
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-4" />
+              <Loader2 className="w-8 h-8 text-violet-600 animate-spin mx-auto mb-4" />
               <p className="text-gray-600">Loading trending campaigns...</p>
             </div>
           </div>
@@ -187,7 +186,7 @@ export default function HomePage() {
             <p className="text-gray-600">No campaigns yet. Be the first to create one!</p>
             <Link
               href="/campaigns/create"
-              className="mt-4 inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition font-semibold"
+              className="mt-4 inline-flex items-center gap-2 bg-violet-600 text-white px-6 py-2 rounded-lg hover:bg-violet-700 transition font-semibold"
             >
               Create a Campaign
               <ArrowRight className="w-4 h-4" />
@@ -229,15 +228,15 @@ export default function HomePage() {
 
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <div className="bg-primary-600 rounded-2xl p-12 text-white">
+        <div className="bg-violet-600 rounded-2xl p-12 text-white">
           <h2 className="text-3xl font-bold mb-4">Ready to Make Your Voice Heard?</h2>
-          <p className="text-primary-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-violet-100 mb-8 max-w-2xl mx-auto">
             Join thousands of people who are tired of wishing and start demanding.
             Create your first campaign in minutes.
           </p>
           <Link
             href="/campaigns/create"
-            className="bg-white text-primary-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary-50 transition inline-flex items-center gap-2"
+            className="bg-white text-violet-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-violet-50 transition inline-flex items-center gap-2"
           >
             Start Your Campaign
             <ArrowRight className="w-5 h-5" />

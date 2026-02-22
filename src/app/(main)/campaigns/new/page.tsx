@@ -168,8 +168,8 @@ export default function NewCampaignPage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-sm border p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-violet-600" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Create a Campaign</h1>
             <p className="text-gray-600 mt-2">
@@ -180,7 +180,7 @@ export default function NewCampaignPage() {
           {needsAuth && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-center">
               <p className="text-sm font-medium text-yellow-800 mb-2">You need to sign in to create a campaign</p>
-              <a href="/login" className="text-sm text-primary-600 hover:text-primary-700 font-medium underline">
+              <a href="/login" className="text-sm text-violet-600 hover:text-violet-700 font-medium underline">
                 Sign in or create an account
               </a>
             </div>
@@ -198,11 +198,11 @@ export default function NewCampaignPage() {
                   onClick={() => setForm({ ...form, template: 'VARIANT' })}
                   className={`p-4 rounded-xl border-2 text-left transition ${
                     form.template === 'VARIANT'
-                      ? 'border-primary-500 bg-primary-50'
+                      ? 'border-violet-500 bg-violet-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <Target className="w-6 h-6 text-primary-600 mb-2" />
+                  <Target className="w-6 h-6 text-violet-600 mb-2" />
                   <div className="font-medium">Product Variant</div>
                   <div className="text-sm text-gray-500 mt-1">
                     New size, color, or version of an existing product
@@ -213,11 +213,11 @@ export default function NewCampaignPage() {
                   onClick={() => setForm({ ...form, template: 'FEATURE' })}
                   className={`p-4 rounded-xl border-2 text-left transition ${
                     form.template === 'FEATURE'
-                      ? 'border-primary-500 bg-primary-50'
+                      ? 'border-violet-500 bg-violet-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <Sparkles className="w-6 h-6 text-primary-600 mb-2" />
+                  <Sparkles className="w-6 h-6 text-violet-600 mb-2" />
                   <div className="font-medium">Feature Request</div>
                   <div className="text-sm text-gray-500 mt-1">
                     New feature or improvement for an existing product
@@ -238,7 +238,7 @@ export default function NewCampaignPage() {
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Nike Air Max 90 in size 15 UK"
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition"
               />
             </div>
 
@@ -258,7 +258,7 @@ export default function NewCampaignPage() {
                 placeholder="Describe what you want and why. Be specific about the product, feature, or variant you'd like to see."
                 required
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition resize-none"
               />
               <div className="flex justify-between mt-1.5">
                 <p className="text-xs text-gray-400">
@@ -289,9 +289,9 @@ export default function NewCampaignPage() {
                 onDrop={handleDrop}
                 onClick={() => !heroImage && fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer ${
-                  isDragging ? 'border-primary-500 bg-primary-50' :
+                  isDragging ? 'border-violet-500 bg-violet-50' :
                   heroImage ? 'border-gray-200 bg-gray-50' :
-                  'border-gray-300 hover:border-primary-400 hover:bg-primary-50'
+                  'border-gray-300 hover:border-violet-400 hover:bg-violet-50'
                 }`}
               >
                 <input
@@ -303,7 +303,7 @@ export default function NewCampaignPage() {
                 />
                 {uploading && !heroImage ? (
                   <div className="py-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-2" />
+                    <Loader2 className="w-8 h-8 animate-spin text-violet-500 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">Uploading...</p>
                   </div>
                 ) : heroImage ? (
@@ -345,7 +345,7 @@ export default function NewCampaignPage() {
                         type="button"
                         onClick={() => additionalFileInputRef.current?.click()}
                         disabled={uploading}
-                        className="text-xs text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
+                        className="text-xs text-violet-600 hover:text-violet-700 font-medium disabled:opacity-50"
                       >
                         + Add more
                       </button>
@@ -396,7 +396,7 @@ export default function NewCampaignPage() {
                     onClick={() => setForm({ ...form, category: cat.value })}
                     className={`px-3.5 py-2 rounded-full text-sm font-medium border transition ${
                       form.category === cat.value
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        ? 'border-violet-500 bg-violet-50 text-violet-700'
                         : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
@@ -418,7 +418,7 @@ export default function NewCampaignPage() {
                 value={form.targetBrand}
                 onChange={(e) => setForm({ ...form, targetBrand: e.target.value })}
                 placeholder="e.g. Nike, Apple, Sony"
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition"
               />
               <p className="text-xs text-gray-400 mt-1.5">
                 Which brand should make this? Leave blank if you&apos;re open to any.
@@ -434,7 +434,7 @@ export default function NewCampaignPage() {
             <button
               type="submit"
               disabled={loading || uploading}
-              className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (
                 <>

@@ -18,9 +18,9 @@ export default function BrandsPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
-          <span className="inline-block bg-primary-100 text-primary-700 px-4 py-1 rounded-full text-sm font-medium mb-4">For Brands</span>
+          <span className="inline-block bg-violet-100 text-violet-700 px-4 py-1 rounded-full text-sm font-medium mb-4">For Brands</span>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 font-display">
-            Turn Consumer Demand Into <span className="text-primary-600">Guaranteed Revenue</span>
+            Turn Consumer Demand Into <span className="text-violet-600">Guaranteed Revenue</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             ProductLobby aggregates real consumer demand with binding purchase commitments.
@@ -30,22 +30,22 @@ export default function BrandsPage() {
 
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="text-center p-6">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-violet-600" />
             </div>
             <h3 className="font-semibold text-lg mb-2">Validated Demand</h3>
             <p className="text-gray-600">Our Signal Score algorithm separates noise from genuine buying intent. Only credible demand reaches your dashboard.</p>
           </div>
           <div className="text-center p-6">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-violet-600" />
             </div>
             <h3 className="font-semibold text-lg mb-2">Zero Risk</h3>
             <p className="text-gray-600">Set your own price and minimum quantity. Payments are only processed when your target is met.</p>
           </div>
           <div className="text-center p-6">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-violet-600" />
             </div>
             <h3 className="font-semibold text-lg mb-2">Direct Connection</h3>
             <p className="text-gray-600">Engage directly with your most passionate potential customers. Run polls, share updates, and build relationships.</p>
@@ -62,7 +62,7 @@ export default function BrandsPage() {
               { num: 4, title: 'Deliver & Earn', desc: 'Funds are released to you when the offer succeeds. You receive the full amount minus a small platform fee (3%).' },
             ].map((step) => (
               <div key={step.num} className="flex gap-6 items-start">
-                <div className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold shrink-0">{step.num}</div>
+                <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold shrink-0">{step.num}</div>
                 <div>
                   <h3 className="font-semibold text-lg mb-1">{step.title}</h3>
                   <p className="text-gray-600">{step.desc}</p>
@@ -91,10 +91,10 @@ export default function BrandsPage() {
           </div>
         </div>
 
-        <div className="text-center bg-primary-600 text-white rounded-2xl p-12">
+        <div className="text-center bg-violet-600 text-white rounded-2xl p-12">
           <h2 className="text-3xl font-bold mb-4">Ready to See What Your Customers Want?</h2>
-          <p className="text-primary-100 mb-8 max-w-2xl mx-auto">Claim your brand on ProductLobby and start turning consumer demand into revenue.</p>
-          <Link href="/login" className="bg-white text-primary-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary-50 transition inline-flex items-center gap-2">
+          <p className="text-violet-100 mb-8 max-w-2xl mx-auto">Claim your brand on ProductLobby and start turning consumer demand into revenue.</p>
+          <Link href="/login" className="bg-white text-violet-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-violet-50 transition inline-flex items-center gap-2">
             Get Started <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
