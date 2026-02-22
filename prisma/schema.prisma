@@ -70,6 +70,7 @@ model User {
   surveys Survey[] @relation("surveys")
   surveyResponses SurveyResponse[] @relation("surveyResponses")
   creatorRevenue CreatorRevenue?
+  bookmarks      Bookmark[]
 
   @@map("users")
 }
@@ -273,6 +274,7 @@ model Campaign {
   outreachQueue       OutreachQueue[]
   surveys             Survey[]
   revenueBreakdowns   RevenueBreakdown[]
+  bookmarks           Bookmark[]
 
   @@unique([slug])
   @@index([status])
@@ -1326,6 +1328,25 @@ model SurveyAnswer {
   @@index([responseId])
   @@index([questionId])
   @@map("survey_answers")
+}
+
+// ============================================================================
+// BOOKMARKS
+// ============================================================================
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId String   @map("campaign_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, campaignId])
+  @@index([userId])
+  @@index([campaignId])
+  @@index([createdAt])
+  @@map("bookmarks")
 }
 
 // ============================================================================

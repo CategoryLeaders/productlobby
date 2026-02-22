@@ -13,6 +13,7 @@ import {
   Compass,
   Megaphone,
   Zap,
+  Heart,
   Menu,
   X,
 } from 'lucide-react'
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
         return [
           { label: 'Dashboard', href: '/dashboard', icon: Home },
           { label: 'My Campaigns', href: '/dashboard/campaigns', icon: Megaphone },
+          { label: 'Saved', href: '/dashboard/saved', icon: Heart },
           { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
           { label: 'Revenue', href: '/dashboard/revenue', icon: Zap },
           { label: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -47,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
       case 'supporter':
         return [
           { label: 'My Lobbies', href: '/lobbies', icon: Compass },
+          { label: 'Saved', href: '/dashboard/saved', icon: Heart },
           { label: 'Notifications', href: '/notifications', icon: Zap },
           { label: 'My Score', href: '/score', icon: Trophy },
           { label: 'Settings', href: '/settings', icon: Settings },

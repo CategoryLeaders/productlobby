@@ -6,6 +6,7 @@ import { ChevronRight, Share2, Twitter, Facebook, MessageCircle, Mail, Megaphone
 import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
 import { Button } from '@/components/ui/button'
+import { BookmarkButton } from '@/components/campaigns/bookmark-button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
@@ -834,6 +835,21 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     </div>
                   </CardContent>
                 </Card>
+                {/* Save Campaign Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Save campaign</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <BookmarkButton 
+                      campaignId={campaign.id} 
+                      variant="button"
+                      showLabel={true}
+                      size="md"
+                    />
+                  </CardContent>
+                </Card>
+
 
                 {/* Share Card */}
                 <Card>
