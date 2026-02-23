@@ -33,8 +33,8 @@ export async function GET(
         campaignId,
         eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['type'],
-          equals: 'tag',
+          path: ['action'],
+          equals: 'tag_update',
         },
       },
       include: {
@@ -52,11 +52,11 @@ export async function GET(
       },
     })
 
-    // Group tags and count usage across campaigns
+    // Group tags and count usage
     const tagMap = new Map<string, {
       name: string
       addedBy: { id: string; displayName: string; avatar: string | null; handle: string | null }
-      addedAt: Date
+      addedAt: string
       count: number
     }>()
 
@@ -64,41 +64,47 @@ export async function GET(
       if (event.metadata && typeof event.metadata === 'object') {
         const metadata = event.metadata as any
         const tagName = metadata.tagName as string
+        const operation = metadata.operation as string
 
-        if (tagName && !tagMap.has(tagName)) {
+        if (tagName && operation === 'add') {
           // Count total usage of this tag across all campaigns
-          const tagCount = await prisma.contributionEvent.count({
-            where: {
-              eventType: 'SOCIAL_SHARE',
-              metadata: {
-                path: ['type'],
-                equals: 'tag',
-              },
-            },
-          })
-
-          // More specific count for this specific tag
           const tagSpecificCount = await prisma.contributionEvent.count({
             where: {
               eventType: 'SOCIAL_SHARE',
               metadata: {
-                path: ['tagName'],
-                equals: tagName,
+                path: ['action'],
+                equals: 'tag_update',
               },
+              AND: [
+                {
+                  metadata: {
+                    path: ['tagName'],
+                    equals: tagName,
+                  },
+                },
+                {
+                  metadata: {
+                    path: ['operation'],
+                    equals: 'add',
+                  },
+                },
+              ],
             },
           })
 
-          tagMap.set(tagName, {
-            name: tagName,
-            addedBy: {
-              id: event.user.id,
-              displayName: event.user.displayName,
-              avatar: event.user.avatar,
-              handle: event.user.handle,
-            },
-            addedAt: event.createdAt,
-            count: tagSpecificCount,
-          })
+          if (tagSpecificCount > 0 && !tagMap.has(tagName)) {
+            tagMap.set(tagName, {
+              name: tagName,
+              addedBy: {
+                id: event.user.id,
+                displayName: event.user.displayName,
+                avatar: event.user.avatar,
+                handle: event.user.handle,
+              },
+              addedAt: event.createdAt.toISOString(),
+              count: tagSpecificCount,
+            })
+          }
         }
       }
     }
@@ -121,7 +127,7 @@ export async function GET(
 // ============================================================================
 // POST /api/campaigns/[id]/tags
 // ============================================================================
-// Add a new tag to a campaign (auth required, max 10 tags, no duplicates)
+// Add a new tag to a campaign (creator-only, max 10 tags, no duplicates)
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -155,15 +161,24 @@ export async function POST(
       )
     }
 
-    // Verify campaign exists
+    // Verify campaign exists and get creator info
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
+      select: { id: true, creatorUserId: true },
     })
 
     if (!campaign) {
       return NextResponse.json(
         { error: 'Campaign not found' },
         { status: 404 }
+      )
+    }
+
+    // Check if user is the creator
+    if (campaign.creatorUserId !== user.id) {
+      return NextResponse.json(
+        { error: 'Only the campaign creator can add tags' },
+        { status: 403 }
       )
     }
 
@@ -177,12 +192,26 @@ export async function POST(
           path: ['tagName'],
           equals: trimmedTag,
         },
+        AND: [
+          {
+            metadata: {
+              path: ['action'],
+              equals: 'tag_update',
+            },
+          },
+          {
+            metadata: {
+              path: ['operation'],
+              equals: 'add',
+            },
+          },
+        ],
       },
     })
 
     if (existingTag) {
       return NextResponse.json(
-        { error: 'Tag already added by you to this campaign' },
+        { error: 'Tag already added to this campaign' },
         { status: 400 }
       )
     }
@@ -193,9 +222,17 @@ export async function POST(
         campaignId,
         eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['type'],
-          equals: 'tag',
+          path: ['action'],
+          equals: 'tag_update',
         },
+        AND: [
+          {
+            metadata: {
+              path: ['operation'],
+              equals: 'add',
+            },
+          },
+        ],
       },
     })
 
@@ -206,7 +243,7 @@ export async function POST(
       )
     }
 
-    // Create contribution event for the tag
+    // Create contribution event for adding the tag
     const tagEvent = await prisma.contributionEvent.create({
       data: {
         userId: user.id,
@@ -214,7 +251,8 @@ export async function POST(
         eventType: 'SOCIAL_SHARE',
         points: 5,
         metadata: {
-          type: 'tag',
+          action: 'tag_update',
+          operation: 'add',
           tagName: trimmedTag,
         },
       },
@@ -231,13 +269,27 @@ export async function POST(
     })
 
     // Count total usage of this tag
-    const tagCount2 = await prisma.contributionEvent.count({
+    const tagCountGlobal = await prisma.contributionEvent.count({
       where: {
         eventType: 'SOCIAL_SHARE',
         metadata: {
           path: ['tagName'],
           equals: trimmedTag,
         },
+        AND: [
+          {
+            metadata: {
+              path: ['action'],
+              equals: 'tag_update',
+            },
+          },
+          {
+            metadata: {
+              path: ['operation'],
+              equals: 'add',
+            },
+          },
+        ],
       },
     })
 
@@ -251,14 +303,127 @@ export async function POST(
           avatar: tagEvent.user.avatar,
           handle: tagEvent.user.handle,
         },
-        addedAt: tagEvent.createdAt,
-        count: tagCount2,
+        addedAt: tagEvent.createdAt.toISOString(),
+        count: tagCountGlobal,
       },
     })
   } catch (error) {
     console.error('[POST /api/campaigns/[id]/tags]', error)
     return NextResponse.json(
       { error: 'Failed to add tag' },
+      { status: 500 }
+    )
+  }
+}
+
+// ============================================================================
+// DELETE /api/campaigns/[id]/tags
+// ============================================================================
+// Remove a tag from a campaign (creator-only)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const campaignId = params.id
+    const { tagName } = await request.json()
+
+    // Validate input
+    if (!tagName || typeof tagName !== 'string') {
+      return NextResponse.json(
+        { error: 'Tag name is required' },
+        { status: 400 }
+      )
+    }
+
+    const trimmedTag = tagName.trim().toLowerCase()
+
+    // Verify campaign exists and get creator info
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { id: true, creatorUserId: true },
+    })
+
+    if (!campaign) {
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if user is the creator
+    if (campaign.creatorUserId !== user.id) {
+      return NextResponse.json(
+        { error: 'Only the campaign creator can remove tags' },
+        { status: 403 }
+      )
+    }
+
+    // Find the tag event to remove
+    const tagEvent = await prisma.contributionEvent.findFirst({
+      where: {
+        campaignId,
+        userId: user.id,
+        eventType: 'SOCIAL_SHARE',
+        metadata: {
+          path: ['tagName'],
+          equals: trimmedTag,
+        },
+        AND: [
+          {
+            metadata: {
+              path: ['action'],
+              equals: 'tag_update',
+            },
+          },
+          {
+            metadata: {
+              path: ['operation'],
+              equals: 'add',
+            },
+          },
+        ],
+      },
+    })
+
+    if (!tagEvent) {
+      return NextResponse.json(
+        { error: 'Tag not found' },
+        { status: 404 }
+      )
+    }
+
+    // Create a deletion event instead of actually deleting the record
+    await prisma.contributionEvent.create({
+      data: {
+        userId: user.id,
+        campaignId,
+        eventType: 'SOCIAL_SHARE',
+        points: 0, // No points for removal
+        metadata: {
+          action: 'tag_update',
+          operation: 'remove',
+          tagName: trimmedTag,
+        },
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Tag removed successfully',
+    })
+  } catch (error) {
+    console.error('[DELETE /api/campaigns/[id]/tags]', error)
+    return NextResponse.json(
+      { error: 'Failed to remove tag' },
       { status: 500 }
     )
   }
