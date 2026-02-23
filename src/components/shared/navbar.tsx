@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/ui/logo'
 import { NotificationBell } from './notification-bell'
+import { SearchCommand } from './search-command'
 import {
   Search,
   Menu,
@@ -23,6 +24,7 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   // Handle scroll shadow
@@ -43,6 +45,18 @@ export const Navbar: React.FC = () => {
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Handle Cmd+K / Ctrl+K keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const navLinks = [
@@ -103,7 +117,11 @@ export const Navbar: React.FC = () => {
             ) : !isLoading && user ? (
               <div className="hidden md:flex items-center gap-4">
                 {/* Search Icon */}
-                <button className="p-2 text-foreground hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="p-2 text-foreground hover:bg-gray-100 rounded-lg transition-colors duration-200 relative"
+                  title="Search (Cmd+K)"
+                >
                   <Search size={20} />
                 </button>
 
@@ -266,6 +284,9 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Search Command Palette */}
+      <SearchCommand isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   )
 }
