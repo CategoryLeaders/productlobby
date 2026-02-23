@@ -10,9 +10,70 @@ interface RouteParams {
   }
 }
 
+interface CreateTestPayload {
+  name: string
+  hypothesis: string
+  variantAName: string
+  variantBName: string
+}
+
 /**
- * Calculate A/B test metrics from ContributionEvents
- * Groups events by variant field in metadata
+ * Calculate statistical significance using chi-square approximation
+ * Returns true if confidence >= 60%
+ */
+function calculateStatisticalSignificance(
+  variantAConversions: number,
+  variantAViews: number,
+  variantBConversions: number,
+  variantBViews: number
+): { confidence: number; isSignificant: boolean } {
+  if (variantAViews === 0 || variantBViews === 0) {
+    return { confidence: 0, isSignificant: false }
+  }
+
+  // Calculate conversion rates
+  const rateA = variantAConversions / variantAViews
+  const rateB = variantBConversions / variantBViews
+  const pooledRate = (variantAConversions + variantBConversions) / (variantAViews + variantBViews)
+
+  // Chi-square calculation
+  const variance = pooledRate * (1 - pooledRate) * (1 / variantAViews + 1 / variantBViews)
+  
+  if (variance === 0) {
+    return { confidence: 0, isSignificant: false }
+  }
+
+  const zScore = Math.abs(rateA - rateB) / Math.sqrt(variance)
+  
+  // Convert z-score to confidence percentage (using normal distribution)
+  // z = 1.645 for 95% confidence, z = 1.28 for 90% confidence
+  let confidence = 0
+  
+  if (zScore >= 1.645) {
+    confidence = 95
+  } else if (zScore >= 1.28) {
+    confidence = 90
+  } else if (zScore >= 1.04) {
+    confidence = 85
+  } else if (zScore >= 0.84) {
+    confidence = 80
+  } else if (zScore >= 0.67) {
+    confidence = 70
+  } else if (zScore >= 0.52) {
+    confidence = 60
+  } else {
+    confidence = Math.min(60, Math.round(zScore * 50))
+  }
+
+  return {
+    confidence: Math.max(0, Math.min(100, confidence)),
+    isSignificant: confidence >= 60,
+  }
+}
+
+/**
+ * GET /api/campaigns/[id]/ab-tests
+ * Fetch all A/B tests for a campaign with results and metrics
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
@@ -20,9 +81,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Verify campaign exists
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaignId)
-    const campaign = await prisma.campaign[isUuid ? 'findUnique' : 'findFirst']({
-      where: isUuid ? { id: campaignId } : { slug: campaignId },
-      select: { id: true },
+    const campaign = await prisma.campaign.findUnique({
+      where: isUuid ? { id: campaignId } : undefined,
     })
 
     if (!campaign) {
@@ -32,7 +92,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Get all A/B test events for this campaign (SOCIAL_SHARE events with ab_test_event action)
+    // Get all A/B test events for this campaign (SOCIAL_SHARE events with ab_test action)
     const abTestEvents = await prisma.contributionEvent.findMany({
       where: {
         campaignId: campaign.id,
@@ -42,90 +102,204 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         metadata: true,
         createdAt: true,
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     })
 
-    // Process events to extract variant data
-    const variantA = {
-      name: 'Variant A',
-      views: 0,
-      conversions: 0,
-      conversionRate: 0,
-    }
+    // Group events by test ID
+    const testsMap: Record<string, any> = {}
 
-    const variantB = {
-      name: 'Variant B',
-      views: 0,
-      conversions: 0,
-      conversionRate: 0,
-    }
-
-    // Group events by variant
     abTestEvents.forEach((event: any) => {
       const metadata = event.metadata || {}
       
       // Check if this is an A/B test event
-      if (metadata.action === 'ab_test_event') {
+      if (metadata.action === 'ab_test_event' && metadata.testId) {
+        const testId = metadata.testId
         const variant = metadata.variant || 'A'
         const isConversion = metadata.isConversion === true || metadata.isConversion === 'true'
+        const engagement = metadata.engagement || 0
+        const clicks = metadata.clicks || 0
 
-        if (variant === 'A' || variant === 'a') {
-          variantA.views += 1
-          if (isConversion) {
-            variantA.conversions += 1
-          }
-        } else if (variant === 'B' || variant === 'b') {
-          variantB.views += 1
-          if (isConversion) {
-            variantB.conversions += 1
+        if (!testsMap[testId]) {
+          testsMap[testId] = {
+            id: testId,
+            name: metadata.testName || `Test ${testId.slice(0, 8)}`,
+            hypothesis: metadata.hypothesis || 'No hypothesis provided',
+            variantA: {
+              id: 'variant-a',
+              name: metadata.variantAName || 'Variant A',
+              views: 0,
+              conversions: 0,
+              conversionRate: 0,
+              engagement: 0,
+              clicks: 0,
+            },
+            variantB: {
+              id: 'variant-b',
+              name: metadata.variantBName || 'Variant B',
+              views: 0,
+              conversions: 0,
+              conversionRate: 0,
+              engagement: 0,
+              clicks: 0,
+            },
+            startDate: metadata.startDate || new Date().toISOString(),
+            endDate: metadata.endDate || null,
+            status: metadata.status || 'RUNNING',
+            sampleSize: 0,
           }
         }
+
+        const variantKey = variant.toUpperCase() === 'A' ? 'variantA' : 'variantB'
+        testsMap[testId][variantKey].views += 1
+        testsMap[testId][variantKey].clicks += clicks
+        testsMap[testId][variantKey].engagement += engagement
+        
+        if (isConversion) {
+          testsMap[testId][variantKey].conversions += 1
+        }
+
+        testsMap[testId].sampleSize += 1
       }
     })
 
-    // Calculate conversion rates
-    variantA.conversionRate = variantA.views > 0 ? (variantA.conversions / variantA.views) * 100 : 0
-    variantB.conversionRate = variantB.views > 0 ? (variantB.conversions / variantB.views) * 100 : 0
+    // Calculate metrics for each test
+    const tests = Object.values(testsMap).map((test: any) => {
+      // Calculate conversion rates
+      test.variantA.conversionRate = 
+        test.variantA.views > 0 ? (test.variantA.conversions / test.variantA.views) * 100 : 0
+      test.variantB.conversionRate = 
+        test.variantB.views > 0 ? (test.variantB.conversions / test.variantB.views) * 100 : 0
 
-    // Determine winner based on statistical significance
-    let winner: 'A' | 'B' | null = null
-    let confidence = 0
+      // Calculate average engagement
+      test.variantA.engagement = 
+        test.variantA.views > 0 ? (test.variantA.engagement / test.variantA.views) : 0
+      test.variantB.engagement = 
+        test.variantB.views > 0 ? (test.variantB.engagement / test.variantB.views) : 0
 
-    if (variantA.views > 0 && variantB.views > 0) {
-      // Simple chi-square inspired confidence calculation
-      const totalViews = variantA.views + variantB.views
-      const expectedConversionRate = (variantA.conversions + variantB.conversions) / totalViews
+      // Determine winner and significance
+      const { confidence, isSignificant } = calculateStatisticalSignificance(
+        test.variantA.conversions,
+        test.variantA.views,
+        test.variantB.conversions,
+        test.variantB.views
+      )
 
-      if (expectedConversionRate > 0) {
-        // Calculate confidence based on sample sizes and effect size
-        const variantAProportionDiff = Math.abs(variantA.conversionRate - expectedConversionRate * 100)
-        const variantBProportionDiff = Math.abs(variantB.conversionRate - expectedConversionRate * 100)
-
-        // Simple confidence calculation: weight by sample size and difference magnitude
-        const sampleSizeWeight = Math.min(totalViews / 100, 1) // Max at 100 samples
-        const effectSize = Math.max(variantAProportionDiff, variantBProportionDiff) / 100
-
-        confidence = Math.min(100, Math.round(sampleSizeWeight * effectSize * 1000))
-
-        // Determine winner if we have sufficient confidence
-        if (confidence >= 60) {
-          winner = variantA.conversionRate > variantB.conversionRate ? 'A' : 'B'
-        }
+      let winner: 'A' | 'B' | null = null
+      if (isSignificant) {
+        winner = test.variantA.conversionRate > test.variantB.conversionRate ? 'A' : 'B'
       }
+
+      return {
+        ...test,
+        winner,
+        confidence,
+        isSignificant,
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: tests,
+      count: tests.length,
+    })
+  } catch (error) {
+    console.error('Error fetching A/B tests:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch A/B tests' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * POST /api/campaigns/[id]/ab-tests
+ * Create a new A/B test and log initial event
+ */
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
+
+    const { id: campaignId } = params
+    const body: CreateTestPayload = await request.json()
+
+    // Validate required fields
+    if (!body.name || !body.hypothesis) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields: name, hypothesis' },
+        { status: 400 }
+      )
+    }
+
+    // Verify campaign exists and user owns it
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaignId)
+    const campaign = await prisma.campaign.findUnique({
+      where: isUuid ? { id: campaignId } : undefined,
+      select: { id: true, creatorId: true },
+    })
+
+    if (!campaign) {
+      return NextResponse.json(
+        { success: false, error: 'Campaign not found' },
+        { status: 404 }
+      )
+    }
+
+    if (campaign.creatorId !== user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: You do not own this campaign' },
+        { status: 403 }
+      )
+    }
+
+    // Create test metadata
+    const testId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    const startDate = new Date().toISOString()
+
+    // Log test creation event
+    await prisma.contributionEvent.create({
+      data: {
+        userId: user.id,
+        campaignId: campaign.id,
+        eventType: 'SOCIAL_SHARE',
+        points: 0,
+        metadata: {
+          action: 'ab_test_event',
+          testId,
+          testName: body.name,
+          hypothesis: body.hypothesis,
+          variantAName: body.variantAName || 'Variant A',
+          variantBName: body.variantBName || 'Variant B',
+          startDate,
+          status: 'RUNNING',
+          variant: 'CONTROL', // This is the test creation event
+        },
+      },
+    })
 
     return NextResponse.json({
       success: true,
       data: {
-        variantA,
-        variantB,
-        winner,
-        confidence: Math.max(0, Math.min(100, confidence)),
+        id: testId,
+        name: body.name,
+        hypothesis: body.hypothesis,
+        variantAName: body.variantAName || 'Variant A',
+        variantBName: body.variantBName || 'Variant B',
+        startDate,
+        status: 'RUNNING',
       },
     })
   } catch (error) {
-    console.error('Error fetching A/B test data:', error)
+    console.error('Error creating A/B test:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch A/B test data' },
+      { success: false, error: 'Failed to create A/B test' },
       { status: 500 }
     )
   }
