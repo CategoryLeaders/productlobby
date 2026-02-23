@@ -71,7 +71,8 @@ export function CampaignFilters({
   // Notify parent of filter changes
   useEffect(() => {
     onFiltersChange({ ...filters, search: debouncedSearch })
-  }, [debouncedSearch, filters.category, filters.status, filters.sort, onFiltersChange])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, filters.category, filters.status, filters.sort])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilters(prev => ({ ...prev, search: e.target.value }))

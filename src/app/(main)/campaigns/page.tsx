@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Loader2, Plus, Search } from 'lucide-react'
 import { Navbar } from '@/components/shared/navbar'
@@ -76,7 +76,6 @@ function mapApiToCampaignCard(campaign: ApiCampaign): CampaignCardProps {
 }
 
 export default function CampaignsPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   // Initialize filters from URL params
@@ -147,9 +146,20 @@ export default function CampaignsPage() {
     fetchCampaigns(1)
   }, [filters, fetchCampaigns])
 
-  const handleFiltersChange = (newFilters: FilterState) => {
-    setFilters(newFilters)
-  }
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    setFilters(prev => {
+      // Only update if values actually changed to prevent infinite loops
+      if (
+        prev.search === newFilters.search &&
+        prev.category === newFilters.category &&
+        prev.status === newFilters.status &&
+        prev.sort === newFilters.sort
+      ) {
+        return prev
+      }
+      return newFilters
+    })
+  }, [])
 
   const loadMore = () => {
     const nextPage = page + 1
