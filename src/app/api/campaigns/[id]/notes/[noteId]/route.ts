@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-// DELETE /api/campaigns/[id]/notes/[noteId] - Delete a note
+// DELETE /api/campaigns/[id]/notes/[noteId] - Delete a note (creator only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string; noteId: string } }

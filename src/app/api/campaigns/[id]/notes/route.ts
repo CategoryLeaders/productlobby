@@ -48,10 +48,10 @@ export async function GET(
       where: {
         campaignId,
         userId: user.id,
-        eventType: 'COMMENT_ENGAGEMENT',
+        eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['type'],
-          equals: 'CREATOR_NOTE',
+          path: ['action'],
+          equals: 'creator_note',
         },
       },
       orderBy: {
@@ -62,7 +62,6 @@ export async function GET(
     const formattedNotes = notes.map((note) => ({
       id: note.id,
       content: (note.metadata as any)?.content || '',
-      isPublic: (note.metadata as any)?.isPublic || false,
       createdAt: note.createdAt,
     }))
 
@@ -97,7 +96,7 @@ export async function POST(
 
     const { id: campaignId } = params
     const body = await request.json()
-    const { content, isPublic = false } = body
+    const { content } = body
 
     if (!content || content.trim().length === 0) {
       return NextResponse.json(
@@ -136,17 +135,16 @@ export async function POST(
       )
     }
 
-    // Create note as ContributionEvent
+    // Create note as ContributionEvent with SOCIAL_SHARE eventType
     const note = await prisma.contributionEvent.create({
       data: {
         userId: user.id,
         campaignId,
-        eventType: 'COMMENT_ENGAGEMENT',
+        eventType: 'SOCIAL_SHARE',
         points: 0,
         metadata: {
-          type: 'CREATOR_NOTE',
+          action: 'creator_note',
           content: content.trim(),
-          isPublic: Boolean(isPublic),
           timestamp: new Date().toISOString(),
         },
       },
@@ -156,7 +154,6 @@ export async function POST(
       {
         id: note.id,
         content: (note.metadata as any).content,
-        isPublic: (note.metadata as any).isPublic,
         createdAt: note.createdAt,
       },
       { status: 201 }
