@@ -4,6 +4,16 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
+const VALID_REACTIONS = ['thumbsup', 'heart', 'laugh', 'surprised', 'sad']
+
+interface ReactionCounts {
+  thumbsup: number
+  heart: number
+  laugh: number
+  surprised: number
+  sad: number
+}
+
 // POST /api/comments/[commentId]/reactions - Toggle reaction on a comment
 export async function POST(
   request: NextRequest,
@@ -20,11 +30,11 @@ export async function POST(
 
     const { commentId } = params
     const body = await request.json()
-    const { type } = body // 'like' or 'dislike'
+    const { reaction } = body
 
-    if (!type || !['like', 'dislike'].includes(type)) {
+    if (!reaction || !VALID_REACTIONS.includes(reaction)) {
       return NextResponse.json(
-        { error: 'Invalid reaction type. Must be "like" or "dislike"' },
+        { error: 'Invalid reaction type' },
         { status: 400 }
       )
     }
@@ -49,40 +59,38 @@ export async function POST(
         campaignId: comment.campaignId,
         eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['commentId'],
-          equals: commentId,
+          path: ['action'],
+          equals: 'comment_reaction',
         },
       },
     })
 
+    let userReaction: string | null = null
+
     if (existingReaction) {
-      // Check if it's the same type
-      const existingType = (existingReaction.metadata as any)?.reactionType
-      if (existingType === type) {
+      const existingMeta = existingReaction.metadata as any
+      const existingType = existingMeta?.reaction
+
+      if (existingType === reaction) {
         // User is removing their reaction
         await prisma.contributionEvent.delete({
           where: { id: existingReaction.id },
         })
-        return NextResponse.json(
-          { reacted: false, type: null },
-          { status: 200 }
-        )
+        userReaction = null
       } else {
         // User is changing their reaction
         await prisma.contributionEvent.update({
           where: { id: existingReaction.id },
           data: {
             metadata: {
+              action: 'comment_reaction',
               commentId,
-              reactionType: type,
+              reaction,
               timestamp: new Date().toISOString(),
             },
           },
         })
-        return NextResponse.json(
-          { reacted: true, type },
-          { status: 200 }
-        )
+        userReaction = reaction
       }
     } else {
       // Create new reaction
@@ -93,18 +101,54 @@ export async function POST(
           eventType: 'SOCIAL_SHARE',
           points: 1,
           metadata: {
+            action: 'comment_reaction',
             commentId,
-            reactionType: type,
+            reaction,
             timestamp: new Date().toISOString(),
           },
         },
       })
-
-      return NextResponse.json(
-        { reacted: true, type },
-        { status: 201 }
-      )
+      userReaction = reaction
     }
+
+    // Get updated reaction counts
+    const reactions = await prisma.contributionEvent.findMany({
+      where: {
+        campaignId: comment.campaignId,
+        eventType: 'SOCIAL_SHARE',
+        metadata: {
+          path: ['action'],
+          equals: 'comment_reaction',
+        },
+      },
+      select: {
+        metadata: true,
+      },
+    })
+
+    const counts: ReactionCounts = {
+      thumbsup: 0,
+      heart: 0,
+      laugh: 0,
+      surprised: 0,
+      sad: 0,
+    }
+
+    reactions.forEach((r) => {
+      const meta = r.metadata as any
+      const reactionType = meta?.reaction
+      if (reactionType && reactionType in counts) {
+        counts[reactionType as keyof ReactionCounts]++
+      }
+    })
+
+    return NextResponse.json(
+      {
+        reactions: counts,
+        userReaction,
+      },
+      { status: 200 }
+    )
   } catch (error) {
     console.error('Error toggling comment reaction:', error)
     return NextResponse.json(
@@ -114,7 +158,7 @@ export async function POST(
   }
 }
 
-// GET /api/comments/[commentId]/reactions - Get reaction counts and user's reaction
+// GET /api/comments/[commentId]/reactions - Get reaction counts and user's reactions
 export async function GET(
   request: NextRequest,
   { params }: { params: { commentId: string } }
@@ -142,45 +186,46 @@ export async function GET(
         campaignId: comment.campaignId,
         eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['commentId'],
-          equals: commentId,
+          path: ['action'],
+          equals: 'comment_reaction',
         },
       },
       select: {
+        userId: true,
         metadata: true,
       },
     })
 
-    // Count likes and dislikes
-    const counts = {
-      likes: 0,
-      dislikes: 0,
+    // Count reactions by type
+    const counts: ReactionCounts = {
+      thumbsup: 0,
+      heart: 0,
+      laugh: 0,
+      surprised: 0,
+      sad: 0,
     }
 
-    reactions.forEach((reaction) => {
-      const meta = reaction.metadata as any
-      if (meta?.reactionType === 'like') {
-        counts.likes++
-      } else if (meta?.reactionType === 'dislike') {
-        counts.dislikes++
+    reactions.forEach((r) => {
+      const meta = r.metadata as any
+      const reactionType = meta?.reaction
+      if (reactionType && reactionType in counts) {
+        counts[reactionType as keyof ReactionCounts]++
       }
     })
 
     // Get user's current reaction if authenticated
-    let userReaction = null
+    let userReaction: string | null = null
     if (user) {
-      const userReact = reactions.find(
-        (r) => (r.metadata as any)?.userId === user.id
-      )
+      const userReact = reactions.find((r) => r.userId === user.id)
       if (userReact) {
-        userReaction = (userReact.metadata as any)?.reactionType
+        const meta = userReact.metadata as any
+        userReaction = meta?.reaction || null
       }
     }
 
     return NextResponse.json(
       {
-        likes: counts.likes,
-        dislikes: counts.dislikes,
+        reactions: counts,
         userReaction,
       },
       { status: 200 }

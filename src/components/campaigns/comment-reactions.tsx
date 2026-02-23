@@ -1,23 +1,42 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+
+interface ReactionCounts {
+  thumbsup: number
+  heart: number
+  laugh: number
+  surprised: number
+  sad: number
+}
 
 interface CommentReactionsProps {
   commentId: string
-  onReactionChange?: (type: string | null) => void
+  onReactionChange?: (reaction: string | null) => void
 }
+
+const EMOJI_REACTIONS = [
+  { id: 'thumbsup', emoji: '👍', label: 'Thumbs up' },
+  { id: 'heart', emoji: '❤️', label: 'Heart' },
+  { id: 'laugh', emoji: '😂', label: 'Laugh' },
+  { id: 'surprised', emoji: '😮', label: 'Surprised' },
+  { id: 'sad', emoji: '😢', label: 'Sad' },
+]
 
 export function CommentReactions({
   commentId,
   onReactionChange,
 }: CommentReactionsProps) {
-  const [likes, setLikes] = useState(0)
-  const [dislikes, setDislikes] = useState(0)
-  const [userReaction, setUserReaction] = useState<'like' | 'dislike' | null>(
-    null
-  )
+  const [reactions, setReactions] = useState<ReactionCounts>({
+    thumbsup: 0,
+    heart: 0,
+    laugh: 0,
+    surprised: 0,
+    sad: 0,
+  })
+  const [userReaction, setUserReaction] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [initialLoaded, setInitialLoaded] = useState(false)
 
@@ -30,8 +49,7 @@ export function CommentReactions({
         )
         if (response.ok) {
           const data = await response.json()
-          setLikes(data.likes)
-          setDislikes(data.dislikes)
+          setReactions(data.reactions)
           setUserReaction(data.userReaction)
         }
       } catch (error) {
@@ -44,7 +62,7 @@ export function CommentReactions({
     loadReactions()
   }, [commentId])
 
-  const handleReaction = async (type: 'like' | 'dislike') => {
+  const handleReaction = async (reactionId: string) => {
     setLoading(true)
     try {
       const response = await fetch(
@@ -52,40 +70,17 @@ export function CommentReactions({
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type }),
+          body: JSON.stringify({ reaction: reactionId }),
         }
       )
 
       if (response.ok) {
         const data = await response.json()
 
-        // Update counts based on new state
-        if (data.reacted) {
-          if (type === 'like') {
-            setLikes((prev) => (userReaction === 'like' ? prev : prev + 1))
-            if (userReaction === 'dislike') {
-              setDislikes((prev) => prev - 1)
-            }
-          } else {
-            setDislikes((prev) => (userReaction === 'dislike' ? prev : prev + 1))
-            if (userReaction === 'like') {
-              setLikes((prev) => prev - 1)
-            }
-          }
-          setUserReaction(type)
-        } else {
-          // Reaction was removed
-          if (type === 'like') {
-            setLikes((prev) => Math.max(0, prev - 1))
-          } else {
-            setDislikes((prev) => Math.max(0, prev - 1))
-          }
-          setUserReaction(null)
-        }
-
-        onReactionChange?.(data.reacted ? type : null)
+        setReactions(data.reactions)
+        setUserReaction(data.userReaction)
+        onReactionChange?.(data.userReaction)
       } else if (response.status === 401) {
-        // Handle authentication required
         console.error('Authentication required to react')
       }
     } catch (error) {
@@ -96,42 +91,36 @@ export function CommentReactions({
   }
 
   if (!initialLoaded) {
-    return <div className="h-8 w-32 bg-gray-200 rounded animate-pulse" />
+    return <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => handleReaction('like')}
-        disabled={loading}
-        className={cn(
-          'flex items-center gap-1 px-2 py-1 rounded-md transition-all duration-200',
-          'hover:bg-gray-100 active:scale-95',
-          userReaction === 'like'
-            ? 'bg-violet-100 text-violet-600'
-            : 'text-gray-600 hover:text-gray-900'
-        )}
-        title="Like this comment"
-      >
-        <ThumbsUp className="w-4 h-4" />
-        {likes > 0 && <span className="text-xs font-medium">{likes}</span>}
-      </button>
-
-      <button
-        onClick={() => handleReaction('dislike')}
-        disabled={loading}
-        className={cn(
-          'flex items-center gap-1 px-2 py-1 rounded-md transition-all duration-200',
-          'hover:bg-gray-100 active:scale-95',
-          userReaction === 'dislike'
-            ? 'bg-red-100 text-red-600'
-            : 'text-gray-600 hover:text-gray-900'
-        )}
-        title="Dislike this comment"
-      >
-        <ThumbsDown className="w-4 h-4" />
-        {dislikes > 0 && <span className="text-xs font-medium">{dislikes}</span>}
-      </button>
+    <div className="flex items-center gap-1">
+      {EMOJI_REACTIONS.map(({ id, emoji, label }) => {
+        const count = reactions[id as keyof ReactionCounts]
+        const isUserReaction = userReaction === id
+        
+        return (
+          <Button
+            key={id}
+            onClick={() => handleReaction(id)}
+            disabled={loading}
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'h-6 px-2 py-0 text-xs transition-all duration-200',
+              'hover:bg-gray-100 active:scale-95',
+              isUserReaction
+                ? 'bg-violet-100 text-violet-700'
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+            title={label}
+          >
+            <span className="mr-1">{emoji}</span>
+            {count > 0 && <span className="text-xs font-medium">{count}</span>}
+          </Button>
+        )
+      })}
     </div>
   )
 }
