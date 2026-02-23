@@ -53,9 +53,19 @@ async function fetchStories({ pageParam = 1, category }: { pageParam?: number; c
     ...(category !== 'all' && { category })
   })
 
-  const res = await fetch(`/api/success-stories?${params}`)
-  if (!res.ok) throw new Error('Failed to fetch stories')
-  return res.json()
+  try {
+    const res = await fetch(`/api/success-stories?${params}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!res.ok) throw new Error('Failed to fetch stories')
+    return res.json()
+  } catch (error) {
+    console.error('Error fetching stories:', error)
+    throw error
+  }
 }
 
 export default function SuccessStoriesPage() {
@@ -93,6 +103,23 @@ export default function SuccessStoriesPage() {
 
   const stories = data?.pages.flatMap((page) => page.stories) || []
   const isEmpty = !isLoading && stories.length === 0
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <section className="bg-gradient-to-br from-violet-50 via-white to-violet-50 pt-32 pb-16 px-4 md:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Success Stories
+            </h1>
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600" />
+            </div>
+          </div>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
