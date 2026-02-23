@@ -4,7 +4,33 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/campaigns/[id]/export - Export campaign data as JSON or CSV
+interface CampaignReport {
+  overview: {
+    title: string
+    description: string
+    createdAt: string
+    updatedAt: string
+    status: string
+  }
+  keyMetrics: {
+    lobbyCount: number
+    commentCount: number
+    eventTypeBreakdown: Record<string, number>
+    totalEvents: number
+  }
+  timeline: {
+    createdDate: string
+    lastUpdateDate: string
+    daysSinceCreation: number
+  }
+  topContributors: Array<{
+    name: string
+    handle: string
+    contributionCount: number
+  }>
+}
+
+// GET /api/campaigns/[id]/export - Export comprehensive campaign report
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -19,8 +45,6 @@ export async function GET(
     }
 
     const { id } = params
-    const { searchParams } = new URL(request.url)
-    const format = searchParams.get('format') || 'json' // json or csv
 
     // Get campaign with creator check
     const campaign = await prisma.campaign.findUnique({
@@ -32,10 +56,6 @@ export async function GET(
             displayName: true,
             handle: true,
           },
-        },
-        media: true,
-        updates: {
-          orderBy: { createdAt: 'desc' },
         },
         comments: {
           select: {
@@ -49,6 +69,7 @@ export async function GET(
               },
             },
           },
+          orderBy: { createdAt: 'desc' },
         },
       },
     })
@@ -68,156 +89,112 @@ export async function GET(
       )
     }
 
-    // Get lobbies stats
-    const [totalLobbies, comments, shares] = await Promise.all([
+    // Aggregate data for report
+    const [lobbyCount, commentCount, contributionEvents] = await Promise.all([
       prisma.lobby.count({
-        where: { campaignId: id, status: 'VERIFIED' },
+        where: { campaignId: id },
       }),
       prisma.comment.count({
         where: { campaignId: id },
       }),
-      prisma.share.count({
+      prisma.contributionEvent.findMany({
         where: { campaignId: id },
       }),
     ])
 
-    // Build export data
-    const exportData = {
-      campaign: {
-        id: campaign.id,
+    // Count event types
+    const eventTypeBreakdown: Record<string, number> = {}
+    let totalEvents = 0
+
+    contributionEvents.forEach((event) => {
+      const eventType = event.eventType || 'UNKNOWN'
+      eventTypeBreakdown[eventType] = (eventTypeBreakdown[eventType] || 0) + 1
+      totalEvents++
+    })
+
+    // Get top contributors from comments
+    const contributorMap = new Map<
+      string,
+      {
+        name: string
+        handle: string
+        count: number
+      }
+    >()
+
+    campaign.comments.forEach((comment) => {
+      const key = `${comment.author.displayName}|${comment.author.handle || 'anonymous'}`
+      const current = contributorMap.get(key)
+      if (current) {
+        current.count += 1
+      } else {
+        contributorMap.set(key, {
+          name: comment.author.displayName,
+          handle: comment.author.handle || 'anonymous',
+          count: 1,
+        })
+      }
+    })
+
+    // Sort and get top 5
+    const topContributors = Array.from(contributorMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((contributor) => ({
+        name: contributor.name,
+        handle: contributor.handle,
+        contributionCount: contributor.count,
+      }))
+
+    // Calculate timeline metrics
+    const createdDate = new Date(campaign.createdAt)
+    const updatedDate = new Date(campaign.updatedAt)
+    const daysSinceCreation = Math.floor(
+      (new Date().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+    )
+
+    // Build comprehensive report
+    const report: CampaignReport = {
+      overview: {
         title: campaign.title,
-        slug: campaign.slug,
         description: campaign.description,
-        category: campaign.category,
+        createdAt: campaign.createdAt.toISOString(),
+        updatedAt: campaign.updatedAt.toISOString(),
         status: campaign.status,
-        path: campaign.path,
-        createdAt: campaign.createdAt,
-        updatedAt: campaign.updatedAt,
-        completenessScore: campaign.completenessScore,
       },
-      creator: campaign.creator,
-      stats: {
-        totalLobbies,
-        comments,
-        shares,
-        media: campaign.media.length,
-        updates: campaign.updates.length,
+      keyMetrics: {
+        lobbyCount,
+        commentCount,
+        eventTypeBreakdown,
+        totalEvents,
       },
-      milestones: campaign.milestones || [],
-      media: campaign.media.map((m: any) => ({
-        id: m.id,
-        url: m.url,
-        caption: m.caption,
-        order: m.order,
-      })),
-      updates: campaign.updates.map((u: any) => ({
-        id: u.id,
-        title: u.title,
-        content: u.content,
-        createdAt: u.createdAt,
-      })),
-      comments: campaign.comments.map((c: any) => ({
-        id: c.id,
-        text: c.text,
-        author: c.author.displayName,
-        createdAt: c.createdAt,
-      })),
+      timeline: {
+        createdDate: createdDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        lastUpdateDate: updatedDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        daysSinceCreation,
+      },
+      topContributors,
     }
 
-    if (format === 'csv') {
-      // Convert to CSV format
-      const csv = generateCSV(exportData)
-      return new NextResponse(csv, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv;charset=utf-8',
-          'Content-Disposition': `attachment; filename="campaign-${campaign.slug}-${new Date().toISOString().split('T')[0]}.csv"`,
-        },
-      })
-    }
-
-    // Return JSON format
-    return new NextResponse(JSON.stringify(exportData, null, 2), {
+    return NextResponse.json(report, {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="campaign-${campaign.slug}-${new Date().toISOString().split('T')[0]}.json"`,
       },
     })
   } catch (error) {
     console.error('[GET /api/campaigns/[id]/export]', error)
     return NextResponse.json(
-      { error: 'Failed to export campaign' },
+      { error: 'Failed to export campaign report' },
       { status: 500 }
     )
   }
-}
-
-// Helper function to convert export data to CSV format
-function generateCSV(data: any): string {
-  const rows: string[] = []
-
-  // Campaign section
-  rows.push('CAMPAIGN EXPORT')
-  rows.push(`Title,${escapeCSV(data.campaign.title)}`)
-  rows.push(`Description,${escapeCSV(data.campaign.description)}`)
-  rows.push(`Category,${data.campaign.category}`)
-  rows.push(`Status,${data.campaign.status}`)
-  rows.push(`Created,${data.campaign.createdAt}`)
-  rows.push('')
-
-  // Creator section
-  rows.push('CREATOR')
-  rows.push(`Name,${escapeCSV(data.creator.displayName)}`)
-  rows.push(`Handle,${data.creator.handle || 'N/A'}`)
-  rows.push('')
-
-  // Stats section
-  rows.push('STATISTICS')
-  rows.push(`Total Lobbies,${data.stats.totalLobbies}`)
-  rows.push(`Comments,${data.stats.comments}`)
-  rows.push(`Shares,${data.stats.shares}`)
-  rows.push(`Media Count,${data.stats.media}`)
-  rows.push(`Updates,${data.stats.updates}`)
-  rows.push('')
-
-  // Milestones section
-  if (data.milestones && data.milestones.length > 0) {
-    rows.push('MILESTONES')
-    rows.push('Title,Target,Current')
-    data.milestones.forEach((m: any) => {
-      rows.push(`${escapeCSV(m.title)},${m.target},${m.current}`)
-    })
-    rows.push('')
-  }
-
-  // Updates section
-  if (data.updates && data.updates.length > 0) {
-    rows.push('UPDATES')
-    rows.push('Title,Date')
-    data.updates.forEach((u: any) => {
-      rows.push(`${escapeCSV(u.title)},${u.createdAt}`)
-    })
-    rows.push('')
-  }
-
-  // Comments section
-  if (data.comments && data.comments.length > 0) {
-    rows.push('COMMENTS')
-    rows.push('Author,Text,Date')
-    data.comments.slice(0, 50).forEach((c: any) => {
-      rows.push(`${escapeCSV(c.author)},${escapeCSV(c.text.substring(0, 100))},${c.createdAt}`)
-    })
-  }
-
-  return rows.join('\n')
-}
-
-// Helper to escape CSV values
-function escapeCSV(value: string): string {
-  if (!value) return ''
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`
-  }
-  return value
 }
