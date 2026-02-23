@@ -3,82 +3,78 @@ import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/campaigns/[id]/related - Get related campaigns in same category
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params
+interface RouteParams {
+  params: {
+    id: string
+  }
+}
 
-    // Support both UUID and slug-based lookup
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-    const campaign = await prisma.campaign.findFirst({
-      where: isUuid ? { id } : { slug: id },
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id: campaignId } = params
+
+    // Get the current campaign's category
+    const currentCampaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
       select: {
         id: true,
         category: true,
       },
     })
 
-    if (!campaign) {
+    if (!currentCampaign) {
       return NextResponse.json(
-        { error: 'Campaign not found' },
+        { success: false, error: 'Campaign not found' },
         { status: 404 }
       )
     }
 
-    // Find related campaigns in the same category
+    // Find related campaigns with matching category (excluding current campaign)
+    // Sort by lobby count descending and limit to 4
     const relatedCampaigns = await prisma.campaign.findMany({
       where: {
-        category: campaign.category,
         id: {
-          not: campaign.id, // Exclude current campaign
+          not: campaignId,
         },
-        status: 'LIVE',
+        category: currentCampaign.category,
+        status: 'LIVE', // Only show live campaigns
       },
-      orderBy: [
-        {
-          lobbies: {
-            _count: 'desc',
-          },
-        },
-        {
-          createdAt: 'desc',
-        },
-      ],
-      take: 6,
-      include: {
-        media: {
-          take: 1,
-          orderBy: { order: 'asc' },
-        },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        category: true,
         _count: {
           select: {
             lobbies: true,
           },
         },
       },
+      orderBy: {
+        lobbies: {
+          _count: 'desc',
+        },
+      },
+      take: 4,
     })
 
-    const formattedCampaigns = relatedCampaigns.map((c: any) => ({
-      id: c.id,
-      title: c.title,
-      slug: c.slug,
-      category: c.category,
-      status: c.status,
-      image: c.media[0]?.url || null,
-      lobbyCount: c._count.lobbies,
-      description: c.description?.substring(0, 120) || '',
+    // Transform the response to include lobby count
+    const formattedCampaigns = relatedCampaigns.map((campaign) => ({
+      id: campaign.id,
+      slug: campaign.slug,
+      title: campaign.title,
+      description: campaign.description,
+      category: campaign.category,
+      lobbyCount: campaign._count.lobbies,
     }))
 
     return NextResponse.json({
       success: true,
-      data: formattedCampaigns,
-      total: formattedCampaigns.length,
+      campaigns: formattedCampaigns,
     })
   } catch (error) {
-    console.error('[GET /api/campaigns/[id]/related]', error)
+    console.error('Error fetching related campaigns:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to fetch related campaigns' },
       { status: 500 }
