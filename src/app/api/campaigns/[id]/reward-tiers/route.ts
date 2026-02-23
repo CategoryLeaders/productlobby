@@ -30,9 +30,31 @@ export async function GET(
       orderBy: { minLobbiesRequired: 'asc' },
     })
 
+    // Calculate supporter count for each tier using ContributionEvent
+    const tiersWithStats = await Promise.all(
+      rewardTiers.map(async (tier) => {
+        const supportersCount = await prisma.contributionEvent.count({
+          where: {
+            campaignId,
+            eventType: 'SOCIAL_SHARE',
+            metadata: {
+              path: ['action'],
+              equals: 'reward_tier',
+            },
+          },
+          distinct: ['userId'],
+        })
+
+        return {
+          ...tier,
+          supportersCount,
+        }
+      })
+    )
+
     return NextResponse.json({
-      rewardTiers,
-      total: rewardTiers.length,
+      rewardTiers: tiersWithStats,
+      total: tiersWithStats.length,
     })
   } catch (error) {
     console.error('Error getting reward tiers:', error)
@@ -80,7 +102,14 @@ export async function POST(
     }
 
     // Parse request body
-    const { name, description, minLobbiesRequired, rewardDescription } = await request.json()
+    const {
+      name,
+      description,
+      minLobbiesRequired,
+      rewardDescription,
+      benefits,
+      color,
+    } = await request.json()
 
     if (!name || !description || minLobbiesRequired === undefined || !rewardDescription) {
       return NextResponse.json(
@@ -96,6 +125,10 @@ export async function POST(
       )
     }
 
+    // Validate color
+    const validColors = ['bronze', 'silver', 'gold', 'platinum', 'diamond']
+    const tierColor = validColors.includes(color) ? color : 'bronze'
+
     // Create reward tier
     const rewardTier = await prisma.rewardTier.create({
       data: {
@@ -104,6 +137,8 @@ export async function POST(
         description,
         minLobbiesRequired,
         rewardDescription,
+        benefits: benefits || [],
+        color: tierColor,
       },
     })
 
@@ -118,6 +153,7 @@ export async function POST(
           action: 'reward_tier',
           rewardTierId: rewardTier.id,
           tierName: name,
+          tierColor: tierColor,
         },
       },
     })
