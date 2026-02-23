@@ -14,6 +14,7 @@ interface TestimonialMetadata {
   action: string
   quote?: string
   author?: string
+  title?: string
   rating?: number
 }
 
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest, { params }: TestimonialParams) {
         userId: event.user.id,
         quote: metadata.quote || '',
         author: metadata.author || event.user.displayName,
+        title: metadata.title,
         rating: metadata.rating || 5,
         createdAt: event.createdAt,
       }
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest, { params }: TestimonialParams) 
       )
     }
 
-    const { quote, author, rating } = await request.json()
+    const { quote, author, title, rating } = await request.json()
 
     // Validation
     if (!quote?.trim()) {
@@ -142,6 +144,19 @@ export async function POST(request: NextRequest, { params }: TestimonialParams) 
       )
     }
 
+    // Build metadata
+    const metadata: TestimonialMetadata = {
+      action: 'testimonial',
+      quote: quote.trim(),
+      author: author.trim(),
+      rating: Math.max(1, Math.min(5, Math.round(rating))),
+    }
+
+    // Add title if provided
+    if (title?.trim()) {
+      metadata.title = title.trim()
+    }
+
     // Create testimonial as ContributionEvent with eventType SOCIAL_SHARE and metadata.action = 'testimonial'
     const testimonial = await prisma.contributionEvent.create({
       data: {
@@ -149,12 +164,7 @@ export async function POST(request: NextRequest, { params }: TestimonialParams) 
         campaignId: campaign.id,
         eventType: 'SOCIAL_SHARE',
         points: 15, // Points for testimonial
-        metadata: {
-          action: 'testimonial',
-          quote: quote.trim(),
-          author: author.trim(),
-          rating: Math.max(1, Math.min(5, Math.round(rating))),
-        },
+        metadata,
       },
       include: {
         user: {
@@ -176,6 +186,7 @@ export async function POST(request: NextRequest, { params }: TestimonialParams) 
           userId: testimonial.user.id,
           quote: quote.trim(),
           author: author.trim(),
+          title: title?.trim(),
           rating: Math.max(1, Math.min(5, Math.round(rating))),
           createdAt: testimonial.createdAt,
         },
