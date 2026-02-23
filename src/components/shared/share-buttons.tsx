@@ -1,86 +1,71 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
 import {
-  Twitter,
-  Facebook,
-  Linkedin,
-  MessageCircle,
+  Link2,
   Mail,
-  Share2,
-  Check
+  Check,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ShareButtonsProps {
-  campaignId: string
-  campaignTitle: string
-  campaignSlug: string
-  showStats?: boolean
+  url: string
+  title: string
+  description?: string
+  campaignId?: string
 }
 
+// Inline SVG icons for platforms
+const TwitterIcon = () => (
+  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.25 7-7 7-7" />
+  </svg>
+)
+
+const FacebookIcon = () => (
+  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M18 2h-3a6 6 0 00-6 6v3H7v4h2v8h4v-8h3l1-4h-4V8a2 2 0 012-2h3z" />
+  </svg>
+)
+
+const LinkedInIcon = () => (
+  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+)
+
 export function ShareButtons({
+  url,
+  title,
+  description = '',
   campaignId,
-  campaignTitle,
-  campaignSlug,
-  showStats = false,
 }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false)
-  const [referralUrl, setReferralUrl] = useState<string | null>(null)
-  const [shareStats, setShareStats] = useState<Record<string, number> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const campaignUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://productlobby.vercel.app'}/campaigns/${campaignSlug}`
-
-  useEffect(() => {
-    if (showStats) {
-      fetchShareStats()
-    }
-  }, [campaignId, showStats])
-
-  const fetchShareStats = async () => {
-    try {
-      const response = await fetch(`/api/campaigns/${campaignId}/share/stats`)
-      if (response.ok) {
-        const data = await response.json()
-        setShareStats(data.byPlatform || {})
-      }
-    } catch (error) {
-      console.error('Failed to fetch share stats:', error)
-    }
-  }
-
   const trackShare = async (platform: string) => {
+    if (!campaignId) return
+
     try {
-      setIsLoading(true)
-      const response = await fetch(`/api/campaigns/${campaignId}/share`, {
+      await fetch(`/api/campaigns/${campaignId}/share`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ platform }),
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.referralUrl) {
-          setReferralUrl(data.referralUrl)
-        }
-      }
     } catch (error) {
       console.error('Failed to track share:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
   const handleCopyLink = async () => {
     try {
-      await trackShare('COPY_LINK')
-      const urlToCopy = referralUrl || campaignUrl
-      await navigator.clipboard.writeText(urlToCopy)
+      setIsLoading(true)
+      await trackShare('copy_link')
+      await navigator.clipboard.writeText(url)
       setCopied(true)
 
       if (copyTimeoutRef.current) {
@@ -92,123 +77,133 @@ export function ShareButtons({
       }, 2000)
     } catch (error) {
       console.error('Failed to copy link:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleTwitterShare = async () => {
-    await trackShare('TWITTER')
-    const text = encodeURIComponent(`Check out "${campaignTitle}" on ProductLobby!`)
-    const url = encodeURIComponent(referralUrl || campaignUrl)
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
+    try {
+      setIsLoading(true)
+      await trackShare('twitter')
+      
+      const text = encodeURIComponent(`Check out "${title}"`)
+      const urlParam = encodeURIComponent(url)
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${urlParam}`, '_blank')
+    } catch (error) {
+      console.error('Failed to share on Twitter:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleFacebookShare = async () => {
-    await trackShare('FACEBOOK')
-    const url = encodeURIComponent(referralUrl || campaignUrl)
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
+    try {
+      setIsLoading(true)
+      await trackShare('facebook')
+      
+      const urlParam = encodeURIComponent(url)
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${urlParam}`, '_blank')
+    } catch (error) {
+      console.error('Failed to share on Facebook:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleLinkedInShare = async () => {
-    await trackShare('LINKEDIN')
-    const url = encodeURIComponent(referralUrl || campaignUrl)
-    const title = encodeURIComponent(campaignTitle)
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank')
-  }
-
-  const handleWhatsAppShare = async () => {
-    await trackShare('WHATSAPP')
-    const text = encodeURIComponent(`Check out "${campaignTitle}" on ProductLobby! ${referralUrl || campaignUrl}`)
-    window.open(`https://wa.me/?text=${text}`, '_blank')
+    try {
+      setIsLoading(true)
+      await trackShare('linkedin')
+      
+      const urlParam = encodeURIComponent(url)
+      const titleParam = encodeURIComponent(title)
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${urlParam}&title=${titleParam}`, '_blank')
+    } catch (error) {
+      console.error('Failed to share on LinkedIn:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleEmailShare = async () => {
-    await trackShare('EMAIL')
-    const subject = encodeURIComponent(`Check out this campaign: ${campaignTitle}`)
-    const body = encodeURIComponent(
-      `I found this great campaign on ProductLobby:\n\n${campaignTitle}\n\n${referralUrl || campaignUrl}`
-    )
-    window.open(`mailto:?subject=${subject}&body=${body}`)
+    try {
+      setIsLoading(true)
+      await trackShare('email')
+      
+      const subject = encodeURIComponent(`Check out: ${title}`)
+      const body = encodeURIComponent(
+        `${description || title}\n\n${url}`
+      )
+      window.location.href = `mailto:?subject=${subject}&body=${body}`
+    } catch (error) {
+      console.error('Failed to share via email:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const ShareButton = ({
     icon: Icon,
     label,
     onClick,
-    variant = 'secondary'
+    bgHoverColor = 'hover:bg-gray-100',
   }: {
-    icon: any
+    icon: React.ReactNode | React.ComponentType<any>
     label: string
     onClick: () => void
-    variant?: string
+    bgHoverColor?: string
   }) => (
-    <Button
-      variant={variant as any}
-      size="md"
-      className={cn('w-full justify-center gap-2')}
+    <button
       onClick={onClick}
       disabled={isLoading}
       title={label}
+      className={cn(
+        'p-2 rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed',
+        bgHoverColor
+      )}
+      aria-label={label}
     >
-      <Icon className="w-4 h-4" />
-      <span className="hidden sm:inline">{label}</span>
-    </Button>
+      {typeof Icon === 'function' ? <Icon /> : Icon}
+    </button>
   )
 
   return (
-    <div className="space-y-4">
-      {/* Share buttons grid */}
-      <div className="space-y-2">
-        <ShareButton
-          icon={Share2}
-          label={copied ? 'Copied!' : 'Copy Link'}
-          onClick={handleCopyLink}
-          variant={copied ? 'primary' : 'secondary'}
-        />
-        <div className="grid grid-cols-2 gap-2">
-          <ShareButton
-            icon={Twitter}
-            label="Twitter/X"
-            onClick={handleTwitterShare}
-          />
-          <ShareButton
-            icon={Facebook}
-            label="Facebook"
-            onClick={handleFacebookShare}
-          />
-          <ShareButton
-            icon={Linkedin}
-            label="LinkedIn"
-            onClick={handleLinkedInShare}
-          />
-          <ShareButton
-            icon={MessageCircle}
-            label="WhatsApp"
-            onClick={handleWhatsAppShare}
-          />
-        </div>
-        <ShareButton
-          icon={Mail}
-          label="Email"
-          onClick={handleEmailShare}
-        />
-      </div>
-
-      {/* Share stats */}
-      {showStats && shareStats && (
-        <div className="pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-600 mb-3 font-medium">Share Activity</p>
-          <div className="space-y-2">
-            {Object.entries(shareStats).map(([platform, count]) => (
-              <div key={platform} className="flex items-center justify-between text-sm">
-                <span className="text-gray-700 capitalize">
-                  {platform.toLowerCase().replace(/_/g, ' ')}
-                </span>
-                <span className="font-medium text-violet-600">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="flex items-center gap-2">
+      <ShareButton
+        icon={copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+        label={copied ? 'Copied!' : 'Copy Link'}
+        onClick={handleCopyLink}
+        bgHoverColor="hover:bg-blue-50"
+      />
+      
+      <ShareButton
+        icon={<TwitterIcon />}
+        label="Share on Twitter"
+        onClick={handleTwitterShare}
+        bgHoverColor="hover:bg-blue-50"
+      />
+      
+      <ShareButton
+        icon={<FacebookIcon />}
+        label="Share on Facebook"
+        onClick={handleFacebookShare}
+        bgHoverColor="hover:bg-blue-50"
+      />
+      
+      <ShareButton
+        icon={<LinkedInIcon />}
+        label="Share on LinkedIn"
+        onClick={handleLinkedInShare}
+        bgHoverColor="hover:bg-blue-50"
+      />
+      
+      <ShareButton
+        icon={<Mail className="w-4 h-4" />}
+        label="Share via Email"
+        onClick={handleEmailShare}
+        bgHoverColor="hover:bg-red-50"
+      />
     </div>
   )
 }
