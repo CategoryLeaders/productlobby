@@ -1,365 +1,346 @@
-import { Metadata } from 'next'
-import Link from 'next/link'
-import {
-  ArrowLeft,
-  FileText,
-  BarChart3,
-  Users,
-  Mail,
-  Download,
-  Image as ImageIcon,
-  Newspaper,
-} from 'lucide-react'
-import { Navbar } from '@/components/shared/navbar'
-import { Footer } from '@/components/shared/footer'
+import { Metadata } from 'next';
+import { Mail, Download, Calendar, ExternalLink, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/shared/navbar';
+import { Footer } from '@/components/shared/footer';
 
 export const metadata: Metadata = {
-  title: 'Press Kit | ProductLobby',
-  description:
-    'ProductLobby press resources, brand assets, key facts & figures, and media contact information.',
-}
+  title: 'Press & Media | ProductLobby',
+  description: 'Press kit, media resources, and brand assets for ProductLobby. Download logos, brand guidelines, and product screenshots.',
+  openGraph: {
+    title: 'Press & Media | ProductLobby',
+    description: 'Access ProductLobby press kit, media resources, and brand assets.',
+    type: 'website',
+  },
+};
+
+const PRESS_MENTIONS = [
+  {
+    id: 1,
+    publication: 'TechCrunch',
+    title: 'ProductLobby Raises $5M Series A to Help Brands Connect with Early Adopters',
+    date: '2025-02-15',
+    excerpt: 'The startup is using AI to identify and engage with product enthusiasts before competitors can reach them.',
+    link: '#',
+  },
+  {
+    id: 2,
+    publication: 'VentureBeat',
+    title: 'How ProductLobby is Changing Customer Discovery',
+    date: '2025-01-28',
+    excerpt: 'A deep dive into how ProductLobby\'s platform enables brands to build engaged communities from day one.',
+    link: '#',
+  },
+  {
+    id: 3,
+    publication: 'Forbes',
+    title: 'The Startup Creating the Future of Product Marketing',
+    date: '2025-01-10',
+    excerpt: 'ProductLobby\'s founders discuss their vision for democratizing access to early adopters and product enthusiasts.',
+    link: '#',
+  },
+  {
+    id: 4,
+    publication: 'The Verge',
+    title: 'ProductLobby Makes Product Discovery Social Again',
+    date: '2024-12-20',
+    excerpt: 'The platform is rethinking how products find their audience in a world of algorithmic feeds and endless options.',
+    link: '#',
+  },
+  {
+    id: 5,
+    publication: 'FastCompany',
+    title: 'Why Brands Are Choosing ProductLobby Over Traditional Marketing',
+    date: '2024-11-15',
+    excerpt: 'An analysis of why ProductLobby\'s community-first approach resonates with modern brands.',
+    link: '#',
+  },
+];
+
+const PRESS_RELEASES = [
+  {
+    id: 1,
+    title: 'ProductLobby Announces Series A Funding Round',
+    date: '2025-02-15',
+    summary: 'ProductLobby secures $5 million in Series A funding to accelerate product expansion and team growth. The round was led by prominent venture capital firms supporting innovation in community-driven product discovery.',
+  },
+  {
+    id: 2,
+    title: 'ProductLobby Launches AI-Powered Audience Insights',
+    date: '2025-01-20',
+    summary: 'New AI-powered analytics feature helps brands understand their audience deeply and tailor campaigns with precision. The feature analyzes audience behavior patterns, preferences, and engagement metrics in real-time.',
+  },
+  {
+    id: 3,
+    title: 'ProductLobby Reaches 10,000 Brands on Platform',
+    date: '2024-12-10',
+    summary: 'Milestone achievement marks significant growth in platform adoption. ProductLobby celebrates serving over 10,000 brands globally, with millions of product launches facilitated through the platform.',
+  },
+];
+
+const COMPANY_FACTS = [
+  {
+    label: 'Founded',
+    value: '2022',
+  },
+  {
+    label: 'Headquarters',
+    value: 'San Francisco, CA',
+  },
+  {
+    label: 'Team Size',
+    value: '45+ Employees',
+  },
+  {
+    label: 'Active Users',
+    value: '100K+',
+  },
+];
+
+const BRAND_COLORS = [
+  {
+    name: 'Primary Violet',
+    hex: '#7C3AED',
+    description: 'Core brand color for primary actions and CTAs',
+  },
+  {
+    name: 'Accent Lime',
+    hex: '#84CC16',
+    description: 'Accent color for highlights and secondary elements',
+  },
+  {
+    name: 'Dark',
+    hex: '#1F2937',
+    description: 'Text and dark backgrounds',
+  },
+  {
+    name: 'Light',
+    hex: '#F9FAFB',
+    description: 'Light backgrounds and surfaces',
+  },
+];
 
 export default function PressPage() {
-  const pressReleases = [
-    {
-      id: 1,
-      date: '2025-02-01',
-      title: 'ProductLobby Launches Campaign FAQ Manager Feature',
-      summary:
-        'New feature enables campaign creators to build comprehensive FAQ sections with accordion-style displays, improving supporter engagement.',
-      link: '#',
-    },
-    {
-      id: 2,
-      date: '2024-12-15',
-      title: 'ProductLobby Reaches 500K Active Campaigns Milestone',
-      summary:
-        'Platform celebrates significant growth with half a million active campaigns, demonstrating strong adoption across product innovation community.',
-      link: '#',
-    },
-    {
-      id: 3,
-      date: '2024-10-20',
-      title: 'ProductLobby Partners with Major Brands to Amplify Product Ideas',
-      summary:
-        'Strategic partnerships expand platform reach, enabling creators to connect directly with leading companies to validate and develop product concepts.',
-      link: '#',
-    },
-  ]
-
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
 
-      <main className="min-h-screen bg-white">
-        {/* Header with Back Link */}
-        <section className="border-b border-gray-200 bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-violet-600 hover:text-violet-700 font-medium mb-6 text-sm"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Link>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
-              Press Kit
-            </h1>
-            <p className="text-lg text-gray-600">
-              Resources for journalists, bloggers, and media professionals
-            </p>
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-20 sm:px-8 lg:px-12">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute right-0 top-0 h-96 w-96 bg-lime-400 opacity-10 blur-3xl" />
+          </div>
+          <div className="relative mx-auto max-w-4xl">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
+                Press & Media
+              </h1>
+              <p className="mt-6 text-lg text-violet-100 sm:text-xl">
+                Get the latest news, press kits, and brand resources for ProductLobby
+              </p>
+            </div>
           </div>
         </section>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Key Facts & Figures Section */}
-          <section className="mb-16">
-            <div className="flex items-center gap-3 mb-8">
-              <BarChart3 className="w-8 h-8 text-violet-600" />
-              <h2 className="text-3xl font-bold text-gray-900">Key Facts & Figures</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-violet-50 to-violet-100 border border-violet-200 rounded-lg p-8 text-center">
-                <p className="text-5xl font-bold text-violet-700 mb-2">500K+</p>
-                <p className="text-gray-700 font-medium">Active Campaigns</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Ideas gaining momentum globally
+        <div className="mx-auto max-w-6xl px-6 py-20 sm:px-8">
+          {/* Press Kit Download Section */}
+          <section className="mb-20">
+            <h2 className="mb-12 text-3xl font-bold text-slate-900">Press Kit</h2>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-lg border border-slate-200 bg-white p-8 hover:shadow-lg transition-shadow">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-violet-100">
+                  <Download className="h-6 w-6 text-violet-600" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-slate-900">Logo Pack</h3>
+                <p className="mb-6 text-slate-600">
+                  ProductLobby logos in PNG and SVG formats with various color options
                 </p>
+                <Button className="w-full bg-violet-600 hover:bg-violet-700">
+                  Download Logos
+                </Button>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-8 text-center">
-                <p className="text-5xl font-bold text-blue-700 mb-2">2M+</p>
-                <p className="text-gray-700 font-medium">Community Members</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Supporting product innovation
+              <div className="rounded-lg border border-slate-200 bg-white p-8 hover:shadow-lg transition-shadow">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-violet-100">
+                  <Download className="h-6 w-6 text-violet-600" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-slate-900">Brand Guidelines</h3>
+                <p className="mb-6 text-slate-600">
+                  Complete brand standards, typography, and usage guidelines for ProductLobby
                 </p>
+                <Button className="w-full bg-violet-600 hover:bg-violet-700">
+                  Download PDF
+                </Button>
               </div>
 
-              <div className="bg-gradient-to-br from-lime-50 to-lime-100 border border-lime-200 rounded-lg p-8 text-center">
-                <p className="text-5xl font-bold text-lime-700 mb-2">150+</p>
-                <p className="text-gray-700 font-medium">Partner Brands</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Companies using ProductLobby
+              <div className="rounded-lg border border-slate-200 bg-white p-8 hover:shadow-lg transition-shadow">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-violet-100">
+                  <Download className="h-6 w-6 text-violet-600" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-slate-900">Product Screenshots</h3>
+                <p className="mb-6 text-slate-600">
+                  High-resolution screenshots and demo videos of ProductLobby features
                 </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-8 text-center">
-                <p className="text-5xl font-bold text-orange-700 mb-2">50</p>
-                <p className="text-gray-700 font-medium">Countries</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Worldwide coverage
-                </p>
+                <Button className="w-full bg-violet-600 hover:bg-violet-700">
+                  Download Assets
+                </Button>
               </div>
             </div>
           </section>
 
-          <hr className="my-16" />
-
-          {/* Brand Assets Section */}
-          <section className="mb-16">
-            <div className="flex items-center gap-3 mb-8">
-              <ImageIcon className="w-8 h-8 text-violet-600" />
-              <h2 className="text-3xl font-bold text-gray-900">Brand Assets</h2>
-            </div>
-
-            <p className="text-gray-600 mb-8">
-              Use these resources for articles, presentations, and media coverage.
-              All assets are available under our Media License.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Logo Description */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-violet-100">
-                      <ImageIcon className="h-6 w-6 text-violet-600" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Logo & Mark
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      ProductLobby logo is available in full color, monochrome, and
-                      white versions. Minimum size: 40px width for digital use.
-                    </p>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors">
-                      <Download className="w-4 h-4" />
-                      Download Logo Package
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Color Palette Description */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-full bg-violet-600" />
-                        <div className="w-2 h-2 rounded-full bg-blue-600" />
-                        <div className="w-2 h-2 rounded-full bg-lime-600" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Color Palette
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Primary: Violet (#7C3AED). Secondary: Blue (#3B82F6), Lime
-                      (#84CC16). Download brand guidelines for specifications.
-                    </p>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors">
-                      <Download className="w-4 h-4" />
-                      Brand Guidelines
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Typography Description */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-emerald-100">
-                      <FileText className="h-6 w-6 text-emerald-600" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Typography
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      We use Inter for UI and system fonts. Headings use Inter Bold,
-                      body text uses Inter Regular. See guidelines for detailed specs.
-                    </p>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors">
-                      <Download className="w-4 h-4" />
-                      Font Files
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Screenshot Package Description */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-pink-100">
-                      <ImageIcon className="h-6 w-6 text-pink-600" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Screenshots & Demos
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      High-resolution screenshots of key features and user flows.
-                      Perfect for articles and presentations. Updated monthly.
-                    </p>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors">
-                      <Download className="w-4 h-4" />
-                      Download Screenshots
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <hr className="my-16" />
-
-          {/* Press Releases Section */}
-          <section className="mb-16">
-            <div className="flex items-center gap-3 mb-8">
-              <Newspaper className="w-8 h-8 text-violet-600" />
-              <h2 className="text-3xl font-bold text-gray-900">Latest Press Releases</h2>
-            </div>
-
+          {/* Recent Press Mentions */}
+          <section className="mb-20">
+            <h2 className="mb-12 text-3xl font-bold text-slate-900">Recent Press Mentions</h2>
             <div className="space-y-6">
-              {pressReleases.map((release) => (
+              {PRESS_MENTIONS.map((mention) => (
+                <article
+                  key={mention.id}
+                  className="rounded-lg border border-slate-200 bg-white p-8 hover:shadow-lg transition-shadow"
+                >
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="inline-block rounded-full bg-lime-100 px-3 py-1 text-sm font-medium text-lime-700">
+                      {mention.publication}
+                    </span>
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(mention.date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                  <h3 className="mb-3 text-xl font-semibold text-slate-900">
+                    {mention.title}
+                  </h3>
+                  <p className="mb-6 text-slate-600">{mention.excerpt}</p>
+                  <a href={mention.link}>
+                    <Button variant="outline" className="gap-2">
+                      Read Article
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </a>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {/* Press Releases */}
+          <section className="mb-20">
+            <h2 className="mb-12 text-3xl font-bold text-slate-900">Press Releases</h2>
+            <div className="space-y-6">
+              {PRESS_RELEASES.map((release) => (
                 <div
                   key={release.id}
-                  className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow"
+                  className="rounded-lg border border-slate-200 bg-white p-8 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium mb-2">
-                        {new Date(release.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                        {release.title}
-                      </h3>
-                      <p className="text-gray-600 leading-relaxed mb-6">
-                        {release.summary}
-                      </p>
-                      <button className="inline-flex items-center gap-2 text-violet-600 hover:text-violet-700 font-medium">
-                        Read Full Release
-                        <span className="text-lg">→</span>
-                      </button>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <FileText className="w-12 h-12 text-gray-300" />
-                    </div>
+                  <div className="mb-3 flex items-center gap-3 text-sm text-slate-500">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(release.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
                   </div>
+                  <h3 className="mb-4 text-2xl font-bold text-slate-900">
+                    {release.title}
+                  </h3>
+                  <p className="text-slate-600">{release.summary}</p>
                 </div>
               ))}
             </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-gray-600 mb-4">
-                Looking for older press releases? Check our news archive.
-              </p>
-              <Link
-                href="/press/archive"
-                className="inline-flex items-center gap-2 text-violet-600 hover:text-violet-700 font-medium"
-              >
-                View Archive
-                <span className="text-lg">→</span>
-              </Link>
-            </div>
           </section>
-
-          <hr className="my-16" />
 
           {/* Media Contact Section */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <Mail className="w-8 h-8 text-violet-600" />
-              <h2 className="text-3xl font-bold text-gray-900">Media Contact</h2>
-            </div>
-
-            <div className="bg-gradient-to-r from-violet-50 to-blue-50 border border-violet-200 rounded-lg p-12">
-              <div className="max-w-2xl">
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  Get in Touch
-                </h3>
-                <p className="text-gray-700 mb-6">
-                  For media inquiries, interview requests, or to learn more about
-                  ProductLobby, please contact our communications team.
-                </p>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-4">
-                    <Mail className="w-5 h-5 text-violet-600 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-gray-900">Email</p>
-                      <a
-                        href="mailto:press@productlobby.com"
-                        className="text-violet-600 hover:text-violet-700 font-medium"
-                      >
-                        press@productlobby.com
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <Users className="w-5 h-5 text-violet-600 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-gray-900">Press Team</p>
-                      <p className="text-gray-600">
-                        Available for interviews, quotes, and technical insights
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <button className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors">
-                  <Mail className="w-4 h-4" />
-                  Request Media Kit
-                </button>
+          <section className="mb-20 rounded-xl bg-gradient-to-r from-violet-50 to-lime-50 p-12">
+            <div className="mx-auto max-w-2xl">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-violet-600">
+                <Mail className="h-6 w-6 text-white" />
               </div>
+              <h2 className="mb-4 text-3xl font-bold text-slate-900">Media Contact</h2>
+              <p className="mb-8 text-lg text-slate-600">
+                For press inquiries, interview requests, or media coverage, please contact our communications team.
+              </p>
+              <div className="mb-8 space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Email</p>
+                  <a
+                    href="mailto:press@productlobby.com"
+                    className="text-lg font-semibold text-violet-600 hover:text-violet-700"
+                  >
+                    press@productlobby.com
+                  </a>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Response Time</p>
+                  <p className="text-lg font-semibold text-slate-900">Within 24 business hours</p>
+                </div>
+              </div>
+              <Button size="lg" className="bg-violet-600 hover:bg-violet-700">
+                Send Media Inquiry
+              </Button>
             </div>
           </section>
 
-          {/* Additional Info */}
-          <section className="mt-16 bg-gray-50 border border-gray-200 rounded-lg p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">About ProductLobby</h3>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              ProductLobby is a global platform empowering creators, entrepreneurs, and
-              innovators to validate, develop, and launch product ideas. We connect
-              visionary makers with a community of millions of supporters and leading
-              brands looking to innovate together.
-            </p>
-            <p className="text-gray-700 leading-relaxed">
-              Founded in 2020, ProductLobby has become the go-to platform for product
-              validation, community engagement, and market research. Our mission is to
-              democratize product development and give every great idea a chance to
-              succeed.
-            </p>
+          {/* Company Facts */}
+          <section className="mb-20">
+            <h2 className="mb-12 text-3xl font-bold text-slate-900">Company Facts</h2>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {COMPANY_FACTS.map((fact) => (
+                <div
+                  key={fact.label}
+                  className="rounded-lg border border-slate-200 bg-white p-8 text-center hover:shadow-lg transition-shadow"
+                >
+                  <p className="mb-3 text-sm font-medium uppercase tracking-wider text-slate-500">
+                    {fact.label}
+                  </p>
+                  <p className="text-3xl font-bold text-violet-600">{fact.value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Brand Assets Preview */}
+          <section>
+            <h2 className="mb-12 text-3xl font-bold text-slate-900">Brand Assets</h2>
+
+            {/* Logo Preview */}
+            <div className="mb-12 rounded-lg border border-slate-200 bg-white p-12">
+              <h3 className="mb-8 text-xl font-semibold text-slate-900">ProductLobby Logo</h3>
+              <div className="flex items-center justify-center rounded-lg bg-slate-50 p-12">
+                <div className="text-center">
+                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-violet-700">
+                    <Zap className="h-8 w-8 text-white" />
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">ProductLobby</p>
+                  <p className="mt-1 text-sm text-slate-500">Logo with icon</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Color Swatches */}
+            <div className="rounded-lg border border-slate-200 bg-white p-12">
+              <h3 className="mb-8 text-xl font-semibold text-slate-900">Brand Colors</h3>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {BRAND_COLORS.map((color) => (
+                  <div key={color.hex}>
+                    <div
+                      className="mb-4 h-24 rounded-lg border border-slate-200 shadow-sm"
+                      style={{ backgroundColor: color.hex }}
+                    />
+                    <p className="font-semibold text-slate-900">{color.name}</p>
+                    <p className="text-sm text-slate-500">{color.hex}</p>
+                    <p className="mt-2 text-xs text-slate-600">{color.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
         </div>
       </main>
 
       <Footer />
-    </>
-  )
+    </div>
+  );
 }
