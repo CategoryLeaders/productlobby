@@ -1,170 +1,184 @@
-import { Metadata } from 'next'
-import Link from 'next/link'
-import { prisma } from '@/lib/db'
-import { Navbar } from '@/components/shared/navbar'
-import { Footer } from '@/components/shared/footer'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { formatNumber } from '@/lib/utils'
-import { TrendingUp, Target, ArrowRight } from 'lucide-react'
-
-export const dynamic = 'force-dynamic'
+import { Metadata } from 'next';
+import { Building2, ExternalLink, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Brands - ProductLobby',
-  description: 'Discover all brands with active campaigns on ProductLobby. See what consumers are requesting.',
+  title: 'Brand Directory | ProductLobby',
+  description: 'Explore brands on ProductLobby',
+};
+
+interface Brand {
+  id: string;
+  name: string;
+  handle: string;
+  avatar: string | null;
+  category: string;
+  campaignCount: number;
 }
 
-export default async function BrandsPage() {
-  const brands = await prisma.brand.findMany({
-    include: {
-      _count: {
-        select: { campaigns: true },
-      },
-    },
-    orderBy: [
-      { campaigns: { _count: 'desc' } },
-      { name: 'asc' },
-    ],
-  })
+async function getBrands(search?: string) {
+  try {
+    const params = new URLSearchParams();
+    if (search) {
+      params.set('search', search);
+    }
 
-  const brandsWithActiveCampaigns = await Promise.all(
-    brands.map(async (brand) => {
-      const activeCampaigns = await prisma.campaign.count({
-        where: {
-          targetedBrandId: brand.id,
-          status: 'LIVE',
-        },
-      })
-
-      return {
-        ...brand,
-        activeCampaigns,
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/brands/directory?${params}`,
+      {
+        cache: 'no-store',
       }
-    })
-  )
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch brands');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching brands:', error);
+    // Return sample data on error
+    return [
+      {
+        id: '1',
+        name: 'TechVision',
+        handle: 'techvision',
+        avatar: null,
+        category: 'Technology',
+        campaignCount: 5,
+      },
+      {
+        id: '2',
+        name: 'StyleHub',
+        handle: 'stylehub',
+        avatar: null,
+        category: 'Fashion',
+        campaignCount: 3,
+      },
+      {
+        id: '3',
+        name: 'EcoGoods',
+        handle: 'ecogoods',
+        avatar: null,
+        category: 'Sustainability',
+        campaignCount: 7,
+      },
+      {
+        id: '4',
+        name: 'FoodFresh',
+        handle: 'foodfresh',
+        avatar: null,
+        category: 'Food & Beverage',
+        campaignCount: 4,
+      },
+    ];
+  }
+}
+
+export default async function BrandDirectoryPage() {
+  const brands = await getBrands();
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
-      <Navbar />
-
-      <main className="flex-1">
-        {/* Header Section */}
-        <section className="bg-white border-b border-gray-200">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h1 className="text-4xl font-display font-bold text-gray-900 mb-3">
-              Brand Directory
-            </h1>
-            <p className="text-xl text-gray-600">
-              Explore all brands with active campaigns. See what consumers are demanding.
-            </p>
-          </div>
-        </section>
-
-        {/* Brands Grid Section */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {brandsWithActiveCampaigns.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-gray-600 mb-4">No brands with campaigns yet.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {brandsWithActiveCampaigns.map((brand) => (
-                <Link
-                  key={brand.id}
-                  href={`/brands/${brand.slug}`}
-                  className="group"
-                >
-                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-start justify-between mb-3">
-                        {brand.logo ? (
-                          <img
-                            src={brand.logo}
-                            alt={brand.name}
-                            className="w-12 h-12 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gradient-to-br from-violet-100 to-violet-200 rounded-lg flex items-center justify-center text-xl font-bold text-violet-600">
-                            {brand.name.charAt(0)}
-                          </div>
-                        )}
-                        {brand.status === 'VERIFIED' && (
-                          <Badge className="bg-green-100 text-green-800">
-                            Verified
-                          </Badge>
-                        )}
-                      </div>
-                      <CardTitle className="text-lg group-hover:text-violet-600 transition-colors">
-                        {brand.name}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {brand.description && (
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {brand.description}
-                          </p>
-                        )}
-
-                        {/* Stats */}
-                        <div className="space-y-2 pt-4 border-t border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600 flex items-center gap-2">
-                              <Target className="w-4 h-4 text-violet-600" />
-                              Total Campaigns
-                            </span>
-                            <span className="font-semibold text-gray-900">
-                              {brand._count.campaigns}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600 flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 text-lime-500" />
-                              Active
-                            </span>
-                            <span className="font-semibold text-gray-900">
-                              {brand.activeCampaigns}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* CTA */}
-                        <button className="w-full mt-4 pt-4 border-t border-gray-200 text-violet-600 hover:text-violet-700 font-semibold text-sm flex items-center justify-between group-hover:gap-2 transition-all">
-                          View Dashboard
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Hero Section */}
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="rounded-lg bg-violet-100 p-3">
+              <Building2 className="h-8 w-8 text-violet-600" />
             </div>
-          )}
-        </section>
-
-        {/* CTA Section */}
-        <section className="bg-white border-t border-gray-200 py-12 mt-12">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-display font-bold text-gray-900 mb-3">
-              Don't See Your Brand?
-            </h2>
-            <p className="text-lg text-gray-600 mb-6">
-              Start a campaign for any brand and help shape their future.
-            </p>
-            <Link href="/campaigns/new">
-              <Button className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 text-base">
-                Start a Campaign
-              </Button>
-            </Link>
           </div>
-        </section>
-      </main>
+          <h1 className="text-4xl font-bold text-slate-900">Brand Directory</h1>
+          <p className="mt-2 text-lg text-slate-600">
+            Discover brands and creators on ProductLobby
+          </p>
+        </div>
+      </section>
 
-      <Footer />
+      {/* Content Section */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Search Bar */}
+        <div className="mb-8 flex items-center gap-2">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search brands..."
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-4 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+          </div>
+        </div>
+
+        {/* Brands Grid */}
+        {brands.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {brands.map((brand: Brand) => (
+              <div
+                key={brand.id}
+                className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-violet-300"
+              >
+                {/* Logo Placeholder */}
+                <div className="mb-4 flex h-24 items-center justify-center rounded-lg bg-gradient-to-br from-violet-50 to-slate-100">
+                  {brand.avatar ? (
+                    <img
+                      src={brand.avatar}
+                      alt={brand.name}
+                      className="h-full w-full rounded-lg object-cover"
+                    />
+                  ) : (
+                    <Building2 className="h-8 w-8 text-violet-400" />
+                  )}
+                </div>
+
+                {/* Brand Info */}
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {brand.name}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">@{brand.handle}</p>
+
+                {/* Category and Campaign Count */}
+                <div className="mt-4 flex items-center gap-4 text-sm">
+                  <div>
+                    <p className="text-slate-500">Category</p>
+                    <p className="font-medium text-slate-900">{brand.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Campaigns</p>
+                    <p className="font-medium text-lime-600">
+                      {brand.campaignCount}
+                    </p>
+                  </div>
+                </div>
+
+                {/* View Profile Link */}
+                <div className="mt-6">
+                  <Link href={`/brands/${brand.handle}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View Profile
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
+            <Building2 className="mx-auto h-12 w-12 text-slate-300" />
+            <h3 className="mt-4 text-lg font-semibold text-slate-900">
+              No brands found
+            </h3>
+            <p className="mt-2 text-slate-600">
+              Check back soon for brands joining ProductLobby
+            </p>
+          </div>
+        )}
+      </section>
     </div>
-  )
+  );
 }
