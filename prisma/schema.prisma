@@ -1348,7 +1348,7 @@ model SurveyAnswer {
 // ============================================================================
 
 model Bookmark {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   userId     String   @map("user_id")
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaignId String   @map("campaign_id")
