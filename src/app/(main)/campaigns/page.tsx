@@ -127,7 +127,7 @@ export default function CampaignsPage() {
     }
   }, [filters])
 
-  // Update URL params when filters change
+  // Update URL params when filters change (use replaceState to avoid RSC refetch)
   useEffect(() => {
     const params = new URLSearchParams()
     if (filters.search) params.set('q', filters.search)
@@ -138,8 +138,8 @@ export default function CampaignsPage() {
     const newUrl = params.toString()
       ? `/campaigns?${params.toString()}`
       : '/campaigns'
-    router.push(newUrl, { scroll: false })
-  }, [filters, router])
+    window.history.replaceState(null, '', newUrl)
+  }, [filters])
 
   // Fetch on filter changes
   useEffect(() => {
