@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Share2, Twitter, Facebook, MessageCircle, Mail, Megaphone } from 'lucide-react'
+import { ChevronRight, Megaphone } from 'lucide-react'
 import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import { PollCreationForm } from '@/components/campaigns/poll-creation-form'
 import { CampaignPollsFeed } from '@/components/campaigns/campaign-polls-feed'
 import CreatorAnalyticsDashboard from '@/components/campaigns/creator-analytics-dashboard'
 import { LobbyReasonsDisplay } from '@/components/campaigns/lobby-reasons-display'
+import { ShareEmbedSection } from '@/components/campaigns/share-embed-section'
 import { QASection } from '@/components/shared/qa-section'
 import { CommentsSection } from '@/components/shared/comments-section'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
@@ -879,111 +880,13 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                 </Card>
 
 
-                {/* Share Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Share this campaign</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="w-full justify-center gap-2"
-                      onClick={() => {
-                        const shareUrl = new URL(window.location.href)
-                        shareUrl.searchParams.set('utm_source', 'campaign_share')
-                        shareUrl.searchParams.set('utm_medium', 'copy_link')
-                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
-                        navigator.clipboard.writeText(shareUrl.toString())
-                      }}
-                    >
-                      <Share2 className="w-4 h-4" />
-                      Copy link
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="w-full justify-center gap-2"
-                      onClick={() => {
-                        const shareUrl = new URL(window.location.href)
-                        shareUrl.searchParams.set('utm_source', 'twitter')
-                        shareUrl.searchParams.set('utm_medium', 'social')
-                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
-                        const text = encodeURIComponent(`I just lobbied for "${campaign.title}" on ProductLobby 🎯\n\nJoin me in showing brands there's real demand for products people actually want!`)
-                        const url = encodeURIComponent(shareUrl.toString())
-                        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
-                      }}
-                    >
-                      <Twitter className="w-4 h-4" />
-                      Twitter / X
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="w-full justify-center gap-2"
-                      onClick={() => {
-                        const shareUrl = new URL(window.location.href)
-                        shareUrl.searchParams.set('utm_source', 'facebook')
-                        shareUrl.searchParams.set('utm_medium', 'social')
-                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
-                        const url = encodeURIComponent(shareUrl.toString())
-                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
-                      }}
-                    >
-                      <Facebook className="w-4 h-4" />
-                      Facebook
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="w-full justify-center gap-2"
-                      onClick={() => {
-                        const shareUrl = new URL(window.location.href)
-                        shareUrl.searchParams.set('utm_source', 'linkedin')
-                        shareUrl.searchParams.set('utm_medium', 'social')
-                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
-                        const text = encodeURIComponent(`I'm lobbying for "${campaign.title}" on ProductLobby. Check it out and add your voice!\n\n${shareUrl.toString()}`)
-                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl.toString())}`, '_blank')
-                      }}
-                    >
-                      <Megaphone className="w-4 h-4" />
-                      LinkedIn
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="w-full justify-center gap-2"
-                      onClick={() => {
-                        const shareUrl = new URL(window.location.href)
-                        shareUrl.searchParams.set('utm_source', 'whatsapp')
-                        shareUrl.searchParams.set('utm_medium', 'social')
-                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
-                        const text = encodeURIComponent(`Check out "${campaign.title}" on ProductLobby! 🎯\n\nAggregate demand. Influence brands.\n\n${shareUrl.toString()}`)
-                        window.open(`https://wa.me/?text=${text}`, '_blank')
-                      }}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      WhatsApp
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="w-full justify-center gap-2"
-                      onClick={() => {
-                        const shareUrl = new URL(window.location.href)
-                        shareUrl.searchParams.set('utm_source', 'email')
-                        shareUrl.searchParams.set('utm_medium', 'direct')
-                        shareUrl.searchParams.set('utm_campaign', campaign.slug)
-                        const subject = encodeURIComponent(`Check out this campaign: ${campaign.title}`)
-                        const body = encodeURIComponent(`I found this great campaign on ProductLobby:\n\n${campaign.title}\n${campaign.description.slice(0, 200)}...\n\nAggregate demand. Influence brands.\n\n${shareUrl.toString()}`)
-                        window.open(`mailto:?subject=${subject}&body=${body}`)
-                      }}
-                    >
-                      <Mail className="w-4 h-4" />
-                      Email
-                    </Button>
-                  </CardContent>
-                </Card>
+                {/* Share & Embed Section */}
+                <ShareEmbedSection
+                  campaignId={campaign.id}
+                  campaignSlug={campaign.slug}
+                  campaignTitle={campaign.title}
+                  campaignDescription={campaign.description}
+                />
 
                 {/* Campaign Stats Card */}
                 <Card>
