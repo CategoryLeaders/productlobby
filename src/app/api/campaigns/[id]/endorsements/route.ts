@@ -11,10 +11,11 @@ interface EndorsementParams {
 }
 
 interface EndorsementMetadata {
-  endorserName: string
-  title: string
-  organization: string
-  reason?: string
+  action: string
+  name?: string
+  title?: string
+  organization?: string
+  quote?: string
 }
 
 // GET /api/campaigns/[id]/endorsements - List endorsements for a campaign
@@ -37,14 +38,14 @@ export async function GET(request: NextRequest, { params }: EndorsementParams) {
       )
     }
 
-    // Get endorsements from ContributionEvent table
+    // Get endorsements from ContributionEvent table where action is 'endorsement'
     const endorsements = await prisma.contributionEvent.findMany({
       where: {
         campaignId: campaign.id,
         eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['type'],
-          equals: 'ENDORSEMENT',
+          path: ['action'],
+          equals: 'endorsement',
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest, { params }: EndorsementParams) {
 
     // Format endorsements
     const formattedEndorsements = endorsements.map((event) => {
-      const metadata = event.metadata as EndorsementMetadata & { type?: string }
+      const metadata = event.metadata as EndorsementMetadata
 
       return {
         id: event.id,
@@ -73,9 +74,10 @@ export async function GET(request: NextRequest, { params }: EndorsementParams) {
           avatar: event.user.avatar,
           handle: event.user.handle,
         },
+        name: metadata.name || event.user.displayName,
         title: metadata.title || '',
         organization: metadata.organization || '',
-        reason: metadata.reason || '',
+        quote: metadata.quote || '',
         createdAt: event.createdAt,
       }
     })
@@ -106,12 +108,30 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
 
     const { id } = params
     const body = await request.json()
-    const { title, organization, reason } = body
+    const { name, title, organization, quote } = body
 
     // Validate input
-    if (!title || !organization) {
+    if (!name?.trim()) {
       return NextResponse.json(
-        { success: false, error: 'Title and organization are required' },
+        { success: false, error: 'Name is required' },
+        { status: 400 }
+      )
+    }
+    if (!title?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Title is required' },
+        { status: 400 }
+      )
+    }
+    if (!organization?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Organization is required' },
+        { status: 400 }
+      )
+    }
+    if (!quote?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Quote is required' },
         { status: 400 }
       )
     }
@@ -138,8 +158,8 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
         campaignId: campaign.id,
         eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['type'],
-          equals: 'ENDORSEMENT',
+          path: ['action'],
+          equals: 'endorsement',
         },
       },
     })
@@ -151,7 +171,7 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
       )
     }
 
-    // Create endorsement as ContributionEvent
+    // Create endorsement as ContributionEvent with eventType SOCIAL_SHARE and metadata.action = 'endorsement'
     const endorsement = await prisma.contributionEvent.create({
       data: {
         userId: user.id,
@@ -159,11 +179,11 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
         eventType: 'SOCIAL_SHARE',
         points: 10, // Points for endorsement
         metadata: {
-          type: 'ENDORSEMENT',
-          endorserName: user.displayName,
-          title,
-          organization,
-          reason: reason || '',
+          action: 'endorsement',
+          name: name.trim(),
+          title: title.trim(),
+          organization: organization.trim(),
+          quote: quote.trim(),
         },
       },
       include: {
@@ -190,9 +210,10 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
             avatar: endorsement.user.avatar,
             handle: endorsement.user.handle,
           },
-          title,
-          organization,
-          reason: reason || '',
+          name: name.trim(),
+          title: title.trim(),
+          organization: organization.trim(),
+          quote: quote.trim(),
           createdAt: endorsement.createdAt,
         },
       },
