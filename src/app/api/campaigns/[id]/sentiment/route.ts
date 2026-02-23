@@ -44,6 +44,12 @@ interface SentimentResult {
   }
 }
 
+interface SentimentSample {
+  sentiment: 'positive' | 'neutral' | 'negative'
+  quote: string
+  timestamp: string
+}
+
 function analyzeSentiment(text: string): 'positive' | 'neutral' | 'negative' {
   if (!text || typeof text !== 'string') {
     return 'neutral'
@@ -111,6 +117,40 @@ function getSentimentTrend(comments: Array<{ createdAt: Date; sentiment: string 
   return trend
 }
 
+function extractSentimentSamples(
+  comments: Array<{
+    id: string
+    content: string
+    createdAt: Date
+    sentiment: 'positive' | 'neutral' | 'negative'
+  }>,
+  limit: number = 3
+): SentimentSample[] {
+  // Get the most recent comments
+  const recentComments = comments.slice(0, limit)
+
+  return recentComments.map(comment => ({
+    sentiment: comment.sentiment,
+    quote: `"${comment.content.substring(0, 80)}${comment.content.length > 80 ? '...' : ''}"`,
+    timestamp: formatRelativeTime(comment.createdAt),
+  }))
+}
+
+function formatRelativeTime(date: Date): string {
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffInSeconds < 60) return 'just now'
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -159,6 +199,7 @@ export async function GET(
           trend: {
             week: [0, 0, 0, 0, 0, 0, 0],
           },
+          samples: [],
         },
       })
     }
@@ -195,6 +236,9 @@ export async function GET(
     // Get trend
     const trend = getSentimentTrend(sentimentAnalysis)
 
+    // Extract sentiment samples
+    const samples = extractSentimentSamples(sentimentAnalysis)
+
     const result: SentimentResult = {
       positive: Math.round(positivePercent),
       neutral: Math.round(neutralPercent),
@@ -209,9 +253,10 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: result,
+      samples,
       meta: {
         totalComments: total,
-        analyzedat: new Date().toISOString(),
+        analyzedAt: new Date().toISOString(),
       },
     })
   } catch (error) {
