@@ -3,71 +3,54 @@ import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-interface SearchResult {
-  campaigns: Array<{
-    id: string
-    title: string
-    slug: string
-    description: string | null
-    category: string | null
-    creator: {
-      id: string
-      displayName: string
-      handle: string | null
-      avatar: string | null
-    }
-    targetedBrand: {
-      id: string
-      name: string
-      slug: string
-      logo: string | null
-    } | null
-    lobbyCount: number
-  }>
-  brands: Array<{
-    id: string
-    name: string
-    slug: string
-    logo: string | null
-    campaignCount: number
-  }>
-  creators: Array<{
-    id: string
-    displayName: string
-    handle: string | null
-    avatar: string | null
-    bio: string | null
-    campaignCount: number
-  }>
-}
-
-// GET /api/search - Unified search across campaigns, brands, and creators
+// ============================================================================
+// GET /api/search
+// ============================================================================
+// Global search for campaigns and users
+// Query params:
+//   - q: search query (required)
+//   - type: filter by type ('campaigns', 'users', 'all' - default 'all')
+//   - limit: results per type (default 10, max 50)
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const q = searchParams.get('q') || ''
-    const limit = Math.min(parseInt(searchParams.get('limit') || '5'), 20)
+    const query = searchParams.get('q')?.trim() || ''
+    const type = searchParams.get('type') || 'all'
+    const limitStr = searchParams.get('limit') || '10'
+    const limit = Math.min(Math.max(1, parseInt(limitStr)), 50)
 
-    // Normalize search query
-    const searchTerm = q.trim()
-
-    if (!searchTerm || searchTerm.length < 1) {
-      return NextResponse.json<SearchResult>({
+    // Validate query
+    if (!query || query.length < 2) {
+      return NextResponse.json({
         campaigns: [],
-        brands: [],
-        creators: [],
+        users: [],
+        message: 'Query must be at least 2 characters',
       })
     }
 
-    // Search campaigns (title, description, category)
-    const [campaigns, brands, creators] = await Promise.all([
-      prisma.campaign.findMany({
+    const results: {
+      campaigns?: any[]
+      users?: any[]
+    } = {}
+
+    // Search campaigns
+    if (type === 'campaigns' || type === 'all') {
+      const campaigns = await prisma.campaign.findMany({
         where: {
           status: 'LIVE',
           OR: [
-            { title: { contains: searchTerm, mode: 'insensitive' } },
-            { description: { contains: searchTerm, mode: 'insensitive' } },
-            { category: { contains: searchTerm, mode: 'insensitive' } },
+            {
+              title: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
+            {
+              description: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
           ],
         },
         select: {
@@ -76,61 +59,52 @@ export async function GET(request: NextRequest) {
           slug: true,
           description: true,
           category: true,
+          status: true,
           creator: {
             select: {
               id: true,
               displayName: true,
-              handle: true,
               avatar: true,
-            },
-          },
-          targetedBrand: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              logo: true,
-            },
-          },
-          _count: {
-            select: {
-              lobbies: true,
+              handle: true,
             },
           },
         },
-        orderBy: [
-          { signalScore: 'desc' },
-          { createdAt: 'desc' },
-        ],
         take: limit,
-      }),
+      })
 
-      // Search brands (name)
-      prisma.brand.findMany({
-        where: {
-          name: { contains: searchTerm, mode: 'insensitive' },
-        },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          logo: true,
-          _count: {
-            select: {
-              campaigns: true,
-            },
-          },
-        },
-        orderBy: { name: 'asc' },
-        take: limit,
-      }),
+      // Add lobby count for each campaign
+      const campaignsWithCounts = await Promise.all(
+        campaigns.map(async (campaign) => {
+          const lobbyCount = await prisma.lobby.count({
+            where: { campaignId: campaign.id },
+          })
+          return {
+            ...campaign,
+            lobbyCount,
+          }
+        })
+      )
 
-      // Search creators/users (displayName, handle)
-      prisma.user.findMany({
+      results.campaigns = campaignsWithCounts
+    }
+
+    // Search users
+    if (type === 'users' || type === 'all') {
+      const users = await prisma.user.findMany({
         where: {
           OR: [
-            { displayName: { contains: searchTerm, mode: 'insensitive' } },
-            { handle: { contains: searchTerm, mode: 'insensitive' } },
+            {
+              displayName: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
+            {
+              handle: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
           ],
         },
         select: {
@@ -139,57 +113,19 @@ export async function GET(request: NextRequest) {
           handle: true,
           avatar: true,
           bio: true,
-          _count: {
-            select: {
-              campaigns: true,
-            },
-          },
+          contributionScore: true,
         },
-        orderBy: { displayName: 'asc' },
         take: limit,
-      }),
-    ])
+      })
 
-    // Format results
-    const formattedCampaigns = campaigns.map((campaign: any) => ({
-      id: campaign.id,
-      title: campaign.title,
-      slug: campaign.slug,
-      description: campaign.description,
-      category: campaign.category,
-      creator: campaign.creator,
-      targetedBrand: campaign.targetedBrand,
-      lobbyCount: campaign._count?.lobbies || 0,
-    }))
-
-    const formattedBrands = brands.map((brand: any) => ({
-      id: brand.id,
-      name: brand.name,
-      slug: brand.slug,
-      logo: brand.logo,
-      campaignCount: brand._count?.campaigns || 0,
-    }))
-
-    const formattedCreators = creators.map((creator: any) => ({
-      id: creator.id,
-      displayName: creator.displayName,
-      handle: creator.handle,
-      avatar: creator.avatar,
-      bio: creator.bio,
-      campaignCount: creator._count?.campaigns || 0,
-    }))
-
-    const result: SearchResult = {
-      campaigns: formattedCampaigns,
-      brands: formattedBrands,
-      creators: formattedCreators,
+      results.users = users
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json(results)
   } catch (error) {
-    console.error('[GET /api/search]', error)
+    console.error('Search error:', error)
     return NextResponse.json(
-      { error: 'Failed to search' },
+      { error: 'Search failed' },
       { status: 500 }
     )
   }
