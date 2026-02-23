@@ -1,8 +1,15 @@
 import Link from 'next/link'
-import { ArrowLeft, Users, Shield, Zap, Heart } from 'lucide-react'
+import { ArrowLeft, Users, Shield, Zap, Heart, TrendingUp, CheckCircle } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 
 export default function AboutPage() {
+  const stats = [
+    { label: 'Active Campaigns', value: '2,400+' },
+    { label: 'Community Members', value: '185K+' },
+    { label: 'Total Pledge Value', value: '$12M+' },
+    { label: 'Successful Offers', value: '340+' },
+  ]
+
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-40">
@@ -89,7 +96,50 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="text-center bg-gray-50 rounded-2xl p-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+          {stats.map((stat) => (
+            <div key={stat.label} className="p-6 rounded-xl border border-gray-100 text-center">
+              <div className="text-3xl font-bold text-violet-600 mb-2">{stat.value}</div>
+              <p className="text-sm text-gray-600">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-gray-50 rounded-2xl p-12 mb-16">
+          <h2 className="text-2xl font-bold mb-6">Why Brands Partner With Us</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="flex gap-4">
+              <CheckCircle className="w-6 h-6 text-violet-600 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Validate Market Demand</h4>
+                <p className="text-gray-600">Real market signals from people willing to put their money where their mouth is.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <CheckCircle className="w-6 h-6 text-violet-600 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">De-Risk Product Launches</h4>
+                <p className="text-gray-600">Presell products with guaranteed minimum orders before manufacturing.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <CheckCircle className="w-6 h-6 text-violet-600 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Reduce Customer Acquisition Costs</h4>
+                <p className="text-gray-600">Reach passionate, pre-qualified customers ready to buy.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <CheckCircle className="w-6 h-6 text-violet-600 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Build Brand Loyalty</h4>
+                <p className="text-gray-600">Customers who get what they requested become your biggest advocates.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center bg-violet-50 rounded-2xl p-12">
           <h2 className="text-2xl font-bold mb-4">Ready to start?</h2>
           <p className="text-gray-600 mb-6">Create your first campaign or explore what others are requesting.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -100,8 +150,12 @@ export default function AboutPage() {
       </main>
 
       <footer className="border-t py-8 mt-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
-          &copy; 2026 ProductLobby. All rights reserved.
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-gray-500 text-sm">
+          <p>&copy; 2026 ProductLobby. All rights reserved.</p>
+          <div className="flex gap-6 mt-4 sm:mt-0">
+            <Link href="/terms" className="hover:text-gray-700">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-gray-700">Privacy Policy</Link>
+          </div>
         </div>
       </footer>
     </div>
