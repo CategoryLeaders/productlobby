@@ -4,8 +4,7 @@ import { prisma } from '@/lib/db'
 
 /**
  * PATCH /api/user/notifications/[id]
- * Marks a specific notification as read
- * Auth required, must own the notification
+ * Mark a specific notification as read
  */
 export async function PATCH(
   request: NextRequest,
@@ -21,14 +20,10 @@ export async function PATCH(
     }
 
     const { id } = params
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Notification ID is required' },
-        { status: 400 }
-      )
-    }
+    const body = await request.json()
+    const { read } = body
 
-    // Get the notification
+    // Verify the notification belongs to the user
     const notification = await prisma.notification.findUnique({
       where: { id },
     })
@@ -40,7 +35,6 @@ export async function PATCH(
       )
     }
 
-    // Check that the user owns this notification
     if (notification.userId !== user.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -51,10 +45,12 @@ export async function PATCH(
     // Update the notification
     const updated = await prisma.notification.update({
       where: { id },
-      data: { read: true },
+      data: {
+        read: typeof read === 'boolean' ? read : true,
+      },
     })
 
-    return NextResponse.json(updated)
+    return NextResponse.json(updated, { status: 200 })
   } catch (error) {
     console.error('[PATCH /api/user/notifications/[id]]', error)
     return NextResponse.json(

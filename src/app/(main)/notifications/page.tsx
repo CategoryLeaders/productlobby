@@ -1,260 +1,384 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { DashboardLayout, PageHeader } from '@/components/shared'
-import { Card, CardContent, Badge, Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui'
-import {
-  CheckCircle,
-  MessageSquare,
-  TrendingUp,
-  Gift,
-  Star,
-  Bell,
-  Zap,
-} from 'lucide-react'
+import { DashboardLayout } from '@/components/shared'
 import { cn } from '@/lib/utils'
+import {
+  Bell,
+  Megaphone,
+  BarChart3,
+  MessageCircle,
+  Heart,
+  Building2,
+  HelpCircle,
+  UserPlus,
+  Check,
+  CheckAll,
+  ChevronLeft,
+} from 'lucide-react'
 
 interface Notification {
   id: string
-  type: 'campaign_update' | 'brand_response' | 'milestone' | 'referral' | 'lobby'
+  type: string
   title: string
   message: string
-  timestamp: string
-  isRead: boolean
-  link?: string
+  linkUrl?: string | null
+  read: boolean
+  createdAt: string
 }
 
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case 'brand_response':
-      return { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' }
-    case 'campaign_update':
-      return { icon: MessageSquare, color: 'text-violet-600', bg: 'bg-violet-50' }
-    case 'milestone':
-      return { icon: TrendingUp, color: 'text-lime-600', bg: 'bg-lime-50' }
-    case 'referral':
-      return { icon: Zap, color: 'text-yellow-600', bg: 'bg-yellow-50' }
-    case 'lobby':
-      return { icon: Star, color: 'text-blue-600', bg: 'bg-blue-50' }
-    default:
-      return { icon: Bell, color: 'text-gray-600', bg: 'bg-gray-50' }
-  }
+const notificationIcons: Record<string, React.ReactNode> = {
+  campaign_update: <Megaphone className="w-5 h-5" />,
+  poll: <BarChart3 className="w-5 h-5" />,
+  comment: <MessageCircle className="w-5 h-5" />,
+  milestone: <Heart className="w-5 h-5" />,
+  brand_response: <Building2 className="w-5 h-5" />,
+  new_lobby: <Heart className="w-5 h-5" />,
+  new_comment: <MessageCircle className="w-5 h-5" />,
+  question_answered: <HelpCircle className="w-5 h-5" />,
+  new_follower: <UserPlus className="w-5 h-5" />,
+  general: <Bell className="w-5 h-5" />,
 }
 
-const formatTime = (timestamp: string) => {
-  const date = new Date(timestamp)
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString)
   const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
 
-  if (hours < 1) return 'Just now'
-  if (hours < 24) return `${hours}h ago`
-  if (days < 7) return `${days}d ago`
-  if (days < 30) {
-    const weeks = Math.floor(days / 7)
-    return `${weeks}w ago`
-  }
+  if (diffMins < 1) return 'just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
 
   return date.toLocaleDateString()
 }
 
-const DEMO_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'brand_response',
-    title: 'Nike responded to a campaign you lobbied for!',
-    message: 'The Nike Extended Sizes campaign received an official response from the brand.',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    isRead: false,
-    link: '/campaigns/nike-extended',
-  },
-  {
-    id: '2',
-    type: 'milestone',
-    title: 'Campaign milestone reached!',
-    message: 'Campaign "Extended Sizes" hit 2,500 lobbies. Great momentum!',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    isRead: false,
-    link: '/campaigns/nike-extended',
-  },
-  {
-    id: '3',
-    type: 'campaign_update',
-    title: 'Sarah posted an update on Extended Sizes',
-    message: 'The campaign creator shared a new update about progress with Nike.',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/campaigns/nike-extended',
-  },
-  {
-    id: '4',
-    type: 'referral',
-    title: 'Your referral link was used!',
-    message: '+10 contribution points awarded. Keep sharing to earn more!',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/score',
-  },
-  {
-    id: '5',
-    type: 'lobby',
-    title: 'You were marked as a Hero on a campaign',
-    message: 'Your engagement on "Sustainable Coffee Pods" earned you hero status. Congratulations!',
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/campaigns/sustainable-coffee',
-  },
-  {
-    id: '6',
-    type: 'brand_response',
-    title: 'Apple viewed your contribution',
-    message: 'Apple brand team checked out your comment on the AirPods case campaign.',
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/campaigns/apple-airpods',
-  },
-  {
-    id: '7',
-    type: 'campaign_update',
-    title: 'New milestone: 1,000 lobbies!',
-    message: 'The "Dog Walking GPS Tracker" campaign reached 1,000 supporters.',
-    timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/campaigns/dog-tracker',
-  },
-  {
-    id: '8',
-    type: 'milestone',
-    title: 'Your contribution score increased',
-    message: 'You earned 25 points from your recent campaign engagement.',
-    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/score',
-  },
-  {
-    id: '9',
-    type: 'referral',
-    title: '5 new sign-ups from your link',
-    message: '+50 contribution points awarded for bringing in quality users.',
-    timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/score',
-  },
-  {
-    id: '10',
-    type: 'campaign_update',
-    title: 'Campaign shipped: Sustainable Coffee Pods',
-    message: 'Great news! The product you lobbied for is now available for purchase.',
-    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    link: '/campaigns/sustainable-coffee',
-  },
-]
+function getDateGroupLabel(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  
+  // Check if today
+  if (
+    date.toDateString() === now.toDateString()
+  ) {
+    return 'Today'
+  }
 
-function NotificationItem({ notification }: { notification: Notification }) {
-  const { icon: IconComponent, color, bg } = getNotificationIcon(notification.type)
+  // Check if yesterday
+  const yesterday = new Date(now.getTime() - 86400000)
+  if (
+    date.toDateString() === yesterday.toDateString()
+  ) {
+    return 'Yesterday'
+  }
 
-  return (
-    <Link href={notification.link || '#'}>
-      <Card className="hover:shadow-card-hover transition-all cursor-pointer">
-        <CardContent className="py-4 px-6">
-          <div className="flex items-start gap-4">
-            <div className={cn('p-3 rounded-lg flex-shrink-0', bg)}>
-              <IconComponent className={cn('w-5 h-5', color)} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm">{notification.title}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                  <p className="text-xs text-gray-500 mt-2">{formatTime(notification.timestamp)}</p>
-                </div>
-                {!notification.isRead && (
-                  <div className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0 mt-2" />
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  )
+  return 'Earlier'
 }
 
-export default function NotificationsPage() {
-  const [activeTab, setActiveTab] = useState('all')
+function groupNotificationsByDate(
+  notifications: Notification[]
+): Record<string, Notification[]> {
+  const grouped: Record<string, Notification[]> = {
+    Today: [],
+    Yesterday: [],
+    Earlier: [],
+  }
 
-  const filteredNotifications = DEMO_NOTIFICATIONS.filter(notif => {
-    switch (activeTab) {
-      case 'unread':
-        return !notif.isRead
-      case 'campaign_updates':
-        return notif.type === 'campaign_update'
-      case 'brand_responses':
-        return notif.type === 'brand_response'
-      case 'milestones':
-        return notif.type === 'milestone'
-      default:
-        return true
+  notifications.forEach((notification) => {
+    const group = getDateGroupLabel(notification.createdAt)
+    if (group in grouped) {
+      grouped[group].push(notification)
     }
   })
 
-  const unreadCount = DEMO_NOTIFICATIONS.filter(n => !n.isRead).length
+  return grouped
+}
+
+export default function NotificationsPage() {
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Fetch all notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true)
+      const url = new URL('/api/user/notifications/recent', window.location.origin)
+      
+      const response = await fetch(url.toString(), {
+        credentials: 'include',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // For now, fetch recent. In a real app, you'd paginate or fetch all
+        setNotifications(data.notifications || [])
+        setUnreadCount(data.unreadCount || 0)
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Initial load
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
+
+  // Mark notification as read
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      const response = await fetch(
+        `/api/user/notifications/${notificationId}`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ read: true }),
+        }
+      )
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notificationId ? { ...n, read: true } : n
+          )
+        )
+        setUnreadCount((prev) => Math.max(0, prev - 1))
+      }
+    } catch (error) {
+      console.error('Failed to mark as read:', error)
+    }
+  }
+
+  // Mark all as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      const response = await fetch(
+        '/api/user/notifications/mark-all-read',
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      )
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => ({ ...n, read: true }))
+        )
+        setUnreadCount(0)
+      }
+    } catch (error) {
+      console.error('Failed to mark all as read:', error)
+    }
+  }
+
+  // Filter notifications
+  const filteredNotifications =
+    filter === 'unread'
+      ? notifications.filter((n) => !n.read)
+      : notifications
+
+  // Group by date
+  const groupedNotifications = groupNotificationsByDate(filteredNotifications)
 
   return (
     <DashboardLayout role="supporter">
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground">Notifications</h1>
-            {unreadCount > 0 && (
-              <p className="text-gray-600 mt-1">You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}</p>
-            )}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Notifications
+              </h1>
+              <p className="text-sm text-gray-600">
+                {unreadCount > 0
+                  ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
+                  : 'All caught up!'}
+              </p>
+            </div>
           </div>
+
+          {/* Mark all as read button */}
           {unreadCount > 0 && (
-            <Button variant="secondary" size="sm">
-              Mark all read
-            </Button>
+            <button
+              onClick={handleMarkAllAsRead}
+              className={cn(
+                'inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium',
+                'transition-colors duration-200',
+                'text-violet-600 hover:bg-violet-50 active:bg-violet-100'
+              )}
+            >
+              <CheckAll className="w-4 h-4" />
+              Mark all as read
+            </button>
           )}
         </div>
 
-        {/* Filter Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="unread">
-              Unread
-              {unreadCount > 0 && (
-                <Badge variant="default" size="sm" className="ml-2">
-                  {unreadCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="campaign_updates">Campaign Updates</TabsTrigger>
-            <TabsTrigger value="brand_responses">Brand Responses</TabsTrigger>
-            <TabsTrigger value="milestones">Milestones</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab} className="mt-6 space-y-3">
-            {filteredNotifications.length > 0 ? (
-              filteredNotifications.map(notification => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                />
-              ))
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600">No notifications in this category</p>
-                </CardContent>
-              </Card>
+        {/* Filter tabs */}
+        <div className="flex gap-2 border-b border-gray-200">
+          <button
+            onClick={() => setFilter('all')}
+            className={cn(
+              'px-4 py-3 font-medium text-sm transition-colors duration-200',
+              'border-b-2',
+              filter === 'all'
+                ? 'text-violet-600 border-violet-600'
+                : 'text-gray-600 border-transparent hover:text-gray-900'
             )}
-          </TabsContent>
-        </Tabs>
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter('unread')}
+            className={cn(
+              'px-4 py-3 font-medium text-sm transition-colors duration-200',
+              'border-b-2',
+              filter === 'unread'
+                ? 'text-violet-600 border-violet-600'
+                : 'text-gray-600 border-transparent hover:text-gray-900'
+            )}
+          >
+            Unread {unreadCount > 0 && `(${unreadCount})`}
+          </button>
+        </div>
+
+        {/* Notifications list */}
+        {loading ? (
+          <div className="py-12 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+              <Bell className="w-6 h-6 text-gray-400 animate-pulse" />
+            </div>
+            <p className="text-gray-600">Loading notifications...</p>
+          </div>
+        ) : filteredNotifications.length === 0 ? (
+          <div className="py-12 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+              <Bell className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-gray-600">
+              {filter === 'unread'
+                ? 'No unread notifications'
+                : 'No notifications yet'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Object.entries(groupedNotifications).map(([group, items]) =>
+              items.length > 0 ? (
+                <div key={group}>
+                  {/* Date group header */}
+                  <h3 className="text-sm font-semibold text-gray-600 mb-3 px-4">
+                    {group}
+                  </h3>
+
+                  {/* Notifications in this group */}
+                  <div className="space-y-2">
+                    {items.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={cn(
+                          'px-4 py-4 rounded-lg transition-colors duration-200 border',
+                          !notification.read
+                            ? 'bg-blue-50 border-blue-100 hover:bg-blue-100'
+                            : 'bg-white border-gray-200 hover:bg-gray-50'
+                        )}
+                      >
+                        <div className="flex gap-4">
+                          {/* Icon */}
+                          <div
+                            className={cn(
+                              'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center',
+                              !notification.read
+                                ? 'bg-blue-100 text-violet-600'
+                                : 'bg-gray-100 text-gray-600'
+                            )}
+                          >
+                            {notificationIcons[notification.type] ||
+                              notificationIcons.general}
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p
+                                  className={cn(
+                                    'text-sm line-clamp-2',
+                                    !notification.read
+                                      ? 'font-semibold text-gray-900'
+                                      : 'font-medium text-gray-800'
+                                  )}
+                                >
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-gray-600 line-clamp-2 mt-1">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-2">
+                                  {formatTimeAgo(notification.createdAt)}
+                                </p>
+                              </div>
+
+                              {/* Status indicator */}
+                              {!notification.read && (
+                                <div className="flex-shrink-0 w-2 h-2 rounded-full bg-violet-600 mt-1" />
+                              )}
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-3 mt-3">
+                              {!notification.read && (
+                                <button
+                                  onClick={() => handleMarkAsRead(notification.id)}
+                                  className={cn(
+                                    'inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium',
+                                    'transition-colors duration-200',
+                                    'text-violet-600 hover:bg-violet-100'
+                                  )}
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Mark as read
+                                </button>
+                              )}
+
+                              {notification.linkUrl && (
+                                <Link
+                                  href={notification.linkUrl}
+                                  className={cn(
+                                    'inline-flex items-center text-xs font-medium',
+                                    'text-violet-600 hover:text-violet-700',
+                                    'transition-colors duration-200'
+                                  )}
+                                >
+                                  View →
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null
+            )}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )
