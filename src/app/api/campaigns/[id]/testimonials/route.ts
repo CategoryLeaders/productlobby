@@ -4,21 +4,29 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-interface TestimonialPayload {
-  content: string
+interface TestimonialParams {
+  params: {
+    id: string
+  }
 }
 
-// GET /api/campaigns/[id]/testimonials - List testimonials for campaign
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: campaignId } = await params
+interface TestimonialMetadata {
+  action: string
+  quote?: string
+  author?: string
+  rating?: number
+}
 
-    // Verify campaign exists
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
+// GET /api/campaigns/[id]/testimonials - List testimonials for a campaign
+export async function GET(request: NextRequest, { params }: TestimonialParams) {
+  try {
+    const { id } = params
+
+    // Support both UUID and slug-based lookup
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+    const campaign = await prisma.campaign.findFirst({
+      where: isUuid ? { id } : { slug: id },
       select: { id: true },
     })
 
@@ -29,16 +37,17 @@ export async function GET(
       )
     }
 
-    // Get testimonials from contribution events
+    // Get testimonials from ContributionEvent table where action is 'testimonial'
     const testimonials = await prisma.contributionEvent.findMany({
       where: {
-        campaignId,
+        campaignId: campaign.id,
         eventType: 'SOCIAL_SHARE',
         metadata: {
           path: ['action'],
           equals: 'testimonial',
         },
       },
+      orderBy: { createdAt: 'desc' },
       include: {
         user: {
           select: {
@@ -49,26 +58,29 @@ export async function GET(
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
+    })
+
+    // Format testimonials
+    const formattedTestimonials = testimonials.map((event) => {
+      const metadata = event.metadata as TestimonialMetadata
+
+      return {
+        id: event.id,
+        userId: event.user.id,
+        quote: metadata.quote || '',
+        author: metadata.author || event.user.displayName,
+        rating: metadata.rating || 5,
+        createdAt: event.createdAt,
+      }
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: formattedTestimonials,
       },
-    })
-
-    // Transform to testimonial format
-    const formattedTestimonials = testimonials.map((event) => ({
-      id: event.id,
-      userId: event.user.id,
-      userName: event.user.displayName,
-      userHandle: event.user.handle,
-      userAvatar: event.user.avatar,
-      content: (event.metadata as any)?.content || '',
-      createdAt: event.createdAt,
-    }))
-
-    return NextResponse.json({
-      success: true,
-      data: formattedTestimonials,
-    })
+      { status: 200 }
+    )
   } catch (error) {
     console.error('Get testimonials error:', error)
     return NextResponse.json(
@@ -78,13 +90,11 @@ export async function GET(
   }
 }
 
-// POST /api/campaigns/[id]/testimonials - Create testimonial (auth required)
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// POST /api/campaigns/[id]/testimonials - Create a new testimonial
+export async function POST(request: NextRequest, { params }: TestimonialParams) {
   try {
     const user = await getCurrentUser()
+
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
@@ -92,11 +102,36 @@ export async function POST(
       )
     }
 
-    const { id: campaignId } = await params
+    const { quote, author, rating } = await request.json()
 
-    // Verify campaign exists
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
+    // Validation
+    if (!quote?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Testimonial text is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!author?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Author name is required' },
+        { status: 400 }
+      )
+    }
+
+    if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+      return NextResponse.json(
+        { success: false, error: 'Rating must be between 1 and 5' },
+        { status: 400 }
+      )
+    }
+
+    // Support both UUID and slug-based lookup
+    const { id } = params
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+    const campaign = await prisma.campaign.findFirst({
+      where: isUuid ? { id } : { slug: id },
       select: { id: true },
     })
 
@@ -107,33 +142,18 @@ export async function POST(
       )
     }
 
-    // Parse and validate request
-    const body: TestimonialPayload = await request.json()
-
-    if (!body.content || body.content.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Testimonial content is required' },
-        { status: 400 }
-      )
-    }
-
-    if (body.content.length > 500) {
-      return NextResponse.json(
-        { success: false, error: 'Testimonial must be 500 characters or less' },
-        { status: 400 }
-      )
-    }
-
-    // Create contribution event with testimonial metadata
-    const event = await prisma.contributionEvent.create({
+    // Create testimonial as ContributionEvent with eventType SOCIAL_SHARE and metadata.action = 'testimonial'
+    const testimonial = await prisma.contributionEvent.create({
       data: {
         userId: user.id,
-        campaignId,
+        campaignId: campaign.id,
         eventType: 'SOCIAL_SHARE',
-        points: 5,
+        points: 15, // Points for testimonial
         metadata: {
           action: 'testimonial',
-          content: body.content.trim(),
+          quote: quote.trim(),
+          author: author.trim(),
+          rating: Math.max(1, Math.min(5, Math.round(rating))),
         },
       },
       include: {
@@ -152,13 +172,12 @@ export async function POST(
       {
         success: true,
         data: {
-          id: event.id,
-          userId: event.user.id,
-          userName: event.user.displayName,
-          userHandle: event.user.handle,
-          userAvatar: event.user.avatar,
-          content: (event.metadata as any)?.content || '',
-          createdAt: event.createdAt,
+          id: testimonial.id,
+          userId: testimonial.user.id,
+          quote: quote.trim(),
+          author: author.trim(),
+          rating: Math.max(1, Math.min(5, Math.round(rating))),
+          createdAt: testimonial.createdAt,
         },
       },
       { status: 201 }
