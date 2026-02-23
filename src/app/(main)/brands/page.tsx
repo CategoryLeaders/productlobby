@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { formatNumber } from '@/lib/utils'
 import { TrendingUp, Target, ArrowRight } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Brands - ProductLobby',
   description: 'Discover all brands with active campaigns on ProductLobby. See what consumers are requesting.',
@@ -33,16 +35,6 @@ export default async function BrandsPage() {
         where: {
           targetedBrandId: brand.id,
           status: 'LIVE',
-        },
-      })
-
-      const totalLobbies = await prisma.campaign.aggregate({
-        where: {
-          targetedBrandId: brand.id,
-        },
-        _sum: {
-          // Note: We'd need to count lobbies through relations
-          // For now we'll count campaigns as a proxy
         },
       })
 
