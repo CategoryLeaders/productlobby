@@ -79,7 +79,8 @@ export default function HomePage() {
         const data = await res.json()
 
         // Map the API response to CampaignCardProps format
-        const mapped: CampaignCardProps[] = data.campaigns.map((campaign: any) => ({
+        const campaigns = data.data || data.campaigns || []
+        const mapped: CampaignCardProps[] = campaigns.map((campaign: any) => ({
           id: campaign.id,
           title: campaign.title,
           slug: campaign.slug,

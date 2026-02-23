@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentUser } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
