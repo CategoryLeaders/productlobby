@@ -1,5 +1,6 @@
 import OnboardingCheck from '@/components/onboarding-check'
 import VerificationBanner from '@/components/auth/verification-banner'
+import { CompareBar } from '@/components/shared/compare-bar'
 
 export default function MainLayout({
   children,
@@ -11,6 +12,7 @@ export default function MainLayout({
       <OnboardingCheck />
       <VerificationBanner />
       {children}
+      <CompareBar />
     </>
   )
 }

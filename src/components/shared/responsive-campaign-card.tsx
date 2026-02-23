@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -80,6 +80,90 @@ export const ResponsiveCampaignCard: React.FC<ResponsiveCampaignCardProps> = ({
   brand,
   createdAt,
 }) => {
+  const [isSelected, setIsSelected] = useState(false)
+  const [selectedCount, setSelectedCount] = useState(0)
+
+  // Check if this campaign is in the compare list on mount
+  useEffect(() => {
+    const checkSelected = () => {
+      if (typeof window === 'undefined') return
+      try {
+        const stored = localStorage.getItem('productlobby-compare-ids')
+        if (stored) {
+          const ids = stored.split(',').filter(i => i.trim())
+          setSelectedCount(ids.length)
+          setIsSelected(ids.includes(id))
+        }
+      } catch (error) {
+        console.error('Error checking compare selection:', error)
+      }
+    }
+    checkSelected()
+
+    // Listen for updates from other components
+    const handleUpdate = () => checkSelected()
+    window.addEventListener('compareBarUpdate', handleUpdate)
+    window.addEventListener('compareBarClear', handleUpdate)
+    return () => {
+      window.removeEventListener('compareBarUpdate', handleUpdate)
+      window.removeEventListener('compareBarClear', handleUpdate)
+    }
+  }, [id])
+
+  const handleCompareToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (typeof window === 'undefined') return
+
+    try {
+      let stored = localStorage.getItem('productlobby-compare-ids') || ''
+      let ids = stored.split(',').filter(i => i.trim())
+      let titles = [] as Array<{ id: string; title: string }>
+
+      // Load existing titles
+      const titlesData = sessionStorage.getItem('productlobby-compare-titles')
+      if (titlesData) {
+        titles = JSON.parse(titlesData)
+      }
+
+      if (isSelected) {
+        // Remove from comparison
+        ids = ids.filter(i => i !== id)
+        titles = titles.filter(t => t.id !== id)
+      } else {
+        // Add to comparison (max 4)
+        if (ids.length >= 4) {
+          alert('You can compare a maximum of 4 campaigns')
+          return
+        }
+        ids.push(id)
+        // Add title to the titles list
+        const existing = titles.find(t => t.id === id)
+        if (!existing) {
+          titles.push({ id, title })
+        }
+      }
+
+      // Update localStorage
+      if (ids.length > 0) {
+        localStorage.setItem('productlobby-compare-ids', ids.join(','))
+        sessionStorage.setItem('productlobby-compare-titles', JSON.stringify(titles))
+      } else {
+        localStorage.removeItem('productlobby-compare-ids')
+        sessionStorage.removeItem('productlobby-compare-titles')
+      }
+
+      setIsSelected(!isSelected)
+      setSelectedCount(ids.length)
+
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('compareBarUpdate'))
+    } catch (error) {
+      console.error('Error updating compare selection:', error)
+    }
+  }
+
   const creatorInitials = getCreatorInitials(creator.displayName, creator.email)
 
   return (
@@ -112,11 +196,38 @@ export const ResponsiveCampaignCard: React.FC<ResponsiveCampaignCardProps> = ({
               </Badge>
             </div>
 
-            {/* Status Badge */}
-            <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+            {/* Status Badge & Compare Checkbox */}
+            <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-2">
               <Badge variant={getStatusColor(status)} size="sm" className="text-xs sm:text-sm">
                 {getStatusLabel(status)}
               </Badge>
+              <button
+                onClick={handleCompareToggle}
+                className={cn(
+                  'w-5 h-5 sm:w-6 sm:h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0',
+                  isSelected
+                    ? 'bg-violet-600 border-violet-600'
+                    : 'bg-white border-gray-300 hover:border-violet-400'
+                )}
+                title={isSelected ? 'Remove from comparison' : 'Add to comparison'}
+                aria-label={isSelected ? 'Remove from comparison' : 'Add to comparison'}
+              >
+                {isSelected && (
+                  <svg
+                    className="w-3 h-3 sm:w-4 sm:h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </button>
             </div>
 
             {/* Signal Score Badge - Mobile hidden, visible on desktop */}
