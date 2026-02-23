@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         select: { name: true },
       },
       _count: {
-        lobbies: true,
+        select: { lobbies: true },
       },
     },
   })

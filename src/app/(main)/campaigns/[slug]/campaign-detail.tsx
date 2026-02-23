@@ -28,7 +28,6 @@ import { QASection } from '@/components/shared/qa-section'
 import { CommentsSection } from '@/components/shared/comments-section'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
-import { getCurrentUser } from '@/lib/auth'
 
 interface CampaignDetailPageProps {
   params: {
