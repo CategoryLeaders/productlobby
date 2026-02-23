@@ -1,336 +1,406 @@
-'use client'
+'use client';
 
-import React from 'react'
-import Link from 'next/link'
-import { ArrowLeft, Zap, Sparkles, Bug } from 'lucide-react'
-import { Navbar } from '@/components/shared/navbar'
-import { Footer } from '@/components/shared/footer'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { useState, useEffect } from 'react';
+import { History, Tag, Filter, Sparkles, Bug, Zap, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+type ChangeCategory = 'all' | 'feature' | 'fix' | 'improvement' | 'security';
 
 interface ChangelogEntry {
-  id: string
-  date: string
-  title: string
-  description: string
-  type: 'feature' | 'improvement' | 'fix'
+  id: string;
+  date: string;
+  version: string;
+  title: string;
+  description: string;
+  category: 'feature' | 'fix' | 'improvement' | 'security';
 }
 
 const changelogEntries: ChangelogEntry[] = [
   {
     id: '1',
-    date: '2026-02-23',
-    title: 'Campaign Success Criteria Tracker',
-    description:
-      'Creators can now set success criteria for their campaigns, including minimum lobbies, target dates, and pledge value goals. Progress is displayed with visual indicators showing how close campaigns are to meeting their targets.',
-    type: 'feature',
+    date: 'February 20, 2026',
+    version: 'v2.5.0',
+    title: 'Real-time Collaboration Features',
+    description: 'Added live cursor tracking and instant synchronization for team members editing the same product listing simultaneously.',
+    category: 'feature',
   },
   {
     id: '2',
-    date: '2026-02-23',
-    title: 'Campaign Collaboration Requests',
-    description:
-      'Users can now submit collaboration requests to campaign creators, expressing interest in contributing, reviewing, or promoting campaigns. Creators get a dedicated view of all collaboration requests.',
-    type: 'feature',
+    date: 'February 18, 2026',
+    version: 'v2.4.9',
+    title: 'Performance Improvements',
+    description: 'Optimized image loading and database queries, reducing page load times by 40%.',
+    category: 'improvement',
   },
   {
     id: '3',
-    date: '2026-02-23',
-    title: 'Platform Changelog Page',
-    description:
-      'A new public changelog page showcasing all platform updates, features, and improvements. This helps keep the community informed about what\'s new and what\'s being worked on.',
-    type: 'feature',
+    date: 'February 15, 2026',
+    version: 'v2.4.8',
+    title: 'Security Patch',
+    description: 'Fixed critical XSS vulnerability in product description renderer. All users should update immediately.',
+    category: 'security',
   },
   {
     id: '4',
-    date: '2026-02-20',
-    title: 'Improved Campaign Analytics Dashboard',
-    description:
-      'Enhanced the analytics dashboard with better visualization of campaign performance metrics, including engagement rates, supporter demographics, and trend analysis.',
-    type: 'improvement',
+    date: 'February 12, 2026',
+    version: 'v2.4.7',
+    title: 'Advanced Analytics Dashboard',
+    description: 'New comprehensive dashboard showing product performance metrics, user engagement, and conversion tracking.',
+    category: 'feature',
   },
   {
     id: '5',
-    date: '2026-02-18',
-    title: 'Campaign Comparison Tool',
-    description:
-      'New feature allowing users to compare multiple campaigns side-by-side, viewing metrics, pledges, and community sentiment all in one view.',
-    type: 'feature',
+    date: 'February 10, 2026',
+    version: 'v2.4.6',
+    title: 'Mobile App Bug Fix',
+    description: 'Resolved issue where notifications were not displaying on iOS devices running iOS 17+.',
+    category: 'fix',
   },
   {
     id: '6',
-    date: '2026-02-15',
-    title: 'Fixed Email Notification Timing Issues',
-    description:
-      'Resolved issues where campaign update notifications were being sent at incorrect times. All notifications should now arrive promptly.',
-    type: 'fix',
+    date: 'February 8, 2026',
+    version: 'v2.4.5',
+    title: 'Dark Mode Enhancement',
+    description: 'Improved contrast ratios and refined color palette for better readability in dark mode across all pages.',
+    category: 'improvement',
   },
   {
     id: '7',
-    date: '2026-02-12',
-    title: 'Enhanced Search Functionality',
-    description:
-      'Improved full-text search across campaigns, brands, and users. Search results now include helpful filters for category, status, and relevance ranking.',
-    type: 'improvement',
+    date: 'February 5, 2026',
+    version: 'v2.4.4',
+    title: 'AI-Powered Product Tagging',
+    description: 'Introduced intelligent auto-tagging system that suggests relevant tags based on product descriptions.',
+    category: 'feature',
   },
   {
     id: '8',
-    date: '2026-02-10',
-    title: 'Brand Leaderboard Public Launch',
-    description:
-      'The brand leaderboard is now publicly accessible, showing which brands are most responsive to customer feedback. Includes metrics for response rates, response speed, and action rates.',
-    type: 'feature',
+    date: 'February 1, 2026',
+    version: 'v2.4.3',
+    title: 'Search Algorithm Update',
+    description: 'Enhanced search algorithm with improved relevance ranking and typo correction.',
+    category: 'improvement',
   },
   {
     id: '9',
-    date: '2026-02-08',
-    title: 'Performance Optimizations',
-    description:
-      'Optimized database queries and implemented caching for campaign listings, significantly improving page load times across the platform.',
-    type: 'improvement',
+    date: 'January 28, 2026',
+    version: 'v2.4.2',
+    title: 'Export to PDF Fix',
+    description: 'Fixed formatting issues when exporting product listings to PDF format.',
+    category: 'fix',
   },
   {
     id: '10',
-    date: '2026-02-05',
-    title: 'Campaign Update Reactions',
-    description:
-      'Users can now react to campaign updates with emojis. Creators can see which updates generate the most positive sentiment from their supporters.',
-    type: 'feature',
+    date: 'January 25, 2026',
+    version: 'v2.4.1',
+    title: 'Two-Factor Authentication',
+    description: 'Added support for TOTP-based two-factor authentication and hardware security keys.',
+    category: 'security',
   },
-]
+  {
+    id: '11',
+    date: 'January 22, 2026',
+    version: 'v2.4.0',
+    title: 'Team Management System',
+    description: 'Complete overhaul of team features with role-based access control, permissions management, and audit logs.',
+    category: 'feature',
+  },
+  {
+    id: '12',
+    date: 'January 18, 2026',
+    version: 'v2.3.9',
+    title: 'API Rate Limit Updates',
+    description: 'Adjusted rate limiting to be more generous for free tier users and better aligned with usage patterns.',
+    category: 'improvement',
+  },
+  {
+    id: '13',
+    date: 'January 15, 2026',
+    version: 'v2.3.8',
+    title: 'Bulk Import Tool',
+    description: 'New bulk import feature supporting CSV and JSON formats for quick product catalog uploads.',
+    category: 'feature',
+  },
+  {
+    id: '14',
+    date: 'January 12, 2026',
+    version: 'v2.3.7',
+    title: 'Email Delivery Issue',
+    description: 'Fixed bug preventing notification emails from being sent to users with special characters in email addresses.',
+    category: 'fix',
+  },
+  {
+    id: '15',
+    date: 'January 8, 2026',
+    version: 'v2.3.6',
+    title: 'Database Security Enhancement',
+    description: 'Implemented end-to-end encryption for sensitive user data at rest and in transit.',
+    category: 'security',
+  },
+  {
+    id: '16',
+    date: 'January 5, 2026',
+    version: 'v2.3.5',
+    title: 'Responsive Design Improvements',
+    description: 'Refined layouts for tablet devices and improved touch interactions throughout the platform.',
+    category: 'improvement',
+  },
+  {
+    id: '17',
+    date: 'January 1, 2026',
+    version: 'v2.3.4',
+    title: 'Integration with Slack',
+    description: 'New Slack integration allowing teams to receive ProductLobby notifications directly in Slack channels.',
+    category: 'feature',
+  },
+  {
+    id: '18',
+    date: 'December 28, 2025',
+    version: 'v2.3.3',
+    title: 'Webhook Stability Fix',
+    description: 'Improved webhook delivery reliability and added automatic retry logic for failed deliveries.',
+    category: 'fix',
+  },
+  {
+    id: '19',
+    date: 'December 25, 2025',
+    version: 'v2.3.2',
+    title: 'Accessibility Compliance',
+    description: 'Enhanced accessibility features to meet WCAG 2.1 AA standards across all components.',
+    category: 'improvement',
+  },
+  {
+    id: '20',
+    date: 'December 20, 2025',
+    version: 'v2.3.1',
+    title: 'Custom Domain Support',
+    description: 'Added ability to host public product pages on custom domains with automatic SSL certificate provisioning.',
+    category: 'feature',
+  },
+];
 
-const getTypeIcon = (
-  type: 'feature' | 'improvement' | 'fix'
-) => {
-  switch (type) {
+const getCategoryIcon = (category: string) => {
+  switch (category) {
     case 'feature':
-      return <Sparkles className="w-5 h-5" />
-    case 'improvement':
-      return <Zap className="w-5 h-5" />
+      return <Sparkles className="w-4 h-4" />;
     case 'fix':
-      return <Bug className="w-5 h-5" />
+      return <Bug className="w-4 h-4" />;
+    case 'improvement':
+      return <Zap className="w-4 h-4" />;
+    case 'security':
+      return <Shield className="w-4 h-4" />;
+    default:
+      return <Tag className="w-4 h-4" />;
   }
-}
+};
 
-const getTypeColor = (
-  type: 'feature' | 'improvement' | 'fix'
-): {
-  bg: string
-  text: string
-  badge: string
-  icon: string
-} => {
-  switch (type) {
+const getCategoryColor = (category: string) => {
+  switch (category) {
     case 'feature':
-      return {
-        bg: 'bg-violet-50',
-        text: 'text-violet-700',
-        badge: 'bg-violet-600',
-        icon: 'text-violet-600',
-      }
-    case 'improvement':
-      return {
-        bg: 'bg-blue-50',
-        text: 'text-blue-700',
-        badge: 'bg-blue-600',
-        icon: 'text-blue-600',
-      }
+      return 'bg-violet-100 text-violet-800 border-violet-300';
     case 'fix':
-      return {
-        bg: 'bg-green-50',
-        text: 'text-green-700',
-        badge: 'bg-green-600',
-        icon: 'text-green-600',
-      }
+      return 'bg-red-100 text-red-800 border-red-300';
+    case 'improvement':
+      return 'bg-blue-100 text-blue-800 border-blue-300';
+    case 'security':
+      return 'bg-amber-100 text-amber-800 border-amber-300';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-300';
   }
-}
+};
 
-const getTypeLabel = (type: 'feature' | 'improvement' | 'fix'): string => {
-  switch (type) {
+const getCategoryLabel = (category: string) => {
+  switch (category) {
     case 'feature':
-      return 'Feature'
-    case 'improvement':
-      return 'Improvement'
+      return 'Feature';
     case 'fix':
-      return 'Fix'
+      return 'Fix';
+    case 'improvement':
+      return 'Improvement';
+    case 'security':
+      return 'Security';
+    default:
+      return 'Update';
   }
-}
+};
 
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+export default function ChangelogPage() {
+  const [selectedCategory, setSelectedCategory] = useState<ChangeCategory>('all');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    document.title = 'Changelog - ProductLobby';
+  }, []);
+
+  const filteredEntries =
+    selectedCategory === 'all'
+      ? changelogEntries
+      : changelogEntries.filter(
+          (entry) => entry.category === selectedCategory
+        );
+
+  if (!mounted) {
+    return null;
   }
-  return date.toLocaleDateString('en-US', options)
-}
 
-const ChangelogCard = ({ entry }: { entry: ChangelogEntry }) => {
-  const colors = getTypeColor(entry.type)
   return (
-    <div
-      className={cn(
-        'border rounded-lg p-6 transition-all hover:shadow-md',
-        colors.bg,
-        'border-gray-200'
-      )}
-    >
-      <div className="flex items-start gap-4">
-        <div
-          className={cn(
-            'p-2 rounded-full flex-shrink-0',
-            colors.bg
-          )}
-        >
-          <div className={cn(colors.icon)}>
-            {getTypeIcon(entry.type)}
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-violet-600 to-violet-700 text-white py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-4">
+            <History className="w-10 h-10" />
+            <h1 className="text-5xl font-bold">Changelog</h1>
+          </div>
+          <p className="text-lg text-violet-100 max-w-2xl">
+            Stay updated with the latest features, improvements, and fixes to
+            ProductLobby. We're constantly working to make your experience
+            better.
+          </p>
+        </div>
+      </div>
+
+      {/* Filter Section */}
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="flex items-center gap-4 mb-8 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-gray-600" />
+            <span className="text-sm font-semibold text-gray-700">Filter:</span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={() => setSelectedCategory('all')}
+              variant={selectedCategory === 'all' ? 'default' : 'outline'}
+              className={
+                selectedCategory === 'all'
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                  : ''
+              }
+            >
+              All
+            </Button>
+            <Button
+              onClick={() => setSelectedCategory('feature')}
+              variant={selectedCategory === 'feature' ? 'default' : 'outline'}
+              className={
+                selectedCategory === 'feature'
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                  : ''
+              }
+            >
+              Features
+            </Button>
+            <Button
+              onClick={() => setSelectedCategory('fix')}
+              variant={selectedCategory === 'fix' ? 'default' : 'outline'}
+              className={
+                selectedCategory === 'fix'
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                  : ''
+              }
+            >
+              Fixes
+            </Button>
+            <Button
+              onClick={() => setSelectedCategory('improvement')}
+              variant={
+                selectedCategory === 'improvement' ? 'default' : 'outline'
+              }
+              className={
+                selectedCategory === 'improvement'
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                  : ''
+              }
+            >
+              Improvements
+            </Button>
+            <Button
+              onClick={() => setSelectedCategory('security')}
+              variant={selectedCategory === 'security' ? 'default' : 'outline'}
+              className={
+                selectedCategory === 'security'
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                  : ''
+              }
+            >
+              Security
+            </Button>
           </div>
         </div>
 
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {entry.title}
-            </h3>
-            <Badge className={cn('text-white', colors.badge)}>
-              {getTypeLabel(entry.type)}
-            </Badge>
+        {/* Timeline */}
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="absolute left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-violet-300 via-lime-300 to-violet-300" />
+
+          {/* Timeline Entries */}
+          <div className="space-y-8">
+            {filteredEntries.map((entry, index) => (
+              <div key={entry.id} className="relative pl-24">
+                {/* Timeline dot */}
+                <div className="absolute left-0 top-2 w-12 h-12 bg-white border-4 border-violet-600 rounded-full flex items-center justify-center shadow-lg hover:border-lime-400 transition-colors duration-300">
+                  {getCategoryIcon(entry.category)}
+                </div>
+
+                {/* Entry card */}
+                <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-violet-600">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium">
+                        {entry.date}
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-900 mt-1">
+                        {entry.title}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border">
+                        <Tag className="w-3 h-3" />
+                        {entry.version}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-700 mb-4">{entry.description}</p>
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(
+                        entry.category
+                      )}`}
+                    >
+                      {getCategoryIcon(entry.category)}
+                      {getCategoryLabel(entry.category)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <p className="text-sm text-gray-600 mb-3">{entry.description}</p>
+          {/* Empty state */}
+          {filteredEntries.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">
+                No entries found for this category.
+              </p>
+            </div>
+          )}
+        </div>
 
-          <p className="text-xs text-gray-500">{formatDate(entry.date)}</p>
+        {/* Footer note */}
+        <div className="mt-16 p-6 bg-lime-50 rounded-lg border border-lime-200">
+          <p className="text-gray-700 text-sm">
+            <strong>Note:</strong> ProductLobby is constantly evolving. Check
+            back regularly for the latest updates and improvements. For more
+            detailed information about any release, visit our{' '}
+            <span className="text-violet-600 font-semibold">
+              documentation
+            </span>
+            .
+          </p>
         </div>
       </div>
     </div>
-  )
-}
-
-const Timeline = ({ entries }: { entries: ChangelogEntry[] }) => {
-  return (
-    <div className="space-y-4">
-      {entries.map((entry, index) => (
-        <div key={entry.id} className="flex gap-4">
-          <div className="flex flex-col items-center">
-            <div className="w-2 h-2 rounded-full bg-violet-600 mt-2"></div>
-            {index < entries.length - 1 && (
-              <div className="w-0.5 h-12 bg-gray-200 mt-2"></div>
-            )}
-          </div>
-          <div className="pb-4 flex-1">
-            <ChangelogCard entry={entry} />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-export default function ChangelogPage() {
-  const featureCount = changelogEntries.filter(e => e.type === 'feature').length
-  const improvementCount = changelogEntries.filter(e => e.type === 'improvement').length
-  const fixCount = changelogEntries.filter(e => e.type === 'fix').length
-
-  return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
-      <Navbar />
-
-      <main className="flex-1">
-        {/* Header */}
-        <section className="bg-white border-b border-gray-200">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <Link href="/">
-              <Button
-                variant="ghost"
-                className="mb-6 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-
-            <h1 className="text-4xl font-display font-bold text-gray-900 mb-4">
-              What's New
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl">
-              Stay updated with the latest features, improvements, and fixes to
-              ProductLobby. We're constantly working to make it easier for you
-              to advocate for the products you love.
-            </p>
-          </div>
-        </section>
-
-        {/* Stats */}
-        <section className="bg-white border-b border-gray-200">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex items-center gap-3 p-4 bg-violet-50 border border-violet-200 rounded-lg">
-                <Sparkles className="w-8 h-8 text-violet-600 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-violet-700 font-medium">Features</p>
-                  <p className="text-2xl font-bold text-violet-900">
-                    {featureCount}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <Zap className="w-8 h-8 text-blue-600 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-blue-700 font-medium">
-                    Improvements
-                  </p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {improvementCount}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <Bug className="w-8 h-8 text-green-600 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-green-700 font-medium">Fixes</p>
-                  <p className="text-2xl font-bold text-green-900">
-                    {fixCount}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Timeline */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h2 className="text-2xl font-display font-bold text-gray-900 mb-8">
-            Recent Updates
-          </h2>
-          <Timeline entries={changelogEntries} />
-        </section>
-
-        {/* CTA Section */}
-        <section className="bg-gradient-to-r from-violet-50 to-lime-50 border-t border-gray-200 py-12">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-display font-bold text-gray-900 mb-4">
-                Have Ideas for Improvements?
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                We'd love to hear your feedback. Let us know what features you'd
-                like to see next.
-              </p>
-              <Link href="/feedback">
-                <Button className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 text-base">
-                  Send Feedback
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <Footer />
-    </div>
-  )
+  );
 }
