@@ -50,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
         return [
           { label: 'My Lobbies', href: '/lobbies', icon: Compass },
           { label: 'Saved', href: '/dashboard/saved', icon: Heart },
+          { label: 'Achievements', href: '/dashboard/achievements', icon: Trophy },
           { label: 'Notifications', href: '/notifications', icon: Zap },
           { label: 'My Score', href: '/score', icon: Trophy },
           { label: 'Settings', href: '/settings', icon: Settings },
