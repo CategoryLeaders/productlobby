@@ -42,12 +42,20 @@ export async function GET(
       },
     })
 
-    const fields = customFieldEvents.map((event) => ({
-      id: event.id,
-      name: (event.metadata as any)?.name || '',
-      value: (event.metadata as any)?.value || '',
-      createdAt: event.createdAt.toISOString(),
-    }))
+    const fields = customFieldEvents.map((event) => {
+      const metadata = (event.metadata as any) || {}
+      return {
+        id: event.id,
+        name: metadata.name || '',
+        value: metadata.value || '',
+        type: metadata.type || 'text',
+        required: metadata.required || false,
+        placeholder: metadata.placeholder || '',
+        options: metadata.options || [],
+        createdAt: event.createdAt.toISOString(),
+        metadata: JSON.stringify(metadata),
+      }
+    })
 
     return NextResponse.json(
       {
@@ -80,19 +88,12 @@ export async function POST(
 
     const { id: campaignId } = params
     const body = await request.json()
-    const { name, value } = body
+    const { name, value, metadata = {} } = body
 
     // Validate inputs
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
         { error: 'Field name is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!value || value.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Field value is required' },
         { status: 400 }
       )
     }
@@ -104,11 +105,58 @@ export async function POST(
       )
     }
 
-    if (value.length > 500) {
-      return NextResponse.json(
-        { error: 'Field value must be 500 characters or less' },
-        { status: 400 }
-      )
+    const fieldType = metadata.type || 'text'
+
+    // Type-specific validation
+    if (value) {
+      switch (fieldType) {
+        case 'number':
+          if (isNaN(parseFloat(value))) {
+            return NextResponse.json(
+              { error: 'Invalid number format' },
+              { status: 400 }
+            )
+          }
+          break
+
+        case 'date':
+          if (isNaN(new Date(value).getTime())) {
+            return NextResponse.json(
+              { error: 'Invalid date format' },
+              { status: 400 }
+            )
+          }
+          break
+
+        case 'url':
+          try {
+            new URL(value)
+          } catch {
+            return NextResponse.json(
+              { error: 'Invalid URL format' },
+              { status: 400 }
+            )
+          }
+          break
+
+        case 'toggle':
+          if (
+            ![
+              'true',
+              'false',
+              '1',
+              '0',
+              'yes',
+              'no',
+            ].includes(value.toLowerCase())
+          ) {
+            return NextResponse.json(
+              { error: 'Invalid toggle value' },
+              { status: 400 }
+            )
+          }
+          break
+      }
     }
 
     // Verify campaign exists and user is the creator
@@ -163,18 +211,27 @@ export async function POST(
         metadata: {
           action: 'custom_field',
           name: name.trim(),
-          value: value.trim(),
+          value: value ? value.trim() : '',
+          type: fieldType,
+          required: metadata.required || false,
+          placeholder: metadata.placeholder || '',
+          options: metadata.options || [],
           timestamp: new Date().toISOString(),
         },
       },
     })
 
+    const fieldMetadata = fieldEvent.metadata as any
     return NextResponse.json(
       {
         field: {
           id: fieldEvent.id,
-          name: (fieldEvent.metadata as any).name,
-          value: (fieldEvent.metadata as any).value,
+          name: fieldMetadata.name,
+          value: fieldMetadata.value,
+          type: fieldMetadata.type,
+          required: fieldMetadata.required,
+          placeholder: fieldMetadata.placeholder,
+          options: fieldMetadata.options,
           createdAt: fieldEvent.createdAt.toISOString(),
         },
       },
