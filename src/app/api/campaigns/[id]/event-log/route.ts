@@ -1,51 +1,74 @@
 import { prisma } from '@/lib/db'
+import { getCurrentUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-interface EventLogItem {
+interface EventRecord {
   id: string
-  type: 'lobby' | 'comment' | 'status_change' | 'brand_response'
-  title: string
-  description: string
+  eventType: string
   timestamp: string
-  user?: {
+  user: {
     id: string
     displayName: string
+    email: string
     avatar?: string
   }
+  points: number
+  metadata?: Record<string, any>
+  ipHint?: string
 }
 
 interface EventLogResponse {
   success: boolean
-  data: EventLogItem[]
+  data: EventRecord[]
   pagination: {
     page: number
     limit: number
     total: number
     hasMore: boolean
   }
+  eventCounts?: Record<string, number>
+  error?: string
 }
 
 /**
  * GET /api/campaigns/[id]/event-log
- * Returns chronological event log for a campaign
- * Includes: lobbies created, comments, status changes, brand responses
+ * Returns a detailed audit log of all campaign events (ContributionEvents)
+ * Requires creator authentication
+ * Supports filtering by:
+ * - eventType: Filter by contribution event type
+ * - startDate: ISO date string for range start
+ * - endDate: ISO date string for range end
+ * - search: Search by user displayName or email
  * Paginated with ?page=1&limit=20
- * Public endpoint
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const campaignId = params.id
     const searchParams = request.nextUrl.searchParams
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')))
     const skip = (page - 1) * limit
 
-    // Try to find campaign by UUID or slug
+    // Query parameters for filtering
+    const eventType = searchParams.get('eventType') || undefined
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+    const search = searchParams.get('search') || undefined
+
+    // Find campaign by UUID or slug
     const campaign = await prisma.campaign.findFirst({
       where: {
         OR: [
@@ -53,7 +76,10 @@ export async function GET(
           { slug: campaignId }
         ]
       },
-      select: { id: true }
+      select: {
+        id: true,
+        creatorId: true
+      }
     })
 
     if (!campaign) {
@@ -63,150 +89,138 @@ export async function GET(
       )
     }
 
-    const realCampaignId = campaign.id
+    // Verify creator authorization
+    if (campaign.creatorId !== currentUser.id) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
 
-    // Fetch all event data concurrently
-    const [lobbies, comments, brandResponses, statusUpdates] = await Promise.all([
-      prisma.lobby.findMany({
-        where: { campaignId: realCampaignId },
-        select: {
-          id: true,
-          createdAt: true,
+    // Build filter conditions
+    const whereConditions: any = {
+      campaignId: campaign.id
+    }
+
+    // Filter by event type if provided
+    if (eventType) {
+      whereConditions.eventType = eventType
+    }
+
+    // Filter by date range if provided
+    if (startDate || endDate) {
+      whereConditions.createdAt = {}
+      if (startDate) {
+        whereConditions.createdAt.gte = new Date(startDate)
+      }
+      if (endDate) {
+        const end = new Date(endDate)
+        end.setHours(23, 59, 59, 999)
+        whereConditions.createdAt.lte = end
+      }
+    }
+
+    // Filter by user search if provided
+    if (search) {
+      whereConditions.OR = [
+        {
           user: {
-            select: {
-              id: true,
-              displayName: true,
-              avatar: true
+            displayName: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          }
+        },
+        {
+          user: {
+            email: {
+              contains: search,
+              mode: 'insensitive'
             }
           }
         }
-      }),
-      prisma.comment.findMany({
-        where: { campaignId: realCampaignId },
-        select: {
-          id: true,
-          text: true,
-          createdAt: true,
-          user: {
-            select: {
-              id: true,
-              displayName: true,
-              avatar: true
-            }
+      ]
+    }
+
+    // Fetch total count with filters
+    const total = await prisma.contributionEvent.count({
+      where: whereConditions
+    })
+
+    // Fetch paginated events
+    const dbEvents = await prisma.contributionEvent.findMany({
+      where: whereConditions,
+      select: {
+        id: true,
+        eventType: true,
+        points: true,
+        metadata: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+            avatar: true
           }
         }
-      }),
-      prisma.brandResponse.findMany({
-        where: { campaignId: realCampaignId },
-        select: {
-          id: true,
-          message: true,
-          createdAt: true,
-          user: {
-            select: {
-              id: true,
-              displayName: true,
-              avatar: true
-            }
-          }
-        }
-      }),
-      prisma.campaignUpdate.findMany({
-        where: { campaignId: realCampaignId },
-        select: {
-          id: true,
-          title: true,
-          createdAt: true,
-          user: {
-            select: {
-              id: true,
-              displayName: true,
-              avatar: true
-            }
-          }
-        }
-      })
-    ])
-
-    // Combine all events into a single array
-    const events: EventLogItem[] = []
-
-    // Add lobby events
-    lobbies.forEach(lobby => {
-      events.push({
-        id: `lobby-${lobby.id}`,
-        type: 'lobby',
-        title: 'New Support',
-        description: `${lobby.user.displayName} added their support`,
-        timestamp: lobby.createdAt.toISOString(),
-        user: lobby.user
-      })
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      skip,
+      take: limit
     })
 
-    // Add comment events
-    comments.forEach(comment => {
-      const preview = comment.text.length > 100
-        ? comment.text.substring(0, 100) + '...'
-        : comment.text
-      events.push({
-        id: `comment-${comment.id}`,
-        type: 'comment',
-        title: 'New Comment',
-        description: preview,
-        timestamp: comment.createdAt.toISOString(),
-        user: comment.user
-      })
+    // Transform database records to response format
+    const events: EventRecord[] = dbEvents.map(event => ({
+      id: event.id,
+      eventType: event.eventType,
+      points: event.points,
+      timestamp: event.createdAt.toISOString(),
+      user: {
+        id: event.user.id,
+        displayName: event.user.displayName,
+        email: event.user.email,
+        avatar: event.user.avatar || undefined
+      },
+      metadata: event.metadata as Record<string, any> | undefined,
+      ipHint: (event.metadata as any)?.ipAddress?.substring(0, 15) || undefined
+    }))
+
+    // Get event type counts for the campaign
+    const eventCounts = await prisma.contributionEvent.groupBy({
+      by: ['eventType'],
+      where: {
+        campaignId: campaign.id
+      },
+      _count: true
     })
 
-    // Add brand response events
-    brandResponses.forEach(response => {
-      const preview = response.message.length > 100
-        ? response.message.substring(0, 100) + '...'
-        : response.message
-      events.push({
-        id: `response-${response.id}`,
-        type: 'brand_response',
-        title: 'Brand Response',
-        description: preview,
-        timestamp: response.createdAt.toISOString(),
-        user: response.user
-      })
-    })
-
-    // Add campaign update events (status changes)
-    statusUpdates.forEach(update => {
-      events.push({
-        id: `update-${update.id}`,
-        type: 'status_change',
-        title: 'Campaign Update',
-        description: update.title,
-        timestamp: update.createdAt.toISOString(),
-        user: update.user
-      })
-    })
-
-    // Sort by timestamp descending (newest first)
-    events.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    const eventCountsMap = Object.fromEntries(
+      eventCounts.map(ec => [ec.eventType, ec._count])
     )
-
-    const total = events.length
-    const paginatedEvents = events.slice(skip, skip + limit)
 
     return NextResponse.json({
       success: true,
-      data: paginatedEvents,
+      data: events,
       pagination: {
         page,
         limit,
         total,
         hasMore: skip + limit < total
-      }
-    })
+      },
+      eventCounts: eventCountsMap
+    } as EventLogResponse)
   } catch (error) {
     console.error('Error fetching event log:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch event log' },
+      {
+        success: false,
+        data: [],
+        error: 'Failed to fetch event log',
+        pagination: { page: 1, limit: 20, total: 0, hasMore: false }
+      },
       { status: 500 }
     )
   }
