@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic'
 type Params = Promise<{ id: string }>
 
 // GET /api/campaigns/[id]/media
-// Returns media/attachments for a campaign with attachment metadata
+// Returns media attachments for a campaign for lightbox-style gallery display
+// Fetches media events with eventType: 'SOCIAL_SHARE' and metadata.action = 'media_upload'
 export async function GET(
   _request: NextRequest,
   props: { params: Params }
@@ -43,6 +44,7 @@ export async function GET(
             metadata: {
               action: 'media_view',
               mediaCount: campaign.media.length,
+              timestamp: new Date().toISOString(),
             },
           },
         })
@@ -52,14 +54,13 @@ export async function GET(
       }
     }
 
-    // Format media with extended metadata
+    // Format media with title, url, type, and uploadedAt
     const formattedMedia = campaign.media.map((m: any) => ({
       id: m.id,
       url: m.url,
-      kind: m.kind,
-      altText: m.altText,
-      order: m.order,
-      createdAt: m.createdAt,
+      type: m.kind,
+      title: m.altText || undefined,
+      uploadedAt: m.createdAt,
     }))
 
     return NextResponse.json({
@@ -78,6 +79,7 @@ export async function GET(
 
 // POST /api/campaigns/[id]/media
 // Add media/attachment to campaign
+// Tracks contribution events with eventType: 'SOCIAL_SHARE' and metadata.action = 'media_upload'
 export async function POST(
   request: NextRequest,
   props: { params: Params }
@@ -113,7 +115,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { url, kind, altText, order } = body
+    const { url, type, title, order } = body
 
     // Validate URL format
     try {
@@ -125,11 +127,11 @@ export async function POST(
       )
     }
 
-    // Validate kind enum
-    const validKinds = ['IMAGE', 'VIDEO', 'SKETCH', 'MOCKUP']
-    if (!validKinds.includes(kind)) {
+    // Validate type enum
+    const validTypes = ['IMAGE', 'VIDEO', 'SKETCH', 'MOCKUP']
+    if (!validTypes.includes(type)) {
       return NextResponse.json(
-        { error: `Invalid kind. Must be one of: ${validKinds.join(', ')}` },
+        { error: `Invalid type. Must be one of: ${validTypes.join(', ')}` },
         { status: 400 }
       )
     }
@@ -145,14 +147,14 @@ export async function POST(
     const media = await prisma.campaignMedia.create({
       data: {
         campaignId: id,
-        kind: kind as any,
+        kind: type as any,
         url,
-        altText,
+        altText: title,
         order: newOrder,
       },
     })
 
-    // Track media upload as a contribution event
+    // Track media upload as a contribution event with SOCIAL_SHARE eventType and media_upload action
     try {
       await prisma.contributionEvent.create({
         data: {
@@ -161,8 +163,9 @@ export async function POST(
           eventType: 'SOCIAL_SHARE',
           metadata: {
             action: 'media_upload',
-            mediaKind: kind,
+            mediaType: type,
             mediaId: media.id,
+            timestamp: new Date().toISOString(),
           },
         },
       })
@@ -174,7 +177,13 @@ export async function POST(
     return NextResponse.json(
       {
         success: true,
-        data: media,
+        data: {
+          id: media.id,
+          url: media.url,
+          type: media.kind,
+          title: media.altText,
+          uploadedAt: media.createdAt,
+        },
       },
       { status: 201 }
     )
