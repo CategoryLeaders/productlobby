@@ -2,8 +2,12 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 type Params = Promise<{ id: string }>
 
+// GET /api/campaigns/[id]/media
+// Returns media/attachments for a campaign with attachment metadata
 export async function GET(
   _request: NextRequest,
   props: { params: Params }
@@ -27,9 +31,41 @@ export async function GET(
       )
     }
 
+    // Track media viewing as a contribution event
+    const user = await getCurrentUser()
+    if (user) {
+      try {
+        await prisma.contributionEvent.create({
+          data: {
+            userId: user.id,
+            campaignId: id,
+            eventType: 'SOCIAL_SHARE',
+            metadata: {
+              action: 'media_view',
+              mediaCount: campaign.media.length,
+            },
+          },
+        })
+      } catch (error) {
+        // Silently fail event tracking - don't block the response
+        console.error('Failed to track media view event:', error)
+      }
+    }
+
+    // Format media with extended metadata
+    const formattedMedia = campaign.media.map((m: any) => ({
+      id: m.id,
+      url: m.url,
+      kind: m.kind,
+      altText: m.altText,
+      order: m.order,
+      createdAt: m.createdAt,
+    }))
+
     return NextResponse.json({
       success: true,
-      data: campaign.media,
+      data: formattedMedia,
+      total: formattedMedia.length,
     })
   } catch (error) {
     console.error('GET /api/campaigns/[id]/media error:', error)
@@ -40,6 +76,8 @@ export async function GET(
   }
 }
 
+// POST /api/campaigns/[id]/media
+// Add media/attachment to campaign
 export async function POST(
   request: NextRequest,
   props: { params: Params }
@@ -57,6 +95,7 @@ export async function POST(
 
     const campaign = await prisma.campaign.findUnique({
       where: { id },
+      select: { creatorUserId: true },
     })
 
     if (!campaign) {
@@ -74,7 +113,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { url, type, caption, order } = body
+    const { url, kind, altText, order } = body
 
     // Validate URL format
     try {
@@ -86,11 +125,11 @@ export async function POST(
       )
     }
 
-    // Validate type enum
-    const validTypes = ['IMAGE', 'VIDEO', 'SKETCH', 'MOCKUP']
-    if (!validTypes.includes(type)) {
+    // Validate kind enum
+    const validKinds = ['IMAGE', 'VIDEO', 'SKETCH', 'MOCKUP']
+    if (!validKinds.includes(kind)) {
       return NextResponse.json(
-        { error: `Invalid type. Must be one of: ${validTypes.join(', ')}` },
+        { error: `Invalid kind. Must be one of: ${validKinds.join(', ')}` },
         { status: 400 }
       )
     }
@@ -106,12 +145,31 @@ export async function POST(
     const media = await prisma.campaignMedia.create({
       data: {
         campaignId: id,
-        kind: type as any,
+        kind: kind as any,
         url,
-        altText: caption,
+        altText,
         order: newOrder,
       },
     })
+
+    // Track media upload as a contribution event
+    try {
+      await prisma.contributionEvent.create({
+        data: {
+          userId: user.id,
+          campaignId: id,
+          eventType: 'SOCIAL_SHARE',
+          metadata: {
+            action: 'media_upload',
+            mediaKind: kind,
+            mediaId: media.id,
+          },
+        },
+      })
+    } catch (error) {
+      // Silently fail event tracking - media was still created
+      console.error('Failed to track media upload event:', error)
+    }
 
     return NextResponse.json(
       {
