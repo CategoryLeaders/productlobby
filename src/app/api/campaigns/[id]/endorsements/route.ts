@@ -16,6 +16,9 @@ interface EndorsementMetadata {
   title?: string
   organization?: string
   quote?: string
+  type?: string
+  avatarUrl?: string
+  timestamp?: string
 }
 
 // GET /api/campaigns/[id]/endorsements - List endorsements for a campaign
@@ -78,6 +81,9 @@ export async function GET(request: NextRequest, { params }: EndorsementParams) {
         title: metadata.title || '',
         organization: metadata.organization || '',
         quote: metadata.quote || '',
+        type: metadata.type || 'individual',
+        avatarUrl: metadata.avatarUrl,
+        timestamp: metadata.timestamp || event.createdAt.toISOString(),
         createdAt: event.createdAt,
       }
     })
@@ -108,7 +114,7 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
 
     const { id } = params
     const body = await request.json()
-    const { name, title, organization, quote } = body
+    const { name, title, organization, quote, type = 'individual', avatarUrl } = body
 
     // Validate input
     if (!name?.trim()) {
@@ -141,7 +147,7 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
 
     const campaign = await prisma.campaign.findFirst({
       where: isUuid ? { id } : { slug: id },
-      select: { id: true },
+      select: { id: true, createdByUserId: true },
     })
 
     if (!campaign) {
@@ -151,23 +157,11 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
       )
     }
 
-    // Check if user has already endorsed this campaign
-    const existingEndorsement = await prisma.contributionEvent.findFirst({
-      where: {
-        userId: user.id,
-        campaignId: campaign.id,
-        eventType: 'SOCIAL_SHARE',
-        metadata: {
-          path: ['action'],
-          equals: 'endorsement',
-        },
-      },
-    })
-
-    if (existingEndorsement) {
+    // Check if user is the campaign creator
+    if (campaign.createdByUserId !== user.id) {
       return NextResponse.json(
-        { success: false, error: 'You have already endorsed this campaign' },
-        { status: 409 }
+        { success: false, error: 'Only campaign creators can add endorsements' },
+        { status: 403 }
       )
     }
 
@@ -184,6 +178,9 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
           title: title.trim(),
           organization: organization.trim(),
           quote: quote.trim(),
+          type: type || 'individual',
+          avatarUrl: avatarUrl || null,
+          timestamp: new Date().toISOString(),
         },
       },
       include: {
@@ -214,6 +211,9 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
           title: title.trim(),
           organization: organization.trim(),
           quote: quote.trim(),
+          type: type || 'individual',
+          avatarUrl: avatarUrl || null,
+          timestamp: new Date().toISOString(),
           createdAt: endorsement.createdAt,
         },
       },
@@ -221,6 +221,88 @@ export async function POST(request: NextRequest, { params }: EndorsementParams) 
     )
   } catch (error) {
     console.error('Create endorsement error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Something went wrong' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/campaigns/[id]/endorsements/[endorsementId] - Delete an endorsement
+export async function DELETE(request: NextRequest, { params }: EndorsementParams) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const { id } = params
+    const url = new URL(request.url)
+    const endorsementId = url.pathname.split('/').pop()
+
+    if (!endorsementId) {
+      return NextResponse.json(
+        { success: false, error: 'Endorsement ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Support both UUID and slug-based lookup
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+    const campaign = await prisma.campaign.findFirst({
+      where: isUuid ? { id } : { slug: id },
+      select: { id: true, createdByUserId: true },
+    })
+
+    if (!campaign) {
+      return NextResponse.json(
+        { success: false, error: 'Campaign not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if user is the campaign creator
+    if (campaign.createdByUserId !== user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Only campaign creators can delete endorsements' },
+        { status: 403 }
+      )
+    }
+
+    // Find and delete the endorsement
+    const endorsement = await prisma.contributionEvent.findFirst({
+      where: {
+        id: endorsementId,
+        campaignId: campaign.id,
+        eventType: 'SOCIAL_SHARE',
+        metadata: {
+          path: ['action'],
+          equals: 'endorsement',
+        },
+      },
+    })
+
+    if (!endorsement) {
+      return NextResponse.json(
+        { success: false, error: 'Endorsement not found' },
+        { status: 404 }
+      )
+    }
+
+    await prisma.contributionEvent.delete({
+      where: { id: endorsementId },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Endorsement deleted successfully',
+    })
+  } catch (error) {
+    console.error('Delete endorsement error:', error)
     return NextResponse.json(
       { success: false, error: 'Something went wrong' },
       { status: 500 }
