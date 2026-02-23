@@ -4,10 +4,24 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-// ============================================================================
-// GET /api/campaigns/[id]/tags
-// ============================================================================
-// Returns all tags for a campaign with counts and contributor info
+interface TagData {
+  id: string
+  name: string
+  color: string
+  count: number
+  createdAt: string
+}
+
+interface ContributionEventMetadata {
+  action: string
+  tagName: string
+  tagColor: string
+}
+
+/**
+ * GET /api/campaigns/[id]/tags
+ * Fetch all tags for a campaign from ContributionEvent
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -27,96 +41,93 @@ export async function GET(
       )
     }
 
-    // Get all tags for this campaign from ContributionEvent
+    // Fetch tag events from ContributionEvent
     const tagEvents = await prisma.contributionEvent.findMany({
       where: {
         campaignId,
         eventType: 'SOCIAL_SHARE',
-        metadata: {
-          path: ['action'],
-          equals: 'tag_update',
-        },
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            displayName: true,
-            avatar: true,
-            handle: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     })
 
-    // Group tags and count usage
-    const tagMap = new Map<string, {
-      name: string
-      addedBy: { id: string; displayName: string; avatar: string | null; handle: string | null }
-      addedAt: string
-      count: number
-    }>()
+    // Parse and aggregate tags from metadata
+    const tagMap = new Map<string, TagData>()
 
-    for (const event of tagEvents) {
-      if (event.metadata && typeof event.metadata === 'object') {
-        const metadata = event.metadata as any
-        const tagName = metadata.tagName as string
-        const operation = metadata.operation as string
+    tagEvents.forEach((event) => {
+      const metadata = event.metadata as unknown as {
+        action?: string
+        tagName?: string
+        tagColor?: string
+        campaignTagId?: string
+      } | null
 
-        if (tagName && operation === 'add') {
-          // Count total usage of this tag across all campaigns
-          const tagSpecificCount = await prisma.contributionEvent.count({
-            where: {
-              eventType: 'SOCIAL_SHARE',
-              metadata: {
-                path: ['action'],
-                equals: 'tag_update',
-              },
-              AND: [
-                {
-                  metadata: {
-                    path: ['tagName'],
-                    equals: tagName,
-                  },
-                },
-                {
-                  metadata: {
-                    path: ['operation'],
-                    equals: 'add',
-                  },
-                },
-              ],
-            },
+      if (metadata?.action === 'campaign_tag' && metadata.tagName) {
+        const tagKey = metadata.tagName.toLowerCase()
+        const tagId = metadata.campaignTagId || `tag_${tagKey}`
+
+        if (!tagMap.has(tagKey)) {
+          tagMap.set(tagKey, {
+            id: tagId,
+            name: metadata.tagName,
+            color: metadata.tagColor || 'blue',
+            count: 0,
+            createdAt: event.createdAt.toISOString(),
           })
-
-          if (tagSpecificCount > 0 && !tagMap.has(tagName)) {
-            tagMap.set(tagName, {
-              name: tagName,
-              addedBy: {
-                id: event.user.id,
-                displayName: event.user.displayName,
-                avatar: event.user.avatar,
-                handle: event.user.handle,
-              },
-              addedAt: event.createdAt.toISOString(),
-              count: tagSpecificCount,
-            })
-          }
         }
-      }
-    }
 
-    const tags = Array.from(tagMap.values())
+        const tag = tagMap.get(tagKey)!
+        tag.count += 1
+      }
+    })
+
+    const tags = Array.from(tagMap.values()).sort((a, b) => b.count - a.count)
+
+    // Get popular tags from all campaigns for suggestions
+    const allTagEvents = await prisma.contributionEvent.findMany({
+      where: {
+        eventType: 'SOCIAL_SHARE',
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5000, // Limit to avoid performance issues
+    })
+
+    const popularTagMap = new Map<string, TagData>()
+
+    allTagEvents.forEach((event) => {
+      const metadata = event.metadata as unknown as {
+        action?: string
+        tagName?: string
+        tagColor?: string
+      } | null
+
+      if (metadata?.action === 'campaign_tag' && metadata.tagName) {
+        const tagKey = metadata.tagName.toLowerCase()
+
+        if (!popularTagMap.has(tagKey)) {
+          popularTagMap.set(tagKey, {
+            id: `popular_${tagKey}`,
+            name: metadata.tagName,
+            color: metadata.tagColor || 'blue',
+            count: 0,
+            createdAt: new Date().toISOString(),
+          })
+        }
+
+        const tag = popularTagMap.get(tagKey)!
+        tag.count += 1
+      }
+    })
+
+    const popularTags = Array.from(popularTagMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 12)
 
     return NextResponse.json({
-      success: true,
-      data: tags,
+      tags,
+      popularTags,
     })
   } catch (error) {
-    console.error('[GET /api/campaigns/[id]/tags]', error)
+    console.error('Error fetching tags:', error)
     return NextResponse.json(
       { error: 'Failed to fetch tags' },
       { status: 500 }
@@ -124,10 +135,10 @@ export async function GET(
   }
 }
 
-// ============================================================================
-// POST /api/campaigns/[id]/tags
-// ============================================================================
-// Add a new tag to a campaign (creator-only, max 10 tags, no duplicates)
+/**
+ * POST /api/campaigns/[id]/tags
+ * Add a tag to a campaign
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -142,29 +153,18 @@ export async function POST(
     }
 
     const campaignId = params.id
-    const { tagName } = await request.json()
+    const { name, color } = await request.json()
 
-    // Validate input
-    if (!tagName || typeof tagName !== 'string') {
+    if (!name || !name.trim()) {
       return NextResponse.json(
         { error: 'Tag name is required' },
         { status: 400 }
       )
     }
 
-    const trimmedTag = tagName.trim().toLowerCase()
-
-    if (trimmedTag.length < 1 || trimmedTag.length > 30) {
-      return NextResponse.json(
-        { error: 'Tag must be between 1 and 30 characters' },
-        { status: 400 }
-      )
-    }
-
-    // Verify campaign exists and get creator info
+    // Verify campaign exists
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { id: true, creatorUserId: true },
     })
 
     if (!campaign) {
@@ -174,141 +174,102 @@ export async function POST(
       )
     }
 
-    // Check if user is the creator
-    if (campaign.creatorUserId !== user.id) {
-      return NextResponse.json(
-        { error: 'Only the campaign creator can add tags' },
-        { status: 403 }
-      )
-    }
-
-    // Check if tag already exists for this campaign
-    const existingTag = await prisma.contributionEvent.findFirst({
+    // Fetch existing tags to check limit and duplicates
+    const existingTagEvents = await prisma.contributionEvent.findMany({
       where: {
         campaignId,
         eventType: 'SOCIAL_SHARE',
-        userId: user.id,
-        metadata: {
-          path: ['tagName'],
-          equals: trimmedTag,
-        },
-        AND: [
-          {
-            metadata: {
-              path: ['action'],
-              equals: 'tag_update',
-            },
-          },
-          {
-            metadata: {
-              path: ['operation'],
-              equals: 'add',
-            },
-          },
-        ],
       },
     })
 
-    if (existingTag) {
+    const existingTags = new Set<string>()
+    existingTagEvents.forEach((event) => {
+      const metadata = event.metadata as unknown as {
+        action?: string
+        tagName?: string
+      } | null
+      if (metadata?.action === 'campaign_tag' && metadata.tagName) {
+        existingTags.add(metadata.tagName.toLowerCase())
+      }
+    })
+
+    // Check if tag already exists
+    if (existingTags.has(name.toLowerCase())) {
       return NextResponse.json(
-        { error: 'Tag already added to this campaign' },
+        { error: 'This tag already exists for this campaign' },
         { status: 400 }
       )
     }
 
-    // Check max tags per campaign (10 tags total)
-    const tagCount = await prisma.contributionEvent.count({
-      where: {
-        campaignId,
-        eventType: 'SOCIAL_SHARE',
-        metadata: {
-          path: ['action'],
-          equals: 'tag_update',
-        },
-        AND: [
-          {
-            metadata: {
-              path: ['operation'],
-              equals: 'add',
-            },
-          },
-        ],
-      },
-    })
-
-    if (tagCount >= 10) {
+    // Check tag limit (20 tags per campaign)
+    if (existingTags.size >= 20) {
       return NextResponse.json(
-        { error: 'Maximum 10 tags per campaign' },
+        { error: 'Maximum 20 tags per campaign' },
         { status: 400 }
       )
     }
 
-    // Create contribution event for adding the tag
-    const tagEvent = await prisma.contributionEvent.create({
+    // Create a new tag via ContributionEvent
+    const tagId = `tag_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const colorValue = color || 'blue'
+
+    const newEvent = await prisma.contributionEvent.create({
       data: {
         userId: user.id,
         campaignId,
         eventType: 'SOCIAL_SHARE',
         points: 5,
         metadata: {
-          action: 'tag_update',
-          operation: 'add',
-          tagName: trimmedTag,
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            displayName: true,
-            avatar: true,
-            handle: true,
-          },
+          action: 'campaign_tag',
+          tagName: name.trim(),
+          tagColor: colorValue,
+          campaignTagId: tagId,
         },
       },
     })
 
-    // Count total usage of this tag
-    const tagCountGlobal = await prisma.contributionEvent.count({
+    // Return updated tags list
+    const tagEvents = await prisma.contributionEvent.findMany({
       where: {
+        campaignId,
         eventType: 'SOCIAL_SHARE',
-        metadata: {
-          path: ['tagName'],
-          equals: trimmedTag,
-        },
-        AND: [
-          {
-            metadata: {
-              path: ['action'],
-              equals: 'tag_update',
-            },
-          },
-          {
-            metadata: {
-              path: ['operation'],
-              equals: 'add',
-            },
-          },
-        ],
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        name: trimmedTag,
-        addedBy: {
-          id: tagEvent.user.id,
-          displayName: tagEvent.user.displayName,
-          avatar: tagEvent.user.avatar,
-          handle: tagEvent.user.handle,
-        },
-        addedAt: tagEvent.createdAt.toISOString(),
-        count: tagCountGlobal,
-      },
+    const tagMap = new Map<string, TagData>()
+
+    tagEvents.forEach((event) => {
+      const metadata = event.metadata as unknown as {
+        action?: string
+        tagName?: string
+        tagColor?: string
+        campaignTagId?: string
+      } | null
+
+      if (metadata?.action === 'campaign_tag' && metadata.tagName) {
+        const tagKey = metadata.tagName.toLowerCase()
+        const id = metadata.campaignTagId || `tag_${tagKey}`
+
+        if (!tagMap.has(tagKey)) {
+          tagMap.set(tagKey, {
+            id,
+            name: metadata.tagName,
+            color: metadata.tagColor || 'blue',
+            count: 0,
+            createdAt: event.createdAt.toISOString(),
+          })
+        }
+
+        const tag = tagMap.get(tagKey)!
+        tag.count += 1
+      }
     })
+
+    const tags = Array.from(tagMap.values()).sort((a, b) => b.count - a.count)
+
+    return NextResponse.json({ tags }, { status: 201 })
   } catch (error) {
-    console.error('[POST /api/campaigns/[id]/tags]', error)
+    console.error('Error adding tag:', error)
     return NextResponse.json(
       { error: 'Failed to add tag' },
       { status: 500 }
@@ -316,10 +277,10 @@ export async function POST(
   }
 }
 
-// ============================================================================
-// DELETE /api/campaigns/[id]/tags
-// ============================================================================
-// Remove a tag from a campaign (creator-only)
+/**
+ * DELETE /api/campaigns/[id]/tags
+ * Remove a tag from a campaign
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -334,22 +295,18 @@ export async function DELETE(
     }
 
     const campaignId = params.id
-    const { tagName } = await request.json()
+    const { tagId } = await request.json()
 
-    // Validate input
-    if (!tagName || typeof tagName !== 'string') {
+    if (!tagId) {
       return NextResponse.json(
-        { error: 'Tag name is required' },
+        { error: 'Tag ID is required' },
         { status: 400 }
       )
     }
 
-    const trimmedTag = tagName.trim().toLowerCase()
-
-    // Verify campaign exists and get creator info
+    // Verify campaign exists
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { id: true, creatorUserId: true },
     })
 
     if (!campaign) {
@@ -359,71 +316,80 @@ export async function DELETE(
       )
     }
 
-    // Check if user is the creator
-    if (campaign.creatorUserId !== user.id) {
-      return NextResponse.json(
-        { error: 'Only the campaign creator can remove tags' },
-        { status: 403 }
-      )
-    }
-
-    // Find the tag event to remove
-    const tagEvent = await prisma.contributionEvent.findFirst({
+    // Find and delete the tag event(s) matching the tag ID
+    const tagEvents = await prisma.contributionEvent.findMany({
       where: {
         campaignId,
-        userId: user.id,
         eventType: 'SOCIAL_SHARE',
-        metadata: {
-          path: ['tagName'],
-          equals: trimmedTag,
-        },
-        AND: [
-          {
-            metadata: {
-              path: ['action'],
-              equals: 'tag_update',
-            },
-          },
-          {
-            metadata: {
-              path: ['operation'],
-              equals: 'add',
-            },
-          },
-        ],
       },
     })
 
-    if (!tagEvent) {
+    // Find events with the matching tag
+    let deleteCount = 0
+    for (const event of tagEvents) {
+      const metadata = event.metadata as unknown as {
+        campaignTagId?: string
+      } | null
+      if (metadata?.campaignTagId === tagId) {
+        await prisma.contributionEvent.delete({
+          where: { id: event.id },
+        })
+        deleteCount += 1
+        break // Delete only the first match (one tag entry)
+      }
+    }
+
+    if (deleteCount === 0) {
       return NextResponse.json(
         { error: 'Tag not found' },
         { status: 404 }
       )
     }
 
-    // Create a deletion event instead of actually deleting the record
-    await prisma.contributionEvent.create({
-      data: {
-        userId: user.id,
+    // Return updated tags list
+    const updatedTagEvents = await prisma.contributionEvent.findMany({
+      where: {
         campaignId,
         eventType: 'SOCIAL_SHARE',
-        points: 0, // No points for removal
-        metadata: {
-          action: 'tag_update',
-          operation: 'remove',
-          tagName: trimmedTag,
-        },
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: 'Tag removed successfully',
+    const tagMap = new Map<string, TagData>()
+
+    updatedTagEvents.forEach((event) => {
+      const metadata = event.metadata as unknown as {
+        action?: string
+        tagName?: string
+        tagColor?: string
+        campaignTagId?: string
+      } | null
+
+      if (metadata?.action === 'campaign_tag' && metadata.tagName) {
+        const tagKey = metadata.tagName.toLowerCase()
+        const id = metadata.campaignTagId || `tag_${tagKey}`
+
+        if (!tagMap.has(tagKey)) {
+          tagMap.set(tagKey, {
+            id,
+            name: metadata.tagName,
+            color: metadata.tagColor || 'blue',
+            count: 0,
+            createdAt: event.createdAt.toISOString(),
+          })
+        }
+
+        const tag = tagMap.get(tagKey)!
+        tag.count += 1
+      }
     })
+
+    const tags = Array.from(tagMap.values()).sort((a, b) => b.count - a.count)
+
+    return NextResponse.json({ tags })
   } catch (error) {
-    console.error('[DELETE /api/campaigns/[id]/tags]', error)
+    console.error('Error deleting tag:', error)
     return NextResponse.json(
-      { error: 'Failed to remove tag' },
+      { error: 'Failed to delete tag' },
       { status: 500 }
     )
   }

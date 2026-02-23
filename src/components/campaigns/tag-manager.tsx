@@ -1,132 +1,205 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { X, Plus, Tag, Search, Loader2, Zap, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Tag, X, Plus, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+// Preset colors for tags
+const TAG_COLORS = [
+  { name: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300', dot: 'bg-blue-500' },
+  { name: 'purple', bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', dot: 'bg-purple-500' },
+  { name: 'pink', bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-300', dot: 'bg-pink-500' },
+  { name: 'green', bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300', dot: 'bg-green-500' },
+  { name: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300', dot: 'bg-orange-500' },
+  { name: 'red', bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', dot: 'bg-red-500' },
+  { name: 'yellow', bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300', dot: 'bg-yellow-500' },
+  { name: 'indigo', bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300', dot: 'bg-indigo-500' },
+]
+
+interface TagData {
+  id: string
+  name: string
+  color: string
+  count: number
+  createdAt: string
+}
 
 interface TagManagerProps {
   campaignId: string
-  creatorId: string
-  currentUserId?: string
+  campaignTitle?: string
   onTagsChange?: (tags: TagData[]) => void
-  maxTags?: number
-  disabled?: boolean
+  readOnly?: boolean
 }
 
-interface TagData {
-  name: string
-  count: number
-  addedBy: {
-    id: string
-    displayName: string
-    avatar: string | null
-    handle: string | null
-  }
-  addedAt: string
-}
-
-const COMMON_TAGS = [
-  'innovative',
-  'sustainability',
-  'community-driven',
-  'affordable',
-  'eco-friendly',
-  'inclusive',
-  'transparent',
-  'user-focused',
-  'quality',
-  'reliable',
-]
-
-export function TagManager({
+export const TagManager: React.FC<TagManagerProps> = ({
   campaignId,
-  creatorId,
-  currentUserId,
+  campaignTitle = '',
   onTagsChange,
-  maxTags = 10,
-  disabled = false,
-}: TagManagerProps) {
+  readOnly = false,
+}) => {
   const [tags, setTags] = useState<TagData[]>([])
-  const [inputValue, setInputValue] = useState('')
+  const [popularTags, setPopularTags] = useState<TagData[]>([])
   const [suggestions, setSuggestions] = useState<string[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [newTag, setNewTag] = useState('')
+  const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0].name)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [initialLoading, setInitialLoading] = useState(true)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  const isCreator = currentUserId === creatorId
-
-  // Load existing tags on mount
+  // Fetch tags and suggestions on mount
   useEffect(() => {
-    const loadTags = async () => {
-      try {
-        setInitialLoading(true)
-        const response = await fetch(`/api/campaigns/${campaignId}/tags`)
-        const result = await response.json()
+    fetchTags()
+    generateSuggestions()
+  }, [campaignId])
 
-        if (result.success && result.data) {
-          setTags(result.data)
-          onTagsChange?.(result.data)
-        }
-      } catch (error) {
-        console.error('Failed to load tags:', error)
-      } finally {
-        setInitialLoading(false)
+  const fetchTags = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/campaigns/${campaignId}/tags`)
+      if (response.ok) {
+        const data = await response.json()
+        setTags(data.tags || [])
+        setPopularTags(data.popularTags || [])
+        onTagsChange?.(data.tags || [])
       }
+    } catch (error) {
+      console.error('Error fetching tags:', error)
+    } finally {
+      setLoading(false)
     }
-
-    loadTags()
   }, [campaignId, onTagsChange])
 
-  // Fetch autocomplete suggestions
-  useEffect(() => {
-    if (!inputValue.trim() || !isCreator) {
-      setSuggestions([])
-      setShowSuggestions(false)
-      return
+  const generateSuggestions = useCallback(async () => {
+    try {
+      // Generate suggestions based on campaign content
+      const baseTagSuggestions = [
+        'Innovation',
+        'Design',
+        'Feature Request',
+        'Community',
+        'Sustainability',
+        'Performance',
+        'Security',
+        'Accessibility',
+        'User Experience',
+        'Mobile-Friendly',
+        'AI-Powered',
+        'Open Source',
+      ]
+
+      // Filter out already added tags
+      const existingTagNames = tags.map((t) => t.name.toLowerCase())
+      const filtered = baseTagSuggestions.filter(
+        (s) => !existingTagNames.includes(s.toLowerCase())
+      )
+
+      setSuggestions(filtered.slice(0, 6))
+    } catch (error) {
+      console.error('Error generating suggestions:', error)
     }
+  }, [tags])
 
-    const fetchSuggestions = async () => {
-      try {
-        setLoading(true)
-        const query = inputValue.trim().toLowerCase()
+  // Regenerate suggestions when tags change
+  useEffect(() => {
+    generateSuggestions()
+  }, [generateSuggestions])
 
-        // Filter common tags and already added tags
-        const filtered = COMMON_TAGS.filter(
-          (tag) =>
-            tag.includes(query) &&
-            !tags.some((t) => t.name === tag)
-        )
-
-        setSuggestions(filtered)
-        setShowSuggestions(filtered.length > 0)
-      } catch (error) {
-        console.error('Failed to fetch suggestions:', error)
-      } finally {
-        setLoading(false)
+  const addTag = useCallback(
+    async (tagName: string, tagColor: string = selectedColor) => {
+      if (!tagName.trim()) return
+      if (tags.length >= 20) {
+        alert('Maximum 20 tags per campaign')
+        return
       }
-    }
 
-    const timer = setTimeout(fetchSuggestions, 200)
-    return () => clearTimeout(timer)
-  }, [inputValue, tags, isCreator])
+      try {
+        setAdding(true)
+        const response = await fetch(`/api/campaigns/${campaignId}/tags`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: tagName.trim(), color: tagColor }),
+        })
 
-  // Handle click outside to close suggestions
+        if (response.ok) {
+          const data = await response.json()
+          setTags(data.tags || [])
+          setNewTag('')
+          onTagsChange?.(data.tags || [])
+          setShowSuggestions(false)
+        } else if (response.status === 400) {
+          const error = await response.json()
+          if (error.message?.includes('already exists')) {
+            alert('This tag already exists for this campaign')
+          }
+        }
+      } catch (error) {
+        console.error('Error adding tag:', error)
+      } finally {
+        setAdding(false)
+      }
+    },
+    [campaignId, tags.length, selectedColor, onTagsChange]
+  )
+
+  const removeTag = useCallback(
+    async (tagId: string) => {
+      try {
+        setRemoving(tagId)
+        const response = await fetch(`/api/campaigns/${campaignId}/tags`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tagId }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setTags(data.tags || [])
+          onTagsChange?.(data.tags || [])
+        }
+      } catch (error) {
+        console.error('Error removing tag:', error)
+      } finally {
+        setRemoving(null)
+      }
+    },
+    [campaignId, onTagsChange]
+  )
+
+  const getColorClasses = (colorName: string) => {
+    return TAG_COLORS.find((c) => c.name === colorName) || TAG_COLORS[0]
+  }
+
+  const filteredTags = tags.filter((tag) =>
+    tag.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const getTagSize = (count: number, maxCount: number) => {
+    if (count === 0) return 'text-sm'
+    const ratio = count / maxCount
+    if (ratio < 0.2) return 'text-sm'
+    if (ratio < 0.5) return 'text-base'
+    if (ratio < 0.8) return 'text-lg'
+    return 'text-xl'
+  }
+
+  const maxTagCount =
+    tags.length > 0 ? Math.max(...tags.map((t) => t.count || 0)) : 1
+
+  // Handle click outside to close dropdown
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (e: MouseEvent) => {
       if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
       ) {
         setShowSuggestions(false)
+        setShowColorPicker(false)
       }
     }
 
@@ -134,263 +207,256 @@ export function TagManager({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleAddTag = async (tagName?: string) => {
-    if (!isCreator) {
-      setError('Only the campaign creator can add tags')
-      return
-    }
-
-    const name = (tagName || inputValue).trim().toLowerCase()
-
-    if (!name) {
-      setError('Tag cannot be empty')
-      return
-    }
-
-    if (name.length > 30) {
-      setError('Tag must be less than 30 characters')
-      return
-    }
-
-    if (tags.some((tag) => tag.name === name)) {
-      setError('Tag already added')
-      return
-    }
-
-    if (tags.length >= maxTags) {
-      setError(`Maximum ${maxTags} tags allowed`)
-      return
-    }
-
-    try {
-      setAdding(true)
-      setError(null)
-
-      const response = await fetch(
-        `/api/campaigns/${campaignId}/tags`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tagName: name }),
-        }
-      )
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        setError(result.error || 'Failed to add tag')
-        return
-      }
-
-      const newTag: TagData = {
-        name: result.data.name,
-        count: result.data.count,
-        addedBy: result.data.addedBy,
-        addedAt: result.data.addedAt,
-      }
-
-      const updatedTags = [...tags, newTag]
-      setTags(updatedTags)
-      onTagsChange?.(updatedTags)
-      setInputValue('')
-      setShowSuggestions(false)
-      setSuggestions([])
-    } catch (error) {
-      console.error('Failed to add tag:', error)
-      setError('Failed to add tag')
-    } finally {
-      setAdding(false)
-    }
-  }
-
-  const handleRemoveTag = async (tagName: string) => {
-    if (!isCreator) {
-      setError('Only the campaign creator can remove tags')
-      return
-    }
-
-    try {
-      setRemoving(tagName)
-      setError(null)
-
-      const response = await fetch(
-        `/api/campaigns/${campaignId}/tags`,
-        {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tagName }),
-        }
-      )
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        setError(result.error || 'Failed to remove tag')
-        setRemoving(null)
-        return
-      }
-
-      const updatedTags = tags.filter((tag) => tag.name !== tagName)
-      setTags(updatedTags)
-      onTagsChange?.(updatedTags)
-    } catch (error) {
-      console.error('Failed to remove tag:', error)
-      setError('Failed to remove tag')
-    } finally {
-      setRemoving(null)
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddTag()
-    }
-  }
-
-  if (initialLoading) {
-    return (
-      <div className="flex items-center justify-center py-4">
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-4">
-      {/* Input field with suggestions - only for creator */}
-      {isCreator && (
-        <div className="relative">
+    <div ref={containerRef} className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Tag className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold">Campaign Tags</h3>
+          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+            {tags.length}/20
+          </span>
+        </div>
+      </div>
+
+      {/* Add Tag Form */}
+      {!readOnly && (
+        <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+          <label className="block text-sm font-medium text-gray-700">
+            Add New Tag
+          </label>
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <Input
-                ref={inputRef}
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Add a tag..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onFocus={() => inputValue && setShowSuggestions(true)}
-                disabled={disabled || adding || tags.length >= maxTags}
-                className="w-full"
+                placeholder="Enter tag name..."
+                value={newTag}
+                onChange={(e) => {
+                  setNewTag(e.target.value)
+                  setShowSuggestions(e.target.value.length > 0)
+                }}
+                onFocus={() => newTag.length > 0 && setShowSuggestions(true)}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
 
-              {/* Suggestions Dropdown */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div
-                  ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto"
-                >
-                  {loading ? (
-                    <div className="p-3 text-center text-gray-500">
-                      <Loader2 className="w-4 h-4 animate-spin inline" />
-                    </div>
-                  ) : (
-                    suggestions.map((suggestion) => (
+              {/* Tag Suggestions Dropdown */}
+              {showSuggestions && newTag.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {suggestions
+                    .filter((s) =>
+                      s.toLowerCase().includes(newTag.toLowerCase())
+                    )
+                    .map((suggestion) => (
                       <button
                         key={suggestion}
-                        onClick={() => handleAddTag(suggestion)}
-                        className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors text-sm border-b border-gray-100 last:border-b-0"
-                        type="button"
+                        onClick={() => {
+                          setNewTag(suggestion)
+                          setShowSuggestions(false)
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm text-gray-700"
                       >
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-3 h-3 text-violet-600" />
-                          <span className="font-medium text-gray-900">
-                            {suggestion}
-                          </span>
-                        </div>
+                        {suggestion}
                       </button>
-                    ))
-                  )}
+                    ))}
                 </div>
               )}
             </div>
 
+            {/* Color Picker */}
+            <div className="relative">
+              <button
+                onClick={() => setShowColorPicker(!showColorPicker)}
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 flex items-center gap-2"
+              >
+                <div
+                  className={cn(
+                    'w-4 h-4 rounded-full',
+                    getColorClasses(selectedColor).dot
+                  )}
+                />
+              </button>
+
+              {showColorPicker && (
+                <div className="absolute top-full right-0 mt-1 p-3 bg-white border border-gray-200 rounded-lg shadow-lg z-10 grid grid-cols-4 gap-2">
+                  {TAG_COLORS.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => {
+                        setSelectedColor(color.name)
+                        setShowColorPicker(false)
+                      }}
+                      className={cn(
+                        'w-6 h-6 rounded-full border-2 transition-all',
+                        selectedColor === color.name
+                          ? 'border-gray-800 scale-110'
+                          : 'border-transparent hover:scale-105',
+                        color.dot
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add Button */}
             <Button
-              onClick={() => handleAddTag()}
-              disabled={
-                disabled ||
-                adding ||
-                !inputValue.trim() ||
-                tags.length >= maxTags
-              }
-              className="bg-violet-600 hover:bg-violet-700 text-white gap-2"
+              onClick={() => addTag(newTag, selectedColor)}
+              disabled={!newTag.trim() || adding || tags.length >= 20}
+              size="sm"
+              className="gap-2"
             >
               {adding ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  <span>Add</span>
-                </>
+                <Plus className="w-4 h-4" />
               )}
+              Add
             </Button>
           </div>
-
-          {error && (
-            <p className="mt-1 text-sm text-red-600">{error}</p>
-          )}
         </div>
       )}
 
-      {/* Tags Display */}
-      <div className="space-y-3">
-        {tags.length > 0 ? (
-          <>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
+      {/* Current Tags */}
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+        </div>
+      ) : filteredTags.length > 0 ? (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-gray-700">
+            Current Tags ({filteredTags.length})
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {filteredTags.map((tag) => {
+              const colorClasses = getColorClasses(tag.color)
+              const size = getTagSize(tag.count || 0, maxTagCount)
+              return (
                 <div
-                  key={tag.name}
-                  className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-50 to-lime-50 border border-violet-200 rounded-full shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <Tag className="w-3.5 h-3.5 text-violet-600" />
-                  <span className="text-sm font-medium text-violet-900">
-                    {tag.name}
-                  </span>
-                  {tag.count > 1 && (
-                    <span className="text-xs text-lime-700 bg-lime-100 px-2 py-0.5 rounded-full">
-                      {tag.count}
-                    </span>
+                  key={tag.id}
+                  className={cn(
+                    'inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition-all',
+                    colorClasses.bg,
+                    colorClasses.text,
+                    colorClasses.border,
+                    size
                   )}
-                  {isCreator && (
+                >
+                  <div className={cn('w-2 h-2 rounded-full', colorClasses.dot)} />
+                  <span className="font-medium">{tag.name}</span>
+                  <span className="text-xs opacity-75">({tag.count})</span>
+                  {!readOnly && (
                     <button
-                      onClick={() => handleRemoveTag(tag.name)}
-                      disabled={disabled || removing === tag.name}
-                      className={cn(
-                        'p-0.5 rounded-full hover:bg-violet-200 transition-colors ml-1',
-                        (disabled || removing === tag.name) && 'opacity-50 cursor-not-allowed'
-                      )}
-                      type="button"
-                      aria-label={`Remove tag ${tag.name}`}
+                      onClick={() => removeTag(tag.id)}
+                      disabled={removing === tag.id}
+                      className="ml-1 p-0.5 hover:bg-white/50 rounded transition-colors"
                     >
-                      {removing === tag.name ? (
-                        <Loader2 className="w-3 h-3 animate-spin text-violet-600" />
+                      {removing === tag.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
                       ) : (
-                        <X className="w-3 h-3 text-violet-600" />
+                        <X className="w-3 h-3" />
                       )}
                     </button>
                   )}
                 </div>
-              ))}
-            </div>
-
-            {isCreator && (
-              <p className="text-xs text-gray-500">
-                {tags.length} of {maxTags} tags
-              </p>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center gap-2 text-gray-400 text-sm py-4">
-            <Tag className="w-4 h-4" />
-            <span>
-              {isCreator
-                ? 'No tags yet. Add one to describe this campaign.'
-                : 'No tags added for this campaign yet.'}
-            </span>
+              )
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="p-4 text-center bg-gray-50 rounded-lg border border-gray-200">
+          <Tag className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-gray-600">No tags yet. Add your first tag above!</p>
+        </div>
+      )}
+
+      {/* Tag Cloud - Popular Tags */}
+      {!readOnly && popularTags.length > 0 && (
+        <div className="space-y-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-purple-600" />
+            <h4 className="font-semibold text-gray-800">Popular Tags</h4>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {popularTags.slice(0, 8).map((tag) => {
+              const colorClasses = getColorClasses(tag.color)
+              const size = getTagSize(tag.count || 0, Math.max(...popularTags.map((t) => t.count || 0)))
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => {
+                    if (!tags.some((t) => t.id === tag.id)) {
+                      setNewTag(tag.name)
+                      setSelectedColor(tag.color)
+                    }
+                  }}
+                  className={cn(
+                    'inline-flex items-center gap-1 px-3 py-2 rounded-full border transition-all hover:scale-105 cursor-pointer',
+                    colorClasses.bg,
+                    colorClasses.text,
+                    colorClasses.border,
+                    size
+                  )}
+                >
+                  <div className={cn('w-1.5 h-1.5 rounded-full', colorClasses.dot)} />
+                  <span className="font-medium">{tag.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Filter by Tag - Tag Cloud Visualization */}
+      {tags.length > 0 && (
+        <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-amber-600" />
+            <h4 className="font-semibold text-gray-800">Tag Cloud</h4>
+          </div>
+          <div className="flex flex-wrap gap-3 items-center">
+            {tags.map((tag) => {
+              const colorClasses = getColorClasses(tag.color)
+              const size = getTagSize(tag.count || 0, maxTagCount)
+              return (
+                <span
+                  key={tag.id}
+                  className={cn(
+                    'px-3 py-1 rounded-full border cursor-default transition-all',
+                    colorClasses.bg,
+                    colorClasses.text,
+                    colorClasses.border,
+                    size,
+                    'font-medium'
+                  )}
+                >
+                  {tag.name}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tag Search */}
+      {tags.length > 3 && (
+        <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <label className="block text-sm font-medium text-gray-700">
+            Search Tags
+          </label>
+          <input
+            type="text"
+            placeholder="Search tags..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      )}
     </div>
   )
 }
+
+export default TagManager
