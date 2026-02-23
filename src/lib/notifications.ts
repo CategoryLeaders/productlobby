@@ -13,6 +13,7 @@ export type NotificationType =
   | 'new_lobby'
   | 'new_comment'
   | 'question_answered'
+  | 'collaboration_invite'
 
 export interface CreateNotificationOptions {
   userId: string

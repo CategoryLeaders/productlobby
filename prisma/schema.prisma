@@ -865,6 +865,7 @@ enum ContributionEventType {
   COMMENT_ENGAGEMENT
   SOCIAL_SHARE
   BRAND_OUTREACH
+  COLLABORATION_INVITE
 
   @@map("contribution_event_type")
 }
