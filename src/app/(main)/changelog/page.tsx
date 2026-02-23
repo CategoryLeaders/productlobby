@@ -1,404 +1,305 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { History, Tag, Filter, Sparkles, Bug, Zap, Shield } from 'lucide-react';
+import { Metadata } from 'next';
+import { ArrowRight, CheckCircle2, Zap, Bug, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ChangeCategory = 'all' | 'feature' | 'fix' | 'improvement' | 'security';
+export const metadata: Metadata = {
+  title: 'Changelog | ProductLobby',
+  description: 'Track ProductLobby updates, new features, improvements, and bug fixes. Stay informed about product releases and enhancements.',
+  openGraph: {
+    title: 'Changelog | ProductLobby',
+    description: 'Track ProductLobby updates, new features, improvements, and bug fixes.',
+    type: 'website',
+  },
+};
 
-interface ChangelogEntry {
-  id: string;
-  date: string;
-  version: string;
-  title: string;
-  description: string;
-  category: 'feature' | 'fix' | 'improvement' | 'security';
+interface Change {
+  label: string;
+  type: 'new' | 'improved' | 'fixed';
 }
 
-const changelogEntries: ChangelogEntry[] = [
+interface Release {
+  version: string;
+  date: string;
+  title: string;
+  description: string;
+  changes: Change[];
+}
+
+const releases: Release[] = [
   {
-    id: '1',
-    date: 'February 20, 2026',
-    version: 'v2.5.0',
-    title: 'Real-time Collaboration Features',
-    description: 'Added live cursor tracking and instant synchronization for team members editing the same product listing simultaneously.',
-    category: 'feature',
-  },
-  {
-    id: '2',
-    date: 'February 18, 2026',
-    version: 'v2.4.9',
-    title: 'Performance Improvements',
-    description: 'Optimized image loading and database queries, reducing page load times by 40%.',
-    category: 'improvement',
-  },
-  {
-    id: '3',
+    version: 'v2.8.0',
     date: 'February 15, 2026',
-    version: 'v2.4.8',
-    title: 'Security Patch',
-    description: 'Fixed critical XSS vulnerability in product description renderer. All users should update immediately.',
-    category: 'security',
+    title: 'Team Collaboration Suite',
+    description:
+      'Enhanced team productivity with real-time collaboration features, allowing multiple team members to work on product listings simultaneously with live updates.',
+    changes: [
+      { label: 'Real-time cursor tracking for team members', type: 'new' },
+      { label: 'Instant synchronization of product changes', type: 'new' },
+      { label: 'Team comments and mentions', type: 'new' },
+      { label: 'Activity feed for team actions', type: 'improved' },
+      { label: 'Performance boost in live collaboration mode', type: 'improved' },
+    ],
   },
   {
-    id: '4',
-    date: 'February 12, 2026',
-    version: 'v2.4.7',
-    title: 'Advanced Analytics Dashboard',
-    description: 'New comprehensive dashboard showing product performance metrics, user engagement, and conversion tracking.',
-    category: 'feature',
-  },
-  {
-    id: '5',
-    date: 'February 10, 2026',
-    version: 'v2.4.6',
-    title: 'Mobile App Bug Fix',
-    description: 'Resolved issue where notifications were not displaying on iOS devices running iOS 17+.',
-    category: 'fix',
-  },
-  {
-    id: '6',
+    version: 'v2.7.5',
     date: 'February 8, 2026',
-    version: 'v2.4.5',
-    title: 'Dark Mode Enhancement',
-    description: 'Improved contrast ratios and refined color palette for better readability in dark mode across all pages.',
-    category: 'improvement',
+    title: 'Advanced Analytics Dashboard',
+    description:
+      'Comprehensive analytics platform providing deep insights into product performance, user engagement metrics, and conversion tracking with customizable reports.',
+    changes: [
+      { label: 'Interactive analytics dashboard', type: 'new' },
+      { label: 'Custom report builder', type: 'new' },
+      { label: 'User engagement heatmaps', type: 'new' },
+      { label: 'Export analytics to CSV/PDF', type: 'new' },
+      { label: 'Improved chart rendering performance', type: 'improved' },
+      { label: 'Fixed timezone display in reports', type: 'fixed' },
+    ],
   },
   {
-    id: '7',
-    date: 'February 5, 2026',
-    version: 'v2.4.4',
-    title: 'AI-Powered Product Tagging',
-    description: 'Introduced intelligent auto-tagging system that suggests relevant tags based on product descriptions.',
-    category: 'feature',
-  },
-  {
-    id: '8',
-    date: 'February 1, 2026',
-    version: 'v2.4.3',
-    title: 'Search Algorithm Update',
-    description: 'Enhanced search algorithm with improved relevance ranking and typo correction.',
-    category: 'improvement',
-  },
-  {
-    id: '9',
+    version: 'v2.7.0',
     date: 'January 28, 2026',
-    version: 'v2.4.2',
-    title: 'Export to PDF Fix',
-    description: 'Fixed formatting issues when exporting product listings to PDF format.',
-    category: 'fix',
+    title: 'AI-Powered Content Generation',
+    description:
+      'Leverage artificial intelligence to automatically generate compelling product descriptions, feature lists, and marketing copy tailored to your product category.',
+    changes: [
+      { label: 'AI description generator', type: 'new' },
+      { label: 'Smart category detection', type: 'new' },
+      { label: 'Tone and style customization', type: 'new' },
+      { label: 'Batch content generation', type: 'improved' },
+      { label: 'Fixed AI API timeout issues', type: 'fixed' },
+    ],
   },
   {
-    id: '10',
-    date: 'January 25, 2026',
-    version: 'v2.4.1',
-    title: 'Two-Factor Authentication',
-    description: 'Added support for TOTP-based two-factor authentication and hardware security keys.',
-    category: 'security',
-  },
-  {
-    id: '11',
-    date: 'January 22, 2026',
-    version: 'v2.4.0',
-    title: 'Team Management System',
-    description: 'Complete overhaul of team features with role-based access control, permissions management, and audit logs.',
-    category: 'feature',
-  },
-  {
-    id: '12',
-    date: 'January 18, 2026',
-    version: 'v2.3.9',
-    title: 'API Rate Limit Updates',
-    description: 'Adjusted rate limiting to be more generous for free tier users and better aligned with usage patterns.',
-    category: 'improvement',
-  },
-  {
-    id: '13',
+    version: 'v2.6.3',
     date: 'January 15, 2026',
-    version: 'v2.3.8',
-    title: 'Bulk Import Tool',
-    description: 'New bulk import feature supporting CSV and JSON formats for quick product catalog uploads.',
-    category: 'feature',
+    title: 'Mobile App Enhancements',
+    description:
+      'Significant improvements to the mobile experience with faster load times, offline support, and native-like interactions across iOS and Android platforms.',
+    changes: [
+      { label: 'Offline mode for product browsing', type: 'new' },
+      { label: 'Push notifications for product updates', type: 'new' },
+      { label: '40% faster mobile page loads', type: 'improved' },
+      { label: 'Improved touch interactions', type: 'improved' },
+      { label: 'Fixed image caching on iOS', type: 'fixed' },
+      { label: 'Corrected notification timestamps', type: 'fixed' },
+    ],
   },
   {
-    id: '14',
-    date: 'January 12, 2026',
-    version: 'v2.3.7',
-    title: 'Email Delivery Issue',
-    description: 'Fixed bug preventing notification emails from being sent to users with special characters in email addresses.',
-    category: 'fix',
-  },
-  {
-    id: '15',
-    date: 'January 8, 2026',
-    version: 'v2.3.6',
-    title: 'Database Security Enhancement',
-    description: 'Implemented end-to-end encryption for sensitive user data at rest and in transit.',
-    category: 'security',
-  },
-  {
-    id: '16',
-    date: 'January 5, 2026',
-    version: 'v2.3.5',
-    title: 'Responsive Design Improvements',
-    description: 'Refined layouts for tablet devices and improved touch interactions throughout the platform.',
-    category: 'improvement',
-  },
-  {
-    id: '17',
-    date: 'January 1, 2026',
-    version: 'v2.3.4',
-    title: 'Integration with Slack',
-    description: 'New Slack integration allowing teams to receive ProductLobby notifications directly in Slack channels.',
-    category: 'feature',
-  },
-  {
-    id: '18',
-    date: 'December 28, 2025',
-    version: 'v2.3.3',
-    title: 'Webhook Stability Fix',
-    description: 'Improved webhook delivery reliability and added automatic retry logic for failed deliveries.',
-    category: 'fix',
-  },
-  {
-    id: '19',
-    date: 'December 25, 2025',
-    version: 'v2.3.2',
-    title: 'Accessibility Compliance',
-    description: 'Enhanced accessibility features to meet WCAG 2.1 AA standards across all components.',
-    category: 'improvement',
-  },
-  {
-    id: '20',
+    version: 'v2.5.0',
     date: 'December 20, 2025',
-    version: 'v2.3.1',
-    title: 'Custom Domain Support',
-    description: 'Added ability to host public product pages on custom domains with automatic SSL certificate provisioning.',
-    category: 'feature',
+    title: 'API and Integrations Release',
+    description:
+      'Public API launch with comprehensive documentation, webhooks, and out-of-the-box integrations with popular third-party platforms and services.',
+    changes: [
+      { label: 'Public REST API v1', type: 'new' },
+      { label: 'Webhook support for real-time events', type: 'new' },
+      { label: 'Zapier integration', type: 'new' },
+      { label: 'Slack integration for notifications', type: 'new' },
+      { label: 'Rate limiting and quota management', type: 'improved' },
+      { label: 'Fixed API authentication edge cases', type: 'fixed' },
+    ],
   },
 ];
 
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case 'feature':
-      return <Sparkles className="w-4 h-4" />;
-    case 'fix':
-      return <Bug className="w-4 h-4" />;
-    case 'improvement':
-      return <Zap className="w-4 h-4" />;
-    case 'security':
-      return <Shield className="w-4 h-4" />;
-    default:
-      return <Tag className="w-4 h-4" />;
+const getBadgeStyles = (type: 'new' | 'improved' | 'fixed') => {
+  switch (type) {
+    case 'new':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+    case 'improved':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+    case 'fixed':
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
   }
 };
 
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case 'feature':
-      return 'bg-violet-100 text-violet-800 border-violet-300';
-    case 'fix':
-      return 'bg-red-100 text-red-800 border-red-300';
-    case 'improvement':
-      return 'bg-blue-100 text-blue-800 border-blue-300';
-    case 'security':
-      return 'bg-amber-100 text-amber-800 border-amber-300';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+const getBadgeIcon = (type: 'new' | 'improved' | 'fixed') => {
+  switch (type) {
+    case 'new':
+      return <Star className="w-3.5 h-3.5" />;
+    case 'improved':
+      return <Zap className="w-3.5 h-3.5" />;
+    case 'fixed':
+      return <Bug className="w-3.5 h-3.5" />;
   }
 };
 
-const getCategoryLabel = (category: string) => {
-  switch (category) {
-    case 'feature':
-      return 'Feature';
-    case 'fix':
-      return 'Fix';
-    case 'improvement':
-      return 'Improvement';
-    case 'security':
-      return 'Security';
-    default:
-      return 'Update';
+const getBadgeLabel = (type: 'new' | 'improved' | 'fixed') => {
+  switch (type) {
+    case 'new':
+      return 'New';
+    case 'improved':
+      return 'Improved';
+    case 'fixed':
+      return 'Fixed';
   }
 };
 
 export default function ChangelogPage() {
-  const [selectedCategory, setSelectedCategory] = useState<ChangeCategory>('all');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    document.title = 'Changelog - ProductLobby';
-  }, []);
-
-  const filteredEntries =
-    selectedCategory === 'all'
-      ? changelogEntries
-      : changelogEntries.filter(
-          (entry) => entry.category === selectedCategory
-        );
-
-  if (!mounted) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-violet-600 to-violet-700 text-white py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-4">
-            <History className="w-10 h-10" />
-            <h1 className="text-5xl font-bold">Changelog</h1>
+      <div className="relative overflow-hidden py-20 sm:py-32">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-violet-400 rounded-full mix-blend-multiply filter blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-lime-400 rounded-full mix-blend-multiply filter blur-3xl"></div>
+        </div>
+
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 mb-8">
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-sm font-medium">Product Updates</span>
           </div>
-          <p className="text-lg text-violet-100 max-w-2xl">
-            Stay updated with the latest features, improvements, and fixes to
-            ProductLobby. We're constantly working to make your experience
-            better.
+
+          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-6">
+            <span className="bg-gradient-to-r from-violet-600 to-violet-700 dark:from-violet-400 dark:to-violet-500 bg-clip-text text-transparent">
+              Changelog
+            </span>
+          </h1>
+
+          <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-12">
+            Stay up-to-date with the latest ProductLobby features, improvements, and fixes. We're continuously evolving to serve you better.
           </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-base font-medium rounded-lg">
+              Subscribe for Updates
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+            <Button
+              variant="outline"
+              className="border-slate-300 dark:border-slate-600 px-8 py-6 text-base font-medium rounded-lg"
+            >
+              View Latest Release
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Filter Section */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="flex items-center gap-4 mb-8 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-600" />
-            <span className="text-sm font-semibold text-gray-700">Filter:</span>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              onClick={() => setSelectedCategory('all')}
-              variant={selectedCategory === 'all' ? 'default' : 'outline'}
-              className={
-                selectedCategory === 'all'
-                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
-                  : ''
-              }
-            >
-              All
-            </Button>
-            <Button
-              onClick={() => setSelectedCategory('feature')}
-              variant={selectedCategory === 'feature' ? 'default' : 'outline'}
-              className={
-                selectedCategory === 'feature'
-                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
-                  : ''
-              }
-            >
-              Features
-            </Button>
-            <Button
-              onClick={() => setSelectedCategory('fix')}
-              variant={selectedCategory === 'fix' ? 'default' : 'outline'}
-              className={
-                selectedCategory === 'fix'
-                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
-                  : ''
-              }
-            >
-              Fixes
-            </Button>
-            <Button
-              onClick={() => setSelectedCategory('improvement')}
-              variant={
-                selectedCategory === 'improvement' ? 'default' : 'outline'
-              }
-              className={
-                selectedCategory === 'improvement'
-                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
-                  : ''
-              }
-            >
-              Improvements
-            </Button>
-            <Button
-              onClick={() => setSelectedCategory('security')}
-              variant={selectedCategory === 'security' ? 'default' : 'outline'}
-              className={
-                selectedCategory === 'security'
-                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
-                  : ''
-              }
-            >
-              Security
-            </Button>
-          </div>
-        </div>
+      {/* Changelog Timeline */}
+      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        {/* Timeline vertical line */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-violet-300 via-violet-400 to-lime-300 dark:from-violet-700 dark:via-violet-600 dark:to-lime-700"></div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-violet-300 via-lime-300 to-violet-300" />
+        <div className="space-y-20">
+          {releases.map((release, index) => (
+            <div key={release.version} className="relative">
+              {/* Timeline dot */}
+              <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-2">
+                <div className="w-4 h-4 bg-violet-600 rounded-full border-4 border-slate-50 dark:border-slate-950 shadow-md"></div>
+              </div>
 
-          {/* Timeline Entries */}
-          <div className="space-y-8">
-            {filteredEntries.map((entry, index) => (
-              <div key={entry.id} className="relative pl-24">
-                {/* Timeline dot */}
-                <div className="absolute left-0 top-2 w-12 h-12 bg-white border-4 border-violet-600 rounded-full flex items-center justify-center shadow-lg hover:border-lime-400 transition-colors duration-300">
-                  {getCategoryIcon(entry.category)}
+              {/* Content - alternating left and right */}
+              <div className={`flex ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
+                <div className="w-1/2 px-8">
+                  {index % 2 === 0 ? (
+                    // Left side content
+                    <div className="text-right">
+                      <div className="inline-block">
+                        <div className="flex items-center justify-end gap-4 mb-4">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 text-sm font-semibold">
+                            {release.version}
+                          </span>
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                          {release.title}
+                        </h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
+                          {release.date}
+                        </p>
+                        <p className="text-slate-700 dark:text-slate-300 mb-6 leading-relaxed max-w-sm ml-auto">
+                          {release.description}
+                        </p>
+
+                        {/* Changes list */}
+                        <div className="space-y-3 mb-6 max-w-sm ml-auto">
+                          {release.changes.map((change, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 justify-end"
+                            >
+                              <div className="flex-1 text-right">
+                                <p className="text-slate-700 dark:text-slate-300 text-sm">
+                                  {change.label}
+                                </p>
+                              </div>
+                              <div
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium flex-shrink-0 ${getBadgeStyles(change.type)}`}
+                              >
+                                {getBadgeIcon(change.type)}
+                                {getBadgeLabel(change.type)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
-                {/* Entry card */}
-                <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300 border-l-4 border-violet-600">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">
-                        {entry.date}
-                      </p>
-                      <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                        {entry.title}
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border">
-                        <Tag className="w-3 h-3" />
-                        {entry.version}
-                      </span>
-                    </div>
-                  </div>
+                <div className="w-1/2 px-8">
+                  {index % 2 === 1 ? (
+                    // Right side content
+                    <div className="text-left">
+                      <div className="inline-block">
+                        <div className="flex items-center gap-4 mb-4">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 text-sm font-semibold">
+                            {release.version}
+                          </span>
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                          {release.title}
+                        </h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
+                          {release.date}
+                        </p>
+                        <p className="text-slate-700 dark:text-slate-300 mb-6 leading-relaxed max-w-sm">
+                          {release.description}
+                        </p>
 
-                  <p className="text-gray-700 mb-4">{entry.description}</p>
-
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(
-                        entry.category
-                      )}`}
-                    >
-                      {getCategoryIcon(entry.category)}
-                      {getCategoryLabel(entry.category)}
-                    </span>
-                  </div>
+                        {/* Changes list */}
+                        <div className="space-y-3 mb-6 max-w-sm">
+                          {release.changes.map((change, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3"
+                            >
+                              <div
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium flex-shrink-0 ${getBadgeStyles(change.type)}`}
+                              >
+                                {getBadgeIcon(change.type)}
+                                {getBadgeLabel(change.type)}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-slate-700 dark:text-slate-300 text-sm">
+                                  {change.label}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Empty state */}
-          {filteredEntries.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">
-                No entries found for this category.
-              </p>
             </div>
-          )}
+          ))}
         </div>
+      </div>
 
-        {/* Footer note */}
-        <div className="mt-16 p-6 bg-lime-50 rounded-lg border border-lime-200">
-          <p className="text-gray-700 text-sm">
-            <strong>Note:</strong> ProductLobby is constantly evolving. Check
-            back regularly for the latest updates and improvements. For more
-            detailed information about any release, visit our{' '}
-            <span className="text-violet-600 font-semibold">
-              documentation
-            </span>
-            .
+      {/* CTA Section */}
+      <div className="bg-gradient-to-r from-violet-600 to-violet-700 dark:from-violet-900 dark:to-violet-950 py-16 sm:py-20">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Never Miss an Update
+          </h2>
+          <p className="text-violet-100 mb-8 max-w-2xl mx-auto">
+            Subscribe to our changelog to receive notifications about new features, improvements, and important updates.
           </p>
+          <Button className="bg-lime-400 hover:bg-lime-500 text-slate-900 font-semibold px-8 py-6 text-base rounded-lg">
+            Subscribe Now
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
     </div>
