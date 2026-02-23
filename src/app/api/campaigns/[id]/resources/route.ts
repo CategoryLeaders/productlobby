@@ -4,24 +4,17 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-interface ResourceRequestBody {
-  title: string
-  description?: string
-  url: string
-  resourceType: string
-}
-
-interface DeleteRequestBody {
-  resourceId: string
-}
-
-// GET /api/campaigns/[id]/resources - Fetch resources for campaign
+// ============================================================================
+// GET /api/campaigns/[id]/resources
+// ============================================================================
+// Returns all resources for a campaign, including bookmark status for current user
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id: campaignId } = params
+    const campaignId = params.id
+    const user = await getCurrentUser()
 
     // Verify campaign exists
     const campaign = await prisma.campaign.findUnique({
@@ -36,14 +29,14 @@ export async function GET(
       )
     }
 
-    // Fetch all resources stored as ContributionEvent
+    // Get all resources for the campaign
     const resources = await prisma.contributionEvent.findMany({
       where: {
-        campaignId,
+        campaignId: campaignId,
         eventType: 'SOCIAL_SHARE',
         metadata: {
-          path: ['action'],
-          equals: 'campaign_resource',
+          path: ['type'],
+          equals: 'resource',
         },
       },
       orderBy: {
@@ -51,53 +44,77 @@ export async function GET(
       },
     })
 
-    const formattedResources = resources.map((event) => ({
-      id: event.id,
-      title: (event.metadata as any)?.title || '',
-      description: (event.metadata as any)?.description || '',
-      url: (event.metadata as any)?.url || '',
-      resourceType: (event.metadata as any)?.resourceType || 'other',
-      createdAt: event.createdAt,
-    }))
+    // Transform resources and check bookmarks for current user
+    const formattedResources = await Promise.all(
+      resources.map(async (event) => {
+        const metadata = event.metadata as any
+        const resourceId = metadata.resourceId || event.id
 
-    return NextResponse.json(
-      {
-        resources: formattedResources,
-      },
-      { status: 200 }
+        // Check if current user has bookmarked this resource
+        let isBookmarked = false
+        if (user) {
+          const bookmark = await prisma.bookmark.findFirst({
+            where: {
+              userId: user.id,
+              itemId: resourceId,
+              itemType: 'RESOURCE',
+            },
+          })
+          isBookmarked = !!bookmark
+        }
+
+        return {
+          id: resourceId,
+          title: metadata.title || '',
+          description: metadata.description || '',
+          type: metadata.resourceType || 'Guide',
+          url: metadata.url || '',
+          author: metadata.author || '',
+          viewCount: metadata.viewCount || 0,
+          isBookmarked,
+          createdAt: event.createdAt,
+          updatedAt: event.updatedAt,
+        }
+      })
     )
+
+    return NextResponse.json({
+      resources: formattedResources,
+      total: formattedResources.length,
+    })
   } catch (error) {
-    console.error('Error fetching campaign resources:', error)
+    console.error('Error getting resources:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch resources' },
+      { error: 'Failed to get resources' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/campaigns/[id]/resources - Add new resource (creator only)
+// ============================================================================
+// POST /api/campaigns/[id]/resources
+// ============================================================================
+// Create a new resource for a campaign (creator only)
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const user = await getCurrentUser()
+
     if (!user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const { id: campaignId } = params
+    const campaignId = params.id
 
-    // Verify campaign exists and user is the creator
+    // Verify campaign exists and user is creator
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: {
-        id: true,
-        creatorId: true,
-      },
+      select: { id: true, creatorUserId: true },
     })
 
     if (!campaign) {
@@ -107,33 +124,27 @@ export async function POST(
       )
     }
 
-    if (campaign.creatorId !== user.id) {
+    if (campaign.creatorUserId !== user.id) {
       return NextResponse.json(
-        { error: 'Unauthorized - only creator can add resources' },
+        { error: 'Only campaign creator can add resources' },
         { status: 403 }
       )
     }
 
-    const body: ResourceRequestBody = await request.json()
+    // Parse request body
+    const { title, description, type, url, author } = await request.json()
 
     // Validate required fields
-    if (!body.title || !body.title.trim()) {
+    if (!title || !url || !author) {
       return NextResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!body.url || !body.url.trim()) {
-      return NextResponse.json(
-        { error: 'URL is required' },
+        { error: 'Title, URL, and author are required' },
         { status: 400 }
       )
     }
 
     // Validate URL format
     try {
-      new URL(body.url)
+      new URL(url)
     } catch {
       return NextResponse.json(
         { error: 'Invalid URL format' },
@@ -141,148 +152,48 @@ export async function POST(
       )
     }
 
-    // Validate resourceType
-    const validTypes = ['article', 'video', 'pdf', 'tool', 'other']
-    const resourceType = body.resourceType || 'other'
-    if (!validTypes.includes(resourceType)) {
-      return NextResponse.json(
-        { error: 'Invalid resource type' },
-        { status: 400 }
-      )
-    }
+    // Generate resource ID
+    const resourceId = `resource_${crypto.randomUUID()}`
 
-    // Create ContributionEvent with resource metadata
-    const event = await prisma.contributionEvent.create({
+    // Create contribution event to store resource
+    const contributionEvent = await prisma.contributionEvent.create({
       data: {
-        campaignId,
         userId: user.id,
+        campaignId: campaignId,
         eventType: 'SOCIAL_SHARE',
+        points: 0,
         metadata: {
-          action: 'campaign_resource',
-          title: body.title.trim(),
-          description: body.description?.trim() || '',
-          url: body.url.trim(),
-          resourceType,
+          type: 'resource',
+          resourceId: resourceId,
+          title,
+          description: description || '',
+          resourceType: type || 'Guide',
+          url,
+          author,
+          viewCount: 0,
         },
       },
     })
 
     return NextResponse.json(
       {
-        resource: {
-          id: event.id,
-          title: (event.metadata as any).title,
-          description: (event.metadata as any).description,
-          url: (event.metadata as any).url,
-          resourceType: (event.metadata as any).resourceType,
-          createdAt: event.createdAt,
-        },
+        id: resourceId,
+        title,
+        description: description || '',
+        type: type || 'Guide',
+        url,
+        author,
+        viewCount: 0,
+        isBookmarked: false,
+        createdAt: contributionEvent.createdAt,
+        updatedAt: contributionEvent.updatedAt,
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error creating campaign resource:', error)
+    console.error('Error creating resource:', error)
     return NextResponse.json(
       { error: 'Failed to create resource' },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE /api/campaigns/[id]/resources - Delete resource (creator only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const { id: campaignId } = params
-
-    // Verify campaign exists and user is the creator
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: {
-        id: true,
-        creatorId: true,
-      },
-    })
-
-    if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      )
-    }
-
-    if (campaign.creatorId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized - only creator can delete resources' },
-        { status: 403 }
-      )
-    }
-
-    const body: DeleteRequestBody = await request.json()
-
-    if (!body.resourceId) {
-      return NextResponse.json(
-        { error: 'Resource ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Verify the resource belongs to this campaign and user
-    const resource = await prisma.contributionEvent.findUnique({
-      where: { id: body.resourceId },
-      select: {
-        id: true,
-        campaignId: true,
-        userId: true,
-        metadata: true,
-      },
-    })
-
-    if (!resource) {
-      return NextResponse.json(
-        { error: 'Resource not found' },
-        { status: 404 }
-      )
-    }
-
-    if (resource.campaignId !== campaignId || resource.userId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized - cannot delete this resource' },
-        { status: 403 }
-      )
-    }
-
-    // Check if it's a campaign_resource
-    if ((resource.metadata as any)?.action !== 'campaign_resource') {
-      return NextResponse.json(
-        { error: 'Invalid resource type' },
-        { status: 400 }
-      )
-    }
-
-    // Delete the resource
-    await prisma.contributionEvent.delete({
-      where: { id: body.resourceId },
-    })
-
-    return NextResponse.json(
-      { message: 'Resource deleted successfully' },
-      { status: 200 }
-    )
-  } catch (error) {
-    console.error('Error deleting campaign resource:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete resource' },
       { status: 500 }
     )
   }
