@@ -4,7 +4,7 @@
  * POST /api/campaigns/[id]/moodboard - Add a new mood board item
  *
  * Mood board items are stored as ContributionEvents with SOCIAL_SHARE eventType
- * and metadata action: 'moodboard_item'
+ * and metadata action: 'mood_board_item'
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -43,7 +43,7 @@ export async function GET(
         eventType: 'SOCIAL_SHARE',
         metadata: {
           path: ['action'],
-          equals: 'moodboard_item',
+          equals: 'mood_board_item',
         },
       },
       include: {
@@ -61,14 +61,16 @@ export async function GET(
 
     // Format the items for response
     const items = moodboardEvents.map((event) => {
-      const metadata = event.metadata as any || {}
+      const metadata = (event.metadata as Record<string, unknown>) || {}
       return {
         id: event.id,
-        type: metadata.type || 'note', // 'image', 'link', or 'note'
-        content: metadata.content || '',
-        description: metadata.description || '',
-        imageUrl: metadata.imageUrl,
-        linkUrl: metadata.linkUrl,
+        type: (metadata.type as string) || 'note', // 'image', 'link', 'color' or 'note'
+        content: (metadata.content as string) || '',
+        description: (metadata.description as string) || '',
+        imageUrl: metadata.imageUrl as string | undefined,
+        linkUrl: metadata.linkUrl as string | undefined,
+        colorValue: metadata.colorValue as string | undefined,
+        categories: (metadata.categories as string[]) || [],
         createdBy: event.user,
         createdAt: event.createdAt,
       }
@@ -110,12 +112,23 @@ export async function POST(
 
     const { id: campaignId } = params
     const body = await request.json()
-    const { type, content, description, imageUrl, linkUrl } = body
+    const {
+      type,
+      content,
+      description,
+      imageUrl,
+      linkUrl,
+      colorValue,
+      categories,
+    } = body
 
     // Validate required fields
-    if (!type || !['image', 'link', 'note'].includes(type)) {
+    if (!type || !['image', 'link', 'note', 'color'].includes(type)) {
       return NextResponse.json(
-        { success: false, error: 'Type must be one of: image, link, note' },
+        {
+          success: false,
+          error: 'Type must be one of: image, link, note, color',
+        },
         { status: 400 }
       )
     }
@@ -143,19 +156,31 @@ export async function POST(
     // Only campaign creator can add mood board items
     if (campaign.creatorId !== user.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized - only campaign creator can add items' },
+        {
+          success: false,
+          error: 'Unauthorized - only campaign creator can add items',
+        },
         { status: 403 }
       )
     }
 
     // Create the mood board item as a ContributionEvent
-    const metadata = {
-      action: 'moodboard_item',
+    const metadata: Record<string, unknown> = {
+      action: 'mood_board_item',
       type,
       content,
       description: description || '',
-      ...(type === 'image' && imageUrl ? { imageUrl } : {}),
-      ...(type === 'link' && linkUrl ? { linkUrl } : {}),
+      categories: categories || [],
+    }
+
+    if (type === 'image' && imageUrl) {
+      metadata.imageUrl = imageUrl
+    }
+    if (type === 'link' && linkUrl) {
+      metadata.linkUrl = linkUrl
+    }
+    if (type === 'color' && colorValue) {
+      metadata.colorValue = colorValue
     }
 
     const event = await prisma.contributionEvent.create({
@@ -188,6 +213,8 @@ export async function POST(
           description,
           imageUrl,
           linkUrl,
+          colorValue,
+          categories,
           createdBy: event.user,
           createdAt: event.createdAt,
         },
@@ -198,6 +225,86 @@ export async function POST(
     console.error('[POST /api/campaigns/[id]/moodboard]', error)
     return NextResponse.json(
       { success: false, error: 'Failed to add mood board item' },
+      { status: 500 }
+    )
+  }
+}
+
+// ============================================================================
+// DELETE /api/campaigns/[id]/moodboard/[itemId]
+// ============================================================================
+// Delete a mood board item (requires authentication as creator)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const { id: campaignId } = params
+    const url = new URL(request.url)
+    const itemId = url.pathname.split('/').pop()
+
+    if (!itemId) {
+      return NextResponse.json(
+        { success: false, error: 'Item ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify campaign exists and user is creator
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { id: true, creatorId: true },
+    })
+
+    if (!campaign) {
+      return NextResponse.json(
+        { success: false, error: 'Campaign not found' },
+        { status: 404 }
+      )
+    }
+
+    if (campaign.creatorId !== user.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized - only campaign creator can delete items',
+        },
+        { status: 403 }
+      )
+    }
+
+    // Delete the mood board item
+    const result = await prisma.contributionEvent.deleteMany({
+      where: {
+        id: itemId,
+        campaignId,
+        eventType: 'SOCIAL_SHARE',
+      },
+    })
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Mood board item not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Mood board item deleted successfully',
+    })
+  } catch (error) {
+    console.error('[DELETE /api/campaigns/[id]/moodboard]', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete mood board item' },
       { status: 500 }
     )
   }
