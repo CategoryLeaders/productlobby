@@ -57,11 +57,11 @@ export async function GET(request: NextRequest) {
 
     // Get campaigns user is collaborating on using ContributionEvent as reference
     // Since we don't have a formal CampaignCollaborator model yet,
-    // we track collaboration through ContributionEvent with COLLABORATION_INVITE type
+    // we track collaboration through ContributionEvent with SOCIAL_SHARE type
     const collaboratingEvents = await prisma.contributionEvent.findMany({
       where: {
         userId: user.id,
-        eventType: 'COLLABORATION_INVITE',
+        eventType: 'SOCIAL_SHARE',
       },
       select: {
         campaignId: true,
