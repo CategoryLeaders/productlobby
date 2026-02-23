@@ -1,230 +1,282 @@
-import React, { useState } from 'react'
-import { DashboardLayout } from '@/components/shared'
-import { Filter } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Metadata } from "next";
+import {
+  Search,
+  ArrowRight,
+  Code2,
+  Slack,
+  Mail,
+  BarChart3,
+  MessageSquare,
+  Building2,
+  Mail as MailIcon,
+  Search as SearchIcon,
+  LayoutGrid,
+  Zap,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Integrations | ProductLobby",
+  description:
+    "Connect ProductLobby with your favorite tools and services. Explore 500+ integrations to automate your workflow.",
+  openGraph: {
+    title: "Integrations | ProductLobby",
+    description:
+      "Connect ProductLobby with your favorite tools and services. Explore 500+ integrations to automate your workflow.",
+  },
+};
 
 interface Integration {
-  id: string
-  name: string
-  description: string
-  status: 'Available' | 'Coming Soon'
-  logo: string
-  category: string
+  id: string;
+  name: string;
+  description: string;
+  category: "analytics" | "communication" | "crm" | "marketing" | "productivity" | "payments";
+  icon: React.ReactNode;
+  color: string;
+  comingSoon?: boolean;
+  connected?: boolean;
 }
 
-const INTEGRATIONS: Integration[] = [
+const integrations: Integration[] = [
   {
-    id: 'shopify',
-    name: 'Shopify',
-    description:
-      'Connect your Shopify store to sync products and manage campaigns directly from ProductLobby',
-    status: 'Available',
-    logo: '🛍️',
-    category: 'ecommerce',
+    id: "slack",
+    name: "Slack",
+    description: "Get ProductLobby notifications in your Slack workspace",
+    category: "communication",
+    icon: "S",
+    color: "bg-blue-500",
   },
   {
-    id: 'woocommerce',
-    name: 'WooCommerce',
-    description:
-      'Integrate your WooCommerce store to track product demand and manage pre-orders',
-    status: 'Available',
-    logo: '📦',
-    category: 'ecommerce',
+    id: "zapier",
+    name: "Zapier",
+    description: "Connect ProductLobby to thousands of apps via Zapier",
+    category: "productivity",
+    icon: "Z",
+    color: "bg-orange-500",
+    comingSoon: true,
   },
   {
-    id: 'stripe',
-    name: 'Stripe',
-    description:
-      'Accept payments securely through Stripe for pledges and pre-orders',
-    status: 'Available',
-    logo: '💳',
-    category: 'payments',
+    id: "hubspot",
+    name: "HubSpot",
+    description: "Sync customer data and manage relationships seamlessly",
+    category: "crm",
+    icon: "H",
+    color: "bg-orange-600",
   },
   {
-    id: 'slack',
-    name: 'Slack',
-    description:
-      'Get real-time notifications in Slack when your campaigns reach milestones',
-    status: 'Coming Soon',
-    logo: '💬',
-    category: 'communication',
+    id: "mailchimp",
+    name: "Mailchimp",
+    description: "Send targeted email campaigns to your ProductLobby users",
+    category: "marketing",
+    icon: "M",
+    color: "bg-yellow-500",
   },
   {
-    id: 'discord',
-    name: 'Discord',
-    description:
-      'Build a community around your products with Discord integration and updates',
-    status: 'Coming Soon',
-    logo: '🎮',
-    category: 'communication',
+    id: "google-analytics",
+    name: "Google Analytics",
+    description: "Track user behavior and engagement metrics",
+    category: "analytics",
+    icon: "G",
+    color: "bg-red-500",
   },
   {
-    id: 'twitter',
-    name: 'Twitter / X',
-    description:
-      'Share campaign updates and track social engagement from Twitter directly',
-    status: 'Coming Soon',
-    logo: '𝕏',
-    category: 'social',
+    id: "intercom",
+    name: "Intercom",
+    description: "Chat with your customers directly in ProductLobby",
+    category: "communication",
+    icon: "I",
+    color: "bg-blue-600",
+    comingSoon: true,
   },
   {
-    id: 'instagram',
-    name: 'Instagram',
-    description:
-      'Connect Instagram to track mentions and engage with your audience visually',
-    status: 'Coming Soon',
-    logo: '📷',
-    category: 'social',
+    id: "salesforce",
+    name: "Salesforce",
+    description: "Manage sales pipelines and customer information",
+    category: "crm",
+    icon: "S",
+    color: "bg-blue-400",
   },
   {
-    id: 'mailchimp',
-    name: 'Mailchimp',
-    description:
-      'Sync your campaign supporters to Mailchimp email lists for newsletters',
-    status: 'Coming Soon',
-    logo: '📧',
-    category: 'email',
+    id: "jira",
+    name: "Jira",
+    description: "Track issues and manage projects with Jira integration",
+    category: "productivity",
+    icon: "J",
+    color: "bg-blue-700",
   },
-]
+  {
+    id: "notion",
+    name: "Notion",
+    description: "Embed and sync your Notion workspace data",
+    category: "productivity",
+    icon: "N",
+    color: "bg-gray-800",
+  },
+  {
+    id: "stripe",
+    name: "Stripe",
+    description: "Process payments and manage subscriptions",
+    category: "payments",
+    icon: "S",
+    color: "bg-purple-600",
+  },
+  {
+    id: "segment",
+    name: "Segment",
+    description: "Unify your customer data and send to any destination",
+    category: "analytics",
+    icon: "S",
+    color: "bg-green-600",
+  },
+  {
+    id: "webhooks",
+    name: "Webhooks",
+    description: "Custom integrations with incoming and outgoing webhooks",
+    category: "productivity",
+    icon: "W",
+    color: "bg-violet-600",
+  },
+];
+
+const categories = [
+  { id: "all", label: "All" },
+  { id: "analytics", label: "Analytics" },
+  { id: "communication", label: "Communication" },
+  { id: "crm", label: "CRM" },
+  { id: "marketing", label: "Marketing" },
+  { id: "productivity", label: "Productivity" },
+];
+
+interface IntegrationCardProps {
+  integration: Integration;
+}
+
+function IntegrationCard({ integration }: IntegrationCardProps) {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-violet-300 hover:shadow-lg">
+      {integration.comingSoon && (
+        <div className="absolute right-0 top-0 bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
+          Coming Soon
+        </div>
+      )}
+
+      <div className="mb-4 flex items-center gap-3">
+        <div
+          className={`${integration.color} flex h-12 w-12 items-center justify-center rounded-lg font-bold text-white`}
+        >
+          {integration.icon}
+        </div>
+        <h3 className="font-semibold text-gray-900">{integration.name}</h3>
+      </div>
+
+      <p className="mb-4 text-sm text-gray-600">{integration.description}</p>
+
+      <div className="mb-4 flex items-center gap-2">
+        <span className="inline-block rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 capitalize">
+          {integration.category}
+        </span>
+      </div>
+
+      <Button
+        disabled={integration.comingSoon}
+        className={`w-full ${
+          integration.comingSoon
+            ? "bg-gray-200 text-gray-500 hover:bg-gray-200"
+            : "bg-violet-600 text-white hover:bg-violet-700"
+        }`}
+      >
+        {integration.comingSoon ? "Coming Soon" : "Connect"}
+      </Button>
+    </div>
+  );
+}
 
 export default function IntegrationsPage() {
-  const [filterStatus, setFilterStatus] = useState<
-    'All' | 'Available' | 'Coming Soon'
-  >('All')
-
-  const filteredIntegrations =
-    filterStatus === 'All'
-      ? INTEGRATIONS
-      : INTEGRATIONS.filter((i) => i.status === filterStatus)
-
   return (
-    <DashboardLayout role="supporter">
-      <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Integrations</h1>
-          <p className="text-lg text-gray-600 mt-2">
-            Connect ProductLobby with your favorite tools and platforms
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      {/* Hero Section */}
+      <section className="border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+              Integrations Marketplace
+            </h1>
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-600">
+              Connect ProductLobby with your favorite tools and services. Automate your workflow
+              and sync data across platforms seamlessly.
+            </p>
 
-        {/* Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="flex items-center gap-2 text-gray-700 font-medium">
-            <Filter size={20} />
-            <span>Filter:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(['All', 'Available', 'Coming Soon'] as const).map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={cn(
-                  'px-4 py-2 rounded-lg font-medium transition-all',
-                  'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500',
-                  filterStatus === status
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                )}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Integration Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredIntegrations.map((integration) => (
-            <div
-              key={integration.id}
-              className={cn(
-                'border rounded-lg p-6 transition-all',
-                'hover:shadow-lg',
-                integration.status === 'Available'
-                  ? 'bg-white border-gray-200 cursor-pointer'
-                  : 'bg-gray-50 border-gray-200'
-              )}
-            >
-              {/* Logo */}
-              <div
-                className={cn(
-                  'text-4xl mb-4 w-12 h-12 flex items-center justify-center rounded-lg',
-                  integration.status === 'Available'
-                    ? 'bg-blue-50'
-                    : 'bg-gray-200'
-                )}
-              >
-                {integration.logo}
-              </div>
-
-              {/* Name */}
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {integration.name}
-              </h3>
-
-              {/* Description */}
-              <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                {integration.description}
-              </p>
-
-              {/* Status Badge */}
-              <div className="flex items-center justify-between">
-                <span
-                  className={cn(
-                    'text-xs font-semibold px-2 py-1 rounded',
-                    integration.status === 'Available'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  )}
-                >
-                  {integration.status}
-                </span>
-                {integration.status === 'Available' && (
-                  <button
-                    className={cn(
-                      'text-xs font-medium px-3 py-1 rounded',
-                      'bg-blue-600 text-white hover:bg-blue-700',
-                      'transition-colors'
-                    )}
-                  >
-                    Connect
-                  </button>
-                )}
+            {/* Search Bar */}
+            <div className="mx-auto max-w-xl">
+              <div className="relative">
+                <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search integrations..."
+                  className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Category Filter Tabs */}
+        <div className="mb-10 flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                category.id === "all"
+                  ? "bg-violet-600 text-white"
+                  : "border border-gray-300 bg-white text-gray-700 hover:border-violet-400 hover:text-violet-600"
+              }`}
+            >
+              {category.label}
+            </button>
           ))}
         </div>
 
-        {/* Empty State */}
-        {filteredIntegrations.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-lg text-gray-600 mb-2">
-              No integrations found for "{filterStatus}"
-            </p>
-            <p className="text-sm text-gray-500">
-              Try adjusting your filter
-            </p>
-          </div>
-        )}
+        {/* Integration Cards Grid */}
+        <div className="mb-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {integrations.map((integration) => (
+            <IntegrationCard key={integration.id} integration={integration} />
+          ))}
+        </div>
 
-        {/* Info Section */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-2">
-            Don't see what you need?
-          </h3>
-          <p className="text-sm text-blue-800">
-            We're constantly adding new integrations. Have a request?{' '}
-            <a
-              href="/contact"
-              className="font-semibold hover:underline text-blue-700"
-            >
-              Get in touch
-            </a>{' '}
-            and let us know what would help your workflow.
+        {/* Stats Section */}
+        <div className="mb-16 rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-lime-50 p-8 text-center">
+          <div className="mb-2 text-4xl font-bold text-violet-600">500+</div>
+          <p className="text-gray-700">
+            Integrations available through our marketplace and API
           </p>
         </div>
-      </div>
-    </DashboardLayout>
-  )
+
+        {/* Build Your Own CTA */}
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+          <div className="mb-4 flex justify-center">
+            <Code2 className="h-12 w-12 text-lime-500" />
+          </div>
+          <h2 className="mb-3 text-2xl font-bold text-gray-900">
+            Build Your Own Integration
+          </h2>
+          <p className="mx-auto mb-6 max-w-2xl text-gray-600">
+            Use our powerful REST API and webhooks to build custom integrations tailored to your
+            needs. Our comprehensive documentation makes it easy to get started.
+          </p>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+            <Button className="bg-violet-600 text-white hover:bg-violet-700">
+              View API Documentation
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="border-gray-300 text-gray-900">
+              View Code Examples
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }
