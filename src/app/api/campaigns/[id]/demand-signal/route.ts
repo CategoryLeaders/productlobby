@@ -1,132 +1,187 @@
+/**
+ * Campaign Demand Signal API
+ * GET /api/campaigns/[id]/demand-signal
+ *
+ * Returns per-campaign demand signal metrics including:
+ * - Total lobby count and growth trends
+ * - Comment engagement metrics
+ * - Unique contributor count
+ * - Brand response status
+ * - Calculated Demand Score (0-100)
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const campaignId = params.id
+export const dynamic = 'force-dynamic'
 
-    // Verify campaign exists
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    // Require authentication
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const { id: campaignId } = await params
+
+    // Fetch the campaign with creator check
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { id: true, title: true, createdAt: true },
+      select: {
+        id: true,
+        creatorUserId: true,
+        title: true,
+      },
     })
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+      return NextResponse.json(
+        { success: false, error: 'Campaign not found' },
+        { status: 404 }
+      )
     }
 
-    // Get all lobbies with timestamps and intensity
-    const lobbies = await prisma.lobby.findMany({
-      where: { campaignId },
-      select: {
-        createdAt: true,
-        intensity: true,
-      },
-      orderBy: { createdAt: 'asc' },
-    }) as Array<{ createdAt: Date; intensity: string }>
+    // Verify user is the campaign creator
+    if (campaign.creatorUserId !== user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden - you do not own this campaign' },
+        { status: 403 }
+      )
+    }
 
-    const totalLobbies = lobbies.length
-
-    // Calculate daily velocity (last 30 days)
     const now = new Date()
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
 
-    // Build daily counts for last 30 days
-    const velocityData: { date: string; count: number }[] = []
-    for (let i = 29; i >= 0; i--) {
-      const dayStart = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
-      dayStart.setHours(0, 0, 0, 0)
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
-
-      const count = lobbies.filter(
-        (l: { createdAt: Date; intensity: string }) => new Date(l.createdAt) >= dayStart && new Date(l.createdAt) < dayEnd
-      ).length
-
-      velocityData.push({
-        date: dayStart.toISOString().split('T')[0],
-        count,
-      })
-    }
-
-    // Calculate cumulative for chart
-    let cumulative = lobbies.filter((l: { createdAt: Date; intensity: string }) => new Date(l.createdAt) < thirtyDaysAgo).length
-    const cumulativeData = velocityData.map((d) => {
-      cumulative += d.count
-      return { date: d.date, count: d.count, cumulative }
+    // Get total lobby count
+    const totalLobbies = await prisma.lobby.count({
+      where: { campaignId },
     })
 
-    // Trending calculation
-    const lobbiesThisWeek = lobbies.filter(
-      (l: { createdAt: Date; intensity: string }) => new Date(l.createdAt) >= sevenDaysAgo
-    ).length
-    const lobbiesLastWeek = lobbies.filter(
-      (l: { createdAt: Date; intensity: string }) =>
-        new Date(l.createdAt) >= fourteenDaysAgo &&
-        new Date(l.createdAt) < sevenDaysAgo
-    ).length
+    // Get recent growth (last 7 days vs previous 7)
+    const lobbiesLastSevenDays = await prisma.lobby.count({
+      where: {
+        campaignId,
+        createdAt: { gte: sevenDaysAgo },
+      },
+    })
 
-    const weekOverWeekGrowth =
-      lobbiesLastWeek > 0
-        ? ((lobbiesThisWeek - lobbiesLastWeek) / lobbiesLastWeek) * 100
-        : lobbiesThisWeek > 0
-        ? 100
-        : 0
+    const lobbiesPreviousSevenDays = await prisma.lobby.count({
+      where: {
+        campaignId,
+        createdAt: {
+          gte: fourteenDaysAgo,
+          lt: sevenDaysAgo,
+        },
+      },
+    })
 
-    const isTrending = totalLobbies >= 5 && weekOverWeekGrowth > 50
+    // Calculate growth rate percentage
+    const growthRate =
+      lobbiesPreviousSevenDays > 0
+        ? ((lobbiesLastSevenDays - lobbiesPreviousSevenDays) / lobbiesPreviousSevenDays) * 100
+        : lobbiesLastSevenDays > 0
+          ? 100
+          : 0
 
-    // Price sensitivity
-    const takeMyMoney = lobbies.filter(
-      (l: { createdAt: Date; intensity: string }) => l.intensity === 'TAKE_MY_MONEY'
-    ).length
-    const probablyBuy = lobbies.filter(
-      (l: { createdAt: Date; intensity: string }) => l.intensity === 'PROBABLY_BUY'
-    ).length
-    const neatIdea = lobbies.filter(
-      (l: { createdAt: Date; intensity: string }) => l.intensity === 'NEAT_IDEA'
-    ).length
+    // Get comment count (visible comments only)
+    const commentCount = await prisma.comment.count({
+      where: {
+        campaignId,
+        status: 'VISIBLE',
+      },
+    })
 
-    const buyerSignal = totalLobbies > 0
-      ? Math.round(((takeMyMoney + probablyBuy) / totalLobbies) * 100)
-      : 0
+    // Get unique contributor count (lobbies + comments)
+    const lobbyContributors = await prisma.lobby.findMany({
+      where: { campaignId },
+      select: { userId: true },
+      distinct: ['userId'],
+    })
 
-    // Trending badges
-    const badges: { label: string; type: 'trending' | 'signal' | 'velocity' }[] = []
-    if (isTrending) {
-      badges.push({ label: 'Trending', type: 'trending' })
-    }
-    if (buyerSignal >= 70) {
-      badges.push({ label: 'Strong buyer signal', type: 'signal' })
-    }
-    if (lobbiesThisWeek >= 3) {
-      badges.push({ label: `${lobbiesThisWeek} new this week`, type: 'velocity' })
-    }
+    const commentContributors = await prisma.comment.findMany({
+      where: {
+        campaignId,
+        status: 'VISIBLE',
+      },
+      select: { userId: true },
+      distinct: ['userId'],
+    })
+
+    // Combine unique contributors
+    const uniqueContributorIds = new Set([
+      ...lobbyContributors.map(l => l.userId),
+      ...commentContributors.map(c => c.userId),
+    ])
+    const uniqueContributorCount = uniqueContributorIds.size
+
+    // Check if brand has responded
+    const brandResponse = await prisma.brandResponse.findFirst({
+      where: { campaignId },
+      select: { id: true, status: true },
+    })
+
+    // Calculate Demand Score (0-100)
+    // Formula: (Lobby count * 0.4) + (Growth rate * 0.3) + (Comments * 0.15) + (Contributors * 0.15)
+    // Normalized to 0-100 scale
+
+    // Normalize each component to 0-100
+    const lobbyScore = Math.min((totalLobbies / 100) * 100, 100) // Cap at 100
+    const growthScore = Math.min(Math.max(growthRate, 0) / 5 * 100, 100) // Growth > 500% = 100
+    const commentScore = Math.min((commentCount / 50) * 100, 100) // 50+ comments = 100
+    const contributorScore = Math.min((uniqueContributorCount / 30) * 100, 100) // 30+ contributors = 100
+
+    const demandScore = Math.round(
+      lobbyScore * 0.4 +
+      growthScore * 0.3 +
+      commentScore * 0.15 +
+      contributorScore * 0.15
+    )
 
     return NextResponse.json({
-      totalLobbies,
-      velocity: cumulativeData,
-      trending: {
-        isTrending,
-        weekOverWeekGrowth: Math.round(weekOverWeekGrowth),
-        lobbiesThisWeek,
-        lobbiesLastWeek,
+      success: true,
+      data: {
+        campaignId,
+        campaignTitle: campaign.title,
+        // Metrics
+        totalLobbies,
+        lobbiesLastSevenDays,
+        lobbiesPreviousSevenDays,
+        growthRate: Math.round(growthRate * 100) / 100, // Round to 2 decimals
+        commentCount,
+        uniqueContributorCount,
+        brandResponseStatus: brandResponse?.status || 'NONE',
+        // Demand Score
+        demandScore,
+        // Component Scores (for breakdown visualization)
+        componentScores: {
+          lobbies: Math.round(lobbyScore),
+          growth: Math.round(growthScore),
+          comments: Math.round(commentScore),
+          contributors: Math.round(contributorScore),
+        },
+        // Raw values for breakdown
+        breakdown: {
+          lobbies: totalLobbies,
+          growth: growthRate,
+          comments: commentCount,
+          contributors: uniqueContributorCount,
+        },
       },
-      priceSensitivity: {
-        takeMyMoney,
-        probablyBuy,
-        neatIdea,
-        buyerSignal,
-      },
-      badges,
     })
   } catch (error) {
-    console.error('[GET /api/campaigns/[id]/demand-signal]', error)
+    console.error('Demand signal error:', error)
     return NextResponse.json(
-      { error: 'Failed to compute demand signal' },
+      { success: false, error: 'Something went wrong' },
       { status: 500 }
     )
   }
