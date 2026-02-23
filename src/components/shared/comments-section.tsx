@@ -241,10 +241,10 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   }
 
   const userInitials = currentUser?.displayName
-    .split(' ')
+    ?.split(' ')
     .map(n => n.charAt(0))
     .join('')
-    .slice(0, 2)
+    .slice(0, 2) || ''
 
   return (
     <div className="w-full space-y-6">
