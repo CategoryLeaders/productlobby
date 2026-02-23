@@ -1,116 +1,193 @@
+/**
+ * Campaign Comparison API
+ * GET /api/campaigns/compare
+ *
+ * Accepts campaignIds query parameter (comma-separated)
+ * Returns aggregated stats for comparing multiple campaigns
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-interface CampaignComparison {
+interface CampaignComparisonData {
   id: string
-  slug: string
   title: string
+  slug: string
+  category: string
   status: string
+  path: string
   createdAt: string
-  lobbyCount: number
-  commentCount: number
+  creator: {
+    displayName: string
+    handle: string | null
+    avatar: string | null
+  }
+  supportersCount: number
+  voteCount: number
+  activityScore: number
+  trendingScore: number
   signalScore: number | null
-  sentiment?: string
+  targetedBrand?: {
+    id: string
+    name: string
+  } | null
 }
 
+// GET /api/campaigns/compare?campaignIds=id1,id2,id3
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const idsParam = searchParams.get('ids')
+    const campaignIds = request.nextUrl.searchParams.get('campaignIds')
 
-    if (!idsParam) {
+    if (!campaignIds) {
       return NextResponse.json(
-        { error: 'Missing ids parameter' },
+        { success: false, error: 'campaignIds query parameter is required' },
         { status: 400 }
       )
     }
 
-    // Parse and validate IDs
-    const ids = idsParam.split(',').filter((id) => id.trim())
+    const ids = campaignIds
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0)
 
-    if (ids.length === 0 || ids.length > 4) {
+    if (ids.length === 0) {
       return NextResponse.json(
-        { error: 'Please provide between 1 and 4 campaign IDs' },
+        { success: false, error: 'At least one valid campaign ID is required' },
         { status: 400 }
       )
     }
 
-    // Fetch campaigns (try by ID or slug)
-    const campaigns = await Promise.all(
-      ids.map(async (id) => {
-        const campaign = await prisma.campaign.findFirst({
-          where: {
-            OR: [
-              { id: id.trim() },
-              { slug: id.trim() },
-            ],
+    if (ids.length > 5) {
+      return NextResponse.json(
+        { success: false, error: 'Maximum 5 campaigns can be compared at once' },
+        { status: 400 }
+      )
+    }
+
+    // Fetch campaigns with related data
+    const campaigns = await prisma.campaign.findMany({
+      where: {
+        id: { in: ids },
+        status: { not: 'DRAFT' }, // Only show published campaigns
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        category: true,
+        status: true,
+        path: true,
+        createdAt: true,
+        signalScore: true,
+        creator: {
+          select: {
+            displayName: true,
+            handle: true,
+            avatar: true,
           },
+        },
+        targetedBrand: {
           select: {
             id: true,
-            slug: true,
-            title: true,
-            status: true,
+            name: true,
+          },
+        },
+      },
+    })
+
+    // For each campaign, calculate aggregated metrics
+    const campaignsWithMetrics = await Promise.all(
+      campaigns.map(async (campaign) => {
+        // Get lobbies count
+        const lobbiesCount = await prisma.lobby.count({
+          where: { campaignId: campaign.id },
+        })
+
+        // Get pledges data
+        const pledges = await prisma.pledge.findMany({
+          where: { campaignId: campaign.id },
+          select: {
+            pledgeType: true,
             createdAt: true,
-            signalScore: true,
-            lobbies: {
-              select: { id: true },
-            },
-            comments: {
-              select: { id: true, content: true },
-            },
           },
         })
 
-        return campaign
-      })
-    )
+        // Calculate supporters (unique users who pledged)
+        const supportPledges = pledges.filter((p) => p.pledgeType === 'SUPPORT')
+        const intentPledges = pledges.filter((p) => p.pledgeType === 'INTENT')
 
-    // Filter out null results and map to response
-    const validCampaigns: CampaignComparison[] = campaigns
-      .filter((c) => c !== null)
-      .map((campaign) => {
-        // Calculate basic sentiment from comments (simple heuristic)
-        const positive = campaign.comments.filter((c) =>
-          /amazing|great|love|excellent|perfect|awesome/i.test(c.content)
-        ).length
-        const negative = campaign.comments.filter((c) =>
-          /bad|terrible|hate|poor|awful|terrible/i.test(c.content)
-        ).length
+        // Get recent activity count (last 30 days)
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-        let sentiment = 'neutral'
-        if (positive > negative) sentiment = 'positive'
-        if (negative > positive) sentiment = 'negative'
+        const recentActivity = await Promise.all([
+          prisma.lobby.count({
+            where: {
+              campaignId: campaign.id,
+              createdAt: { gte: thirtyDaysAgo },
+            },
+          }),
+          prisma.pledge.count({
+            where: {
+              campaignId: campaign.id,
+              createdAt: { gte: thirtyDaysAgo },
+            },
+          }),
+          prisma.comment.count({
+            where: {
+              campaignId: campaign.id,
+              createdAt: { gte: thirtyDaysAgo },
+            },
+          }),
+        ])
+
+        const activityScore = recentActivity.reduce((sum, count) => sum + count, 0)
+
+        // Calculate trending score based on recent engagement
+        const totalEngagement = lobbiesCount + pledges.length
+        const engagementVelocity = activityScore / (totalEngagement || 1)
+        const trendingScore = Math.min(100, Math.round(engagementVelocity * 10))
 
         return {
           id: campaign.id,
-          slug: campaign.slug,
           title: campaign.title,
+          slug: campaign.slug,
+          category: campaign.category,
           status: campaign.status,
+          path: campaign.path,
           createdAt: campaign.createdAt.toISOString(),
-          lobbyCount: campaign.lobbies.length,
-          commentCount: campaign.comments.length,
-          signalScore: campaign.signalScore,
-          sentiment,
-        }
+          creator: campaign.creator,
+          targetedBrand: campaign.targetedBrand,
+          supportersCount: Math.max(lobbiesCount, supportPledges.length),
+          voteCount: pledges.length,
+          activityScore: activityScore,
+          trendingScore: trendingScore,
+          signalScore: campaign.signalScore || 0,
+        } as CampaignComparisonData
       })
+    )
 
-    if (validCampaigns.length === 0) {
-      return NextResponse.json(
-        { error: 'No campaigns found with the provided IDs' },
-        { status: 404 }
-      )
-    }
+    // Sort by the order requested (maintain requested order)
+    const sortedCampaigns = ids
+      .map((id) => campaignsWithMetrics.find((c) => c.id === id))
+      .filter((c) => c !== undefined) as CampaignComparisonData[]
 
-    return NextResponse.json({
-      campaigns: validCampaigns,
-      count: validCampaigns.length,
+    const response = NextResponse.json({
+      success: true,
+      data: sortedCampaigns,
+      count: sortedCampaigns.length,
     })
+
+    // Add cache headers - campaigns comparison data can be cached briefly
+    response.headers.set('Cache-Control', 'private, max-age=60') // 1 minute cache
+
+    return response
   } catch (error) {
-    console.error('[GET /api/campaigns/compare]', error)
+    console.error('Campaign comparison error:', error)
     return NextResponse.json(
-      { error: 'Failed to compare campaigns' },
+      { success: false, error: 'Failed to fetch campaign comparison data' },
       { status: 500 }
     )
   }
