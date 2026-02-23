@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { DashboardLayout, PageHeader } from '@/components/shared'
+import { DashboardLayout, PageHeader, FeedItem } from '@/components/shared'
 import { Card, CardContent, Badge, Button, Tabs, TabsList, TabsTrigger, TabsContent, EmptyState, Spinner } from '@/components/ui'
 import {
   Bell,
@@ -10,6 +10,7 @@ import {
   CheckCircle,
   ChevronDown,
   Loader2,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -30,6 +31,40 @@ interface ActivityItem {
 
 interface ActivityResponse {
   items: ActivityItem[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
+interface FeedItemData {
+  type: 'campaign_created' | 'lobby' | 'comment'
+  user: {
+    id: string
+    displayName: string
+    handle: string | null
+    avatar: string | null
+  }
+  campaign: {
+    id: string
+    title: string
+    slug: string
+    lobbyCount: number
+  }
+  data: {
+    id: string
+    title?: string
+    content?: string
+    status?: string
+    category?: string
+  }
+  createdAt: string
+}
+
+interface FeedResponse {
+  items: FeedItemData[]
   pagination: {
     page: number
     limit: number
@@ -136,12 +171,42 @@ function ActivityItemComponent({ item, onMarkAsRead }: { item: ActivityItem; onM
 
 export default function ActivityPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('all')
+  const [activeTab, setActiveTab] = useState('following')
   const [items, setItems] = useState<ActivityItem[]>([])
+  const [feedItems, setFeedItems] = useState<FeedItemData[]>([])
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
+  const [feedPagination, setFeedPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
   const [loadingMore, setLoadingMore] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+
+  // Fetch feed items (following tab)
+  const fetchFeed = useCallback(
+    async (page: number = 1, append: boolean = false) => {
+      try {
+        if (!append) setLoading(true)
+        else setLoadingMore(true)
+
+        const response = await fetch(
+          `/api/feed?page=${page}&limit=20`,
+          { credentials: 'include' }
+        )
+
+        if (!response.ok) throw new Error('Failed to fetch feed')
+
+        const data: FeedResponse = await response.json()
+        setFeedItems(append ? [...feedItems, ...data.items] : data.items)
+        setFeedPagination(data.pagination)
+      } catch (error) {
+        console.error('Failed to fetch feed:', error)
+        setFeedItems([])
+      } finally {
+        setLoading(false)
+        setLoadingMore(false)
+      }
+    },
+    [feedItems]
+  )
 
   // Fetch activity items
   const fetchActivity = useCallback(
@@ -188,12 +253,16 @@ export default function ActivityPage() {
 
   // Handle tab change
   useEffect(() => {
-    fetchActivity(1, false)
+    if (activeTab === 'following') {
+      fetchFeed(1, false)
+    } else {
+      fetchActivity(1, false)
+    }
   }, [activeTab])
 
   // Initial load
   useEffect(() => {
-    fetchActivity(1, false)
+    fetchFeed(1, false)
     fetchUnreadCount()
   }, [])
 
@@ -237,10 +306,18 @@ export default function ActivityPage() {
 
   // Load more
   const handleLoadMore = () => {
-    if (pagination.page < pagination.pages) {
-      fetchActivity(pagination.page + 1, true)
+    if (activeTab === 'following') {
+      if (feedPagination.page < feedPagination.pages) {
+        fetchFeed(feedPagination.page + 1, true)
+      }
+    } else {
+      if (pagination.page < pagination.pages) {
+        fetchActivity(pagination.page + 1, true)
+      }
     }
   }
+
+  const currentPagination = activeTab === 'following' ? feedPagination : pagination
 
   if (!user) {
     return (
@@ -275,10 +352,14 @@ export default function ActivityPage() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="following">
+              <Users className="w-4 h-4 mr-1.5" />
+              Following
+            </TabsTrigger>
+            <TabsTrigger value="all">All Activity</TabsTrigger>
             <TabsTrigger value="notifications">
               Notifications
-              {unreadCount > 0 && activeTab === 'notifications' && (
+              {unreadCount > 0 && (
                 <Badge variant="default" size="sm" className="ml-2">
                   {unreadCount}
                 </Badge>
@@ -288,23 +369,26 @@ export default function ActivityPage() {
             <TabsTrigger value="responses">Brand Responses</TabsTrigger>
           </TabsList>
 
-          <TabsContent value={activeTab} className="mt-6">
+          {/* Following Tab */}
+          <TabsContent value="following" className="mt-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Spinner />
               </div>
-            ) : items.length > 0 ? (
+            ) : feedItems.length > 0 ? (
               <div className="space-y-3">
-                {items.map((item) => (
-                  <ActivityItemComponent
-                    key={item.id}
-                    item={item}
-                    onMarkAsRead={handleMarkAsRead}
+                {feedItems.map((item, index) => (
+                  <FeedItem
+                    key={`${item.type}-${item.data.id}-${index}`}
+                    type={item.type}
+                    user={item.user}
+                    campaign={item.campaign}
+                    data={item.data}
+                    createdAt={item.createdAt}
                   />
                 ))}
 
-                {/* Load More Button */}
-                {pagination.page < pagination.pages && (
+                {feedPagination.page < feedPagination.pages && (
                   <div className="flex justify-center pt-4">
                     <Button
                       variant="secondary"
@@ -330,18 +414,78 @@ export default function ActivityPage() {
               <Card>
                 <CardContent className="py-12">
                   <EmptyState
-                    icon={<Bell className="w-12 h-12 text-gray-400" />}
-                    title="No activity yet"
-                    description={
-                      activeTab === 'all'
-                        ? 'When you follow campaigns or receive notifications, they will appear here'
-                        : `No ${activeTab === 'updates' ? 'campaign updates' : activeTab === 'responses' ? 'brand responses' : 'notifications'} yet`
+                    icon={<Users className="w-12 h-12 text-gray-400" />}
+                    title="No activity from people you follow"
+                    description="Follow other users to see their campaigns, lobbies, and comments here"
+                    action={
+                      <Link href="/campaigns">
+                        <Button variant="primary" size="sm">
+                          Discover Campaigns
+                        </Button>
+                      </Link>
                     }
                   />
                 </CardContent>
               </Card>
             )}
           </TabsContent>
+
+          {/* Other Activity Tabs */}
+          {['all', 'notifications', 'updates', 'responses'].map((tab) => (
+            <TabsContent key={tab} value={tab} className="mt-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Spinner />
+                </div>
+              ) : items.length > 0 ? (
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <ActivityItemComponent
+                      key={item.id}
+                      item={item}
+                      onMarkAsRead={handleMarkAsRead}
+                    />
+                  ))}
+
+                  {pagination.page < pagination.pages && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="secondary"
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                      >
+                        {loadingMore ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            Load More
+                            <ChevronDown className="w-4 h-4 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-12">
+                    <EmptyState
+                      icon={<Bell className="w-12 h-12 text-gray-400" />}
+                      title="No activity yet"
+                      description={
+                        tab === 'all'
+                          ? 'When you follow campaigns or receive notifications, they will appear here'
+                          : `No ${tab === 'updates' ? 'campaign updates' : tab === 'responses' ? 'brand responses' : 'notifications'} yet`
+                      }
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          ))}
         </Tabs>
       </div>
     </DashboardLayout>
