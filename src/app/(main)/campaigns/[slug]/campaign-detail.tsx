@@ -25,6 +25,7 @@ import { CampaignPollsFeed } from '@/components/campaigns/campaign-polls-feed'
 import CreatorAnalyticsDashboard from '@/components/campaigns/creator-analytics-dashboard'
 import { LobbyReasonsDisplay } from '@/components/campaigns/lobby-reasons-display'
 import { QASection } from '@/components/shared/qa-section'
+import { CommentsSection } from '@/components/shared/comments-section'
 import { cn, formatDate, formatNumber } from '@/lib/utils'
 import { CampaignJsonLd } from '@/components/shared/json-ld'
 import { getCurrentUser } from '@/lib/auth'
@@ -574,6 +575,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     <TabsTrigger value="preferences">Preferences</TabsTrigger>
                     <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
                     <TabsTrigger value="updates">Updates</TabsTrigger>
+                    <TabsTrigger value="comments">Comments</TabsTrigger>
                     <TabsTrigger value="qa">Q&A</TabsTrigger>
                     <TabsTrigger value="response">Brand Response</TabsTrigger>
                   </TabsList>
@@ -789,7 +791,21 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     <CampaignUpdatesFeed campaignId={campaign?.id || ''} key={updateRefresh} />
                   </TabsContent>
 
-                  {/* Tab 5: Q&A */}
+                  {/* Tab 5: Comments */}
+                  <TabsContent value="comments" className="py-8">
+                    <CommentsSection
+                      campaignId={campaign?.id || ''}
+                      campaignCreatorId={campaign?.creator.id}
+                      currentUser={user ? {
+                        id: user.id,
+                        displayName: user.displayName,
+                        avatar: user.avatar,
+                        handle: user.handle,
+                      } : undefined}
+                    />
+                  </TabsContent>
+
+                  {/* Tab 6: Q&A */}
                   <TabsContent value="qa" className="py-8">
                     <QASection
                       campaignId={campaign?.id || ''}
@@ -798,7 +814,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                     />
                   </TabsContent>
 
-                  {/* Tab 6: Brand Response */}
+                  {/* Tab 7: Brand Response */}
                   <TabsContent value="response" className="py-8">
                     <div className="text-center py-12">
                       <div className="mb-4">
