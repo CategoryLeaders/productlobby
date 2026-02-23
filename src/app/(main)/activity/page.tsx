@@ -330,7 +330,7 @@ export default function ActivityPage() {
               <Card>
                 <CardContent className="py-12">
                   <EmptyState
-                    icon={Bell}
+                    icon={<Bell className="w-12 h-12 text-gray-400" />}
                     title="No activity yet"
                     description={
                       activeTab === 'all'
