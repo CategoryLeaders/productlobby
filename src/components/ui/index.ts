@@ -127,3 +127,6 @@ export {
 
 // Empty State Component
 export { EmptyState, type EmptyStateProps } from './empty-state'
+
+// Toggle Switch Component
+export { ToggleSwitch, type ToggleSwitchProps } from './toggle-switch'
