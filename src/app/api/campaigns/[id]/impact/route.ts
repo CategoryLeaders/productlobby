@@ -1,7 +1,8 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-
-export const dynamic = 'force-dynamic'
+import { getCurrentUser } from '@/lib/auth'
 
 interface ImpactFactors {
   lobbyFactor: number
@@ -21,14 +22,26 @@ interface ImpactScoreResponse {
   }
 }
 
+interface ImpactMetric {
+  id: string
+  name: string
+  value: number
+  previousValue?: number
+  unit: string
+  category: 'reach' | 'engagement' | 'conversion' | 'revenue' | 'social_shares'
+  period: '7d' | '30d' | '90d' | 'all'
+  timestamp: string
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: campaignId } = await params
+    const period = request.nextUrl.searchParams.get('period') || '30d'
 
-    // Get campaign data
+    // Get campaign data for impact score
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
       select: {
@@ -70,7 +83,7 @@ export async function GET(
     const signalScoreValue = campaign.signalScore ?? 0
 
     // Normalize values to 0-100 scale
-    const maxLobbyCount = 1000 // Realistic max
+    const maxLobbyCount = 1000
     const maxCommentCount = 500
     const maxFollowBookmark = 1000
     const maxShares = 200
@@ -122,7 +135,7 @@ export async function GET(
     const position = sortedScores.findIndex((s) => s === score) + 1
     const percentile = Math.round(((sortedScores.length - position) / sortedScores.length) * 100)
 
-    const response: ImpactScoreResponse = {
+    const impactScoreResponse: ImpactScoreResponse = {
       score,
       breakdown: {
         lobbyFactor: Math.round(lobbyFactor),
@@ -138,11 +151,186 @@ export async function GET(
       },
     }
 
-    return NextResponse.json(response)
+    // Fetch custom impact metrics from contribution events
+    const metricsEvents = await prisma.contributionEvent.findMany({
+      where: {
+        campaignId,
+        eventType: 'SOCIAL_SHARE',
+        metadata: {
+          path: ['action'],
+          equals: 'impact_metric',
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+
+    const metrics: ImpactMetric[] = metricsEvents
+      .map((event) => {
+        const metadata = event.metadata as any
+        return {
+          id: event.id,
+          name: metadata?.metricName || 'Unknown Metric',
+          value: metadata?.value || 0,
+          previousValue: metadata?.previousValue,
+          unit: metadata?.unit || '',
+          category: metadata?.category || 'reach',
+          period: metadata?.period || period,
+          timestamp: event.createdAt.toISOString(),
+        }
+      })
+      .filter((m) => m.period === period)
+
+    return NextResponse.json({
+      ...impactScoreResponse,
+      metrics,
+    })
   } catch (error) {
     console.error('[GET /api/campaigns/[id]/impact]', error)
     return NextResponse.json(
-      { error: 'Failed to calculate impact score' },
+      { error: 'Failed to fetch impact metrics' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { id: campaignId } = await params
+    const body = await request.json()
+
+    const {
+      metricName,
+      value,
+      previousValue,
+      unit,
+      category,
+      period,
+    } = body
+
+    // Verify campaign exists and user is creator
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { id: true, creatorUserId: true },
+    })
+
+    if (!campaign) {
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      )
+    }
+
+    if (campaign.creatorUserId !== user.id) {
+      return NextResponse.json(
+        { error: 'Only campaign creator can add metrics' },
+        { status: 403 }
+      )
+    }
+
+    // Create contribution event with impact metric data
+    const event = await prisma.contributionEvent.create({
+      data: {
+        campaignId,
+        userId: user.id,
+        eventType: 'SOCIAL_SHARE',
+        description: `Impact metric added: ${metricName}`,
+        metadata: {
+          action: 'impact_metric',
+          metricName,
+          value: parseFloat(value),
+          previousValue: previousValue ? parseFloat(previousValue) : undefined,
+          unit,
+          category,
+          period,
+          timestamp: new Date().toISOString(),
+        },
+      },
+    })
+
+    return NextResponse.json({
+      id: event.id,
+      name: metricName,
+      value: parseFloat(value),
+      previousValue: previousValue ? parseFloat(previousValue) : undefined,
+      unit,
+      category,
+      period,
+      timestamp: event.createdAt.toISOString(),
+    })
+  } catch (error) {
+    console.error('[POST /api/campaigns/[id]/impact]', error)
+    return NextResponse.json(
+      { error: 'Failed to create impact metric' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { id: campaignId } = await params
+    const body = await request.json()
+    const { metricId } = body
+
+    // Verify campaign exists and user is creator
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { id: true, creatorUserId: true },
+    })
+
+    if (!campaign) {
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      )
+    }
+
+    if (campaign.creatorUserId !== user.id) {
+      return NextResponse.json(
+        { error: 'Only campaign creator can delete metrics' },
+        { status: 403 }
+      )
+    }
+
+    // Delete the metric event
+    await prisma.contributionEvent.delete({
+      where: {
+        id: metricId,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Metric deleted successfully',
+    })
+  } catch (error) {
+    console.error('[DELETE /api/campaigns/[id]/impact]', error)
+    return NextResponse.json(
+      { error: 'Failed to delete impact metric' },
       { status: 500 }
     )
   }
