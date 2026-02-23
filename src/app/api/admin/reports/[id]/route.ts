@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Check if user is admin
 async function isAdmin(userId: string): Promise<boolean> {
   const adminEmail = process.env.ADMIN_EMAIL

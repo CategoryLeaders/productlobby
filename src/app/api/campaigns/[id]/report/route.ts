@@ -1,7 +1,19 @@
+/**
+ * Campaign Report API
+ * POST /api/campaigns/[id]/report
+ *
+ * Report a campaign for inappropriate content or spam.
+ * Creates a Report record and a ContributionEvent for tracking.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
-import { CreateReportSchema } from '@/types'
+
+export const dynamic = 'force-dynamic'
+
+// Valid report reasons
+const VALID_REASONS = ['spam', 'inappropriate', 'misleading', 'duplicate', 'other']
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -18,12 +30,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const { id } = await params
+    const { id: campaignId } = await params
 
     // Verify campaign exists
     const campaign = await prisma.campaign.findUnique({
-      where: { id },
-      select: { id: true },
+      where: { id: campaignId },
+      select: { id: true, title: true },
     })
 
     if (!campaign) {
@@ -34,26 +46,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json()
-    const result = CreateReportSchema.safeParse({
-      ...body,
-      targetType: 'CAMPAIGN',
-      targetId: id,
-    })
+    const { reason, details } = body
 
-    if (!result.success) {
+    // Validate reason
+    if (!reason || !VALID_REASONS.includes(reason)) {
       return NextResponse.json(
-        { success: false, error: result.error.errors[0].message },
+        { success: false, error: 'Invalid report reason' },
         { status: 400 }
       )
     }
 
-    // Check if user already reported this
+    // Check if user already reported this campaign
     const existingReport = await prisma.report.findFirst({
       where: {
         reporterUserId: user.id,
         targetType: 'CAMPAIGN',
-        targetId: id,
-        status: { in: ['OPEN', 'INVESTIGATING'] },
+        targetId: campaignId,
       },
     })
 
@@ -64,25 +72,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Create report
+    // Create the report
     const report = await prisma.report.create({
       data: {
         reporterUserId: user.id,
         targetType: 'CAMPAIGN',
-        targetId: id,
-        reason: result.data.reason,
-        details: result.data.details,
+        targetId: campaignId,
+        reason,
+        details: details || null,
+        status: 'OPEN',
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: report,
-    }, { status: 201 })
+    // Create a ContributionEvent for tracking purposes
+    await prisma.contributionEvent.create({
+      data: {
+        userId: user.id,
+        campaignId,
+        eventType: 'SOCIAL_SHARE',
+        points: 0,
+        metadata: {
+          eventSubType: 'campaign_report',
+          reason,
+          reportId: report.id,
+        },
+      },
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Campaign reported successfully',
+        data: report,
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Report campaign error:', error)
     return NextResponse.json(
-      { success: false, error: 'Something went wrong' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }
