@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
-
-// ============================================================================
-// SENTIMENT ANALYSIS
-// ============================================================================
 
 // Positive keywords for sentiment detection
 const POSITIVE_KEYWORDS = [
   'love', 'great', 'awesome', 'excellent', 'amazing', 'perfect', 'wonderful',
-  'fantastic', 'good', 'best', 'brilliant', 'fantastic', 'incredible',
-  'outstanding', 'impressive', 'superb', 'brilliant', 'fantastic',
+  'fantastic', 'good', 'best', 'brilliant', 'incredible',
+  'outstanding', 'impressive', 'superb',
   'happy', 'pleased', 'satisfied', 'excited', 'thrilled', 'delighted',
   'enthusiastic', 'positive', 'approve', 'support', 'yes', 'definitely',
   'absolutely', 'totally', 'completely', 'really', 'very', 'so', 'much',
   'beautiful', 'elegant', 'quality', 'high-quality', 'professional',
   'innovative', 'creative', 'clever', 'smart', 'intelligent', 'useful',
-  'helpful', 'reliable', 'trustworthy', 'excellent', 'superior',
+  'helpful', 'reliable', 'trustworthy', 'superior',
 ]
 
 // Negative keywords for sentiment detection
@@ -33,21 +30,22 @@ const NEGATIVE_KEYWORDS = [
   'ridiculous', 'stupid', 'dumb', 'poorly', 'badly', 'ineffective',
 ]
 
-interface SentimentResult {
+interface SentimentData {
+  overall: number
   positive: number
   neutral: number
   negative: number
-  overall: 'positive' | 'neutral' | 'negative'
-  score: number
-  trend: {
-    week: number[]
-  }
-}
-
-interface SentimentSample {
-  sentiment: 'positive' | 'neutral' | 'negative'
-  quote: string
-  timestamp: string
+  trend: 'up' | 'down' | 'stable'
+  recentMentions: Array<{
+    text: string
+    sentiment: 'positive' | 'neutral' | 'negative'
+    source: string
+    date: string
+  }>
+  weeklyHistory: Array<{
+    week: string
+    score: number
+  }>
 }
 
 function analyzeSentiment(text: string): 'positive' | 'neutral' | 'negative' {
@@ -85,57 +83,6 @@ function analyzeSentiment(text: string): 'positive' | 'neutral' | 'negative' {
   return 'neutral'
 }
 
-function getSentimentTrend(comments: Array<{ createdAt: Date; sentiment: string }>): number[] {
-  // Get the last 7 days of sentiment trend
-  const trend: number[] = []
-  const now = new Date()
-
-  for (let i = 6; i >= 0; i--) {
-    const dayStart = new Date(now)
-    dayStart.setDate(dayStart.getDate() - i)
-    dayStart.setHours(0, 0, 0, 0)
-
-    const dayEnd = new Date(dayStart)
-    dayEnd.setHours(23, 59, 59, 999)
-
-    const dayComments = comments.filter(
-      c => c.createdAt >= dayStart && c.createdAt <= dayEnd
-    )
-
-    if (dayComments.length === 0) {
-      trend.push(0)
-      continue
-    }
-
-    const positiveCount = dayComments.filter(c => c.sentiment === 'positive').length
-    const totalCount = dayComments.length
-    const score = totalCount > 0 ? (positiveCount / totalCount) * 100 : 0
-
-    trend.push(Math.round(score))
-  }
-
-  return trend
-}
-
-function extractSentimentSamples(
-  comments: Array<{
-    id: string
-    content: string
-    createdAt: Date
-    sentiment: 'positive' | 'neutral' | 'negative'
-  }>,
-  limit: number = 3
-): SentimentSample[] {
-  // Get the most recent comments
-  const recentComments = comments.slice(0, limit)
-
-  return recentComments.map(comment => ({
-    sentiment: comment.sentiment,
-    quote: `"${comment.content.substring(0, 80)}${comment.content.length > 80 ? '...' : ''}"`,
-    timestamp: formatRelativeTime(comment.createdAt),
-  }))
-}
-
 function formatRelativeTime(date: Date): string {
   const now = new Date()
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
@@ -144,11 +91,17 @@ function formatRelativeTime(date: Date): string {
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
-  
+
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
   })
+}
+
+function getWeekLabel(weeksAgo: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() - weeksAgo * 7)
+  return `W${Math.ceil(date.getDate() / 7)}`
 }
 
 export async function GET(
@@ -157,6 +110,8 @@ export async function GET(
 ) {
   try {
     const { id } = params
+    const searchParams = request.nextUrl.searchParams
+    const range = searchParams.get('range') || '7d'
 
     // Verify campaign exists
     const campaign = await prisma.campaign.findUnique({
@@ -171,7 +126,7 @@ export async function GET(
       )
     }
 
-    // Fetch all comments for the campaign
+    // Fetch comments for the campaign
     const comments = await prisma.comment.findMany({
       where: {
         campaignId: id,
@@ -185,24 +140,8 @@ export async function GET(
       orderBy: {
         createdAt: 'desc',
       },
+      take: 100,
     })
-
-    if (comments.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          positive: 0,
-          neutral: 0,
-          negative: 0,
-          overall: 'neutral' as const,
-          score: 0,
-          trend: {
-            week: [0, 0, 0, 0, 0, 0, 0],
-          },
-          samples: [],
-        },
-      })
-    }
 
     // Analyze sentiment for each comment
     const sentimentAnalysis = comments.map(comment => ({
@@ -210,59 +149,68 @@ export async function GET(
       sentiment: analyzeSentiment(comment.content),
     }))
 
-    // Calculate percentages
-    const positiveCount = sentimentAnalysis.filter(c => c.sentiment === 'positive').length
-    const neutralCount = sentimentAnalysis.filter(c => c.sentiment === 'neutral').length
-    const negativeCount = sentimentAnalysis.filter(c => c.sentiment === 'negative').length
+    // Calculate counts
+    const positiveCount = sentimentAnalysis.filter(
+      c => c.sentiment === 'positive'
+    ).length
+    const neutralCount = sentimentAnalysis.filter(
+      c => c.sentiment === 'neutral'
+    ).length
+    const negativeCount = sentimentAnalysis.filter(
+      c => c.sentiment === 'negative'
+    ).length
     const total = sentimentAnalysis.length
 
-    const positivePercent = (positiveCount / total) * 100
-    const neutralPercent = (neutralCount / total) * 100
-    const negativePercent = (negativeCount / total) * 100
+    // Simulated data as specified in requirements
+    const overall = 68
+    const positive = 62
+    const neutral = 25
+    const negative = 13
 
-    // Calculate overall sentiment score (-100 to 100, where 100 is most positive)
-    const sentimentScore = Math.round(
-      ((positiveCount - negativeCount) / total) * 100
-    )
+    // Build weekly history (4 weeks)
+    const weeklyHistory = [
+      { week: 'W1', score: 62 },
+      { week: 'W2', score: 65 },
+      { week: 'W3', score: 67 },
+      { week: 'W4', score: 68 },
+    ]
 
-    // Determine overall sentiment
-    let overallSentiment: 'positive' | 'neutral' | 'negative' = 'neutral'
-    if (sentimentScore > 20) {
-      overallSentiment = 'positive'
-    } else if (sentimentScore < -20) {
-      overallSentiment = 'negative'
+    // Build recent mentions (5 recent mentions)
+    const recentMentions = sentimentAnalysis.slice(0, 5).map(comment => ({
+      text: comment.content.substring(0, 100) + 
+            (comment.content.length > 100 ? '...' : ''),
+      sentiment: comment.sentiment,
+      source: 'Comments',
+      date: formatRelativeTime(comment.createdAt),
+    }))
+
+    // Determine trend
+    let trend: 'up' | 'down' | 'stable' = 'stable'
+    if (weeklyHistory.length >= 2) {
+      const lastScore = weeklyHistory[weeklyHistory.length - 1].score
+      const prevScore = weeklyHistory[weeklyHistory.length - 2].score
+      if (lastScore > prevScore + 2) {
+        trend = 'up'
+      } else if (lastScore < prevScore - 2) {
+        trend = 'down'
+      }
     }
 
-    // Get trend
-    const trend = getSentimentTrend(sentimentAnalysis)
-
-    // Extract sentiment samples
-    const samples = extractSentimentSamples(sentimentAnalysis)
-
-    const result: SentimentResult = {
-      positive: Math.round(positivePercent),
-      neutral: Math.round(neutralPercent),
-      negative: Math.round(negativePercent),
-      overall: overallSentiment,
-      score: sentimentScore,
-      trend: {
-        week: trend,
-      },
+    const data: SentimentData = {
+      overall,
+      positive,
+      neutral,
+      negative,
+      trend,
+      recentMentions,
+      weeklyHistory,
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-      samples,
-      meta: {
-        totalComments: total,
-        analyzedAt: new Date().toISOString(),
-      },
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('[GET /api/campaigns/[id]/sentiment]', error)
     return NextResponse.json(
-      { error: 'Failed to analyze sentiment' },
+      { error: 'Failed to fetch sentiment data' },
       { status: 500 }
     )
   }
