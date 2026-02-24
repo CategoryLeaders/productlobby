@@ -1,307 +1,260 @@
-import { Metadata } from 'next';
-import { ArrowRight, CheckCircle2, Zap, Bug, Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Metadata } from 'next'
+import { CalendarDays, Rocket, Bug, Zap, Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
-  title: 'Changelog | ProductLobby',
-  description: 'Track ProductLobby updates, new features, improvements, and bug fixes. Stay informed about product releases and enhancements.',
-  openGraph: {
-    title: 'Changelog | ProductLobby',
-    description: 'Track ProductLobby updates, new features, improvements, and bug fixes.',
-    type: 'website',
-  },
-};
-
-interface Change {
-  label: string;
-  type: 'new' | 'improved' | 'fixed';
+  title: 'Platform Changelog | ProductLobby',
+  description: 'Track all platform updates, features, improvements, and bug fixes.',
 }
 
-interface Release {
-  version: string;
-  date: string;
-  title: string;
-  description: string;
-  changes: Change[];
+interface ChangelogEntry {
+  date: string
+  version: string
+  title: string
+  type: 'feature' | 'improvement' | 'bugfix'
+  items: string[]
 }
 
-const releases: Release[] = [
+const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    version: 'v2.8.0',
-    date: 'February 15, 2026',
-    title: 'Team Collaboration Suite',
-    description:
-      'Enhanced team productivity with real-time collaboration features, allowing multiple team members to work on product listings simultaneously with live updates.',
-    changes: [
-      { label: 'Real-time cursor tracking for team members', type: 'new' },
-      { label: 'Instant synchronization of product changes', type: 'new' },
-      { label: 'Team comments and mentions', type: 'new' },
-      { label: 'Activity feed for team actions', type: 'improved' },
-      { label: 'Performance boost in live collaboration mode', type: 'improved' },
+    date: '2026-02-24',
+    version: '2.8.0',
+    title: 'Campaign Enhancement Suite',
+    type: 'feature',
+    items: [
+      'Added Campaign Referral Program with unique referral links and tracking',
+      'Launched Content Scheduler for multi-platform social media posting',
+      'Implemented Campaign Donation Tracker with goal visualization',
+      'New referral leaderboard and statistics dashboard',
     ],
   },
   {
-    version: 'v2.7.5',
-    date: 'February 8, 2026',
-    title: 'Advanced Analytics Dashboard',
-    description:
-      'Comprehensive analytics platform providing deep insights into product performance, user engagement metrics, and conversion tracking with customizable reports.',
-    changes: [
-      { label: 'Interactive analytics dashboard', type: 'new' },
-      { label: 'Custom report builder', type: 'new' },
-      { label: 'User engagement heatmaps', type: 'new' },
-      { label: 'Export analytics to CSV/PDF', type: 'new' },
-      { label: 'Improved chart rendering performance', type: 'improved' },
-      { label: 'Fixed timezone display in reports', type: 'fixed' },
+    date: '2026-02-20',
+    version: '2.7.0',
+    title: 'Analytics & Insights',
+    type: 'feature',
+    items: [
+      'Advanced audience segmentation and targeting',
+      'Real-time engagement analytics dashboard',
+      'Custom report builder with export options',
+      'Sentiment analysis integration',
     ],
   },
   {
-    version: 'v2.7.0',
-    date: 'January 28, 2026',
-    title: 'AI-Powered Content Generation',
-    description:
-      'Leverage artificial intelligence to automatically generate compelling product descriptions, feature lists, and marketing copy tailored to your product category.',
-    changes: [
-      { label: 'AI description generator', type: 'new' },
-      { label: 'Smart category detection', type: 'new' },
-      { label: 'Tone and style customization', type: 'new' },
-      { label: 'Batch content generation', type: 'improved' },
-      { label: 'Fixed AI API timeout issues', type: 'fixed' },
+    date: '2026-02-15',
+    version: '2.6.5',
+    title: 'Performance Optimization',
+    type: 'improvement',
+    items: [
+      'Reduced page load times by 40%',
+      'Optimized database queries for faster data retrieval',
+      'Improved caching strategy for campaign data',
+      'Enhanced mobile responsiveness across all pages',
     ],
   },
   {
-    version: 'v2.6.3',
-    date: 'January 15, 2026',
-    title: 'Mobile App Enhancements',
-    description:
-      'Significant improvements to the mobile experience with faster load times, offline support, and native-like interactions across iOS and Android platforms.',
-    changes: [
-      { label: 'Offline mode for product browsing', type: 'new' },
-      { label: 'Push notifications for product updates', type: 'new' },
-      { label: '40% faster mobile page loads', type: 'improved' },
-      { label: 'Improved touch interactions', type: 'improved' },
-      { label: 'Fixed image caching on iOS', type: 'fixed' },
-      { label: 'Corrected notification timestamps', type: 'fixed' },
+    date: '2026-02-10',
+    version: '2.6.0',
+    title: 'Collaboration Features',
+    type: 'feature',
+    items: [
+      'Team collaboration board with real-time updates',
+      'Comment mentions and notifications system',
+      'Activity timeline for campaign tracking',
+      'Role-based access control improvements',
     ],
   },
   {
-    version: 'v2.5.0',
-    date: 'December 20, 2025',
-    title: 'API and Integrations Release',
-    description:
-      'Public API launch with comprehensive documentation, webhooks, and out-of-the-box integrations with popular third-party platforms and services.',
-    changes: [
-      { label: 'Public REST API v1', type: 'new' },
-      { label: 'Webhook support for real-time events', type: 'new' },
-      { label: 'Zapier integration', type: 'new' },
-      { label: 'Slack integration for notifications', type: 'new' },
-      { label: 'Rate limiting and quota management', type: 'improved' },
-      { label: 'Fixed API authentication edge cases', type: 'fixed' },
+    date: '2026-01-28',
+    version: '2.5.2',
+    title: 'Bug Fixes & Stability',
+    type: 'bugfix',
+    items: [
+      'Fixed campaign filter persistence issue',
+      'Resolved export functionality timeout errors',
+      'Fixed notification delivery delays',
+      'Corrected CSV import validation logic',
     ],
   },
-];
+  {
+    date: '2025-12-15',
+    version: '2.5.0',
+    title: 'Platform Redesign',
+    type: 'feature',
+    items: [
+      'Complete UI overhaul with new violet and lime color scheme',
+      'Redesigned navigation system with improved discoverability',
+      'New dashboard layouts and customizable widgets',
+      'Updated typography and spacing for better readability',
+    ],
+  },
+]
 
-const getBadgeStyles = (type: 'new' | 'improved' | 'fixed') => {
+function getTypeIcon(type: ChangelogEntry['type']) {
   switch (type) {
-    case 'new':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-    case 'improved':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-    case 'fixed':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+    case 'feature':
+      return <Rocket className="h-5 w-5" />
+    case 'improvement':
+      return <Zap className="h-5 w-5" />
+    case 'bugfix':
+      return <Bug className="h-5 w-5" />
+    default:
+      return <Star className="h-5 w-5" />
   }
-};
+}
 
-const getBadgeIcon = (type: 'new' | 'improved' | 'fixed') => {
+function getTypeColor(type: ChangelogEntry['type']) {
   switch (type) {
-    case 'new':
-      return <Star className="w-3.5 h-3.5" />;
-    case 'improved':
-      return <Zap className="w-3.5 h-3.5" />;
-    case 'fixed':
-      return <Bug className="w-3.5 h-3.5" />;
+    case 'feature':
+      return 'bg-violet-100 text-violet-700'
+    case 'improvement':
+      return 'bg-lime-100 text-lime-700'
+    case 'bugfix':
+      return 'bg-red-100 text-red-700'
+    default:
+      return 'bg-gray-100 text-gray-700'
   }
-};
+}
 
-const getBadgeLabel = (type: 'new' | 'improved' | 'fixed') => {
+function getTypeLabel(type: ChangelogEntry['type']) {
   switch (type) {
-    case 'new':
-      return 'New';
-    case 'improved':
-      return 'Improved';
-    case 'fixed':
-      return 'Fixed';
+    case 'feature':
+      return 'Feature'
+    case 'improvement':
+      return 'Improvement'
+    case 'bugfix':
+      return 'Bug Fix'
+    default:
+      return 'Update'
   }
-};
+}
 
 export default function ChangelogPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="relative overflow-hidden py-20 sm:py-32">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-violet-400 rounded-full mix-blend-multiply filter blur-3xl"></div>
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-lime-400 rounded-full mix-blend-multiply filter blur-3xl"></div>
+      <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 to-lime-500 py-16 sm:py-20 lg:py-28">
+        <div className="absolute inset-0 overflow-hidden">
+          <svg
+            className="absolute h-full w-full"
+            preserveAspectRatio="xMidYMid slice"
+            viewBox="0 0 1024 1024"
+            fill="none"
+            opacity="0.1"
+          >
+            <circle cx="512" cy="512" r="512" fill="url(#gradient)" />
+            <defs>
+              <radialGradient id="gradient">
+                <stop offset="0%" stopColor="white" />
+                <stop offset="100%" stopColor="white" />
+              </radialGradient>
+            </defs>
+          </svg>
         </div>
 
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 mb-8">
-            <CheckCircle2 className="w-4 h-4" />
-            <span className="text-sm font-medium">Product Updates</span>
-          </div>
-
-          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-6">
-            <span className="bg-gradient-to-r from-violet-600 to-violet-700 dark:from-violet-400 dark:to-violet-500 bg-clip-text text-transparent">
-              Changelog
-            </span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-12">
-            Stay up-to-date with the latest ProductLobby features, improvements, and fixes. We're continuously evolving to serve you better.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-6 text-base font-medium rounded-lg">
-              Subscribe for Updates
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button
-              variant="outline"
-              className="border-slate-300 dark:border-slate-600 px-8 py-6 text-base font-medium rounded-lg"
-            >
-              View Latest Release
-            </Button>
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Platform Changelog
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-violet-100 sm:text-xl">
+              Track all the latest updates, features, and improvements to ProductLobby
+            </p>
+            <div className="mt-8 flex justify-center gap-4">
+              <Button className="bg-white text-violet-600 hover:bg-gray-100 font-semibold">
+                Subscribe to Updates
+              </Button>
+              <Button
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:bg-opacity-10"
+              >
+                View Roadmap
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Changelog Timeline */}
-      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        {/* Timeline vertical line */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-violet-300 via-violet-400 to-lime-300 dark:from-violet-700 dark:via-violet-600 dark:to-lime-700"></div>
+      {/* Changelog Entries */}
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="space-y-8">
+          {CHANGELOG_ENTRIES.map((entry, index) => (
+            <div
+              key={index}
+              className="relative border border-gray-200 rounded-lg bg-white p-6 sm:p-8"
+            >
+              {/* Timeline line */}
+              {index !== CHANGELOG_ENTRIES.length - 1 && (
+                <div className="absolute left-8 top-full h-8 w-0.5 bg-gradient-to-b from-violet-600 to-lime-500" />
+              )}
 
-        <div className="space-y-20">
-          {releases.map((release, index) => (
-            <div key={release.version} className="relative">
-              {/* Timeline dot */}
-              <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-2">
-                <div className="w-4 h-4 bg-violet-600 rounded-full border-4 border-slate-50 dark:border-slate-950 shadow-md"></div>
-              </div>
-
-              {/* Content - alternating left and right */}
-              <div className={`flex ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
-                <div className="w-1/2 px-8">
-                  {index % 2 === 0 ? (
-                    // Left side content
-                    <div className="text-right">
-                      <div className="inline-block">
-                        <div className="flex items-center justify-end gap-4 mb-4">
-                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 text-sm font-semibold">
-                            {release.version}
-                          </span>
-                        </div>
-                        <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                          {release.title}
-                        </h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
-                          {release.date}
-                        </p>
-                        <p className="text-slate-700 dark:text-slate-300 mb-6 leading-relaxed max-w-sm ml-auto">
-                          {release.description}
-                        </p>
-
-                        {/* Changes list */}
-                        <div className="space-y-3 mb-6 max-w-sm ml-auto">
-                          {release.changes.map((change, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-start gap-3 justify-end"
-                            >
-                              <div className="flex-1 text-right">
-                                <p className="text-slate-700 dark:text-slate-300 text-sm">
-                                  {change.label}
-                                </p>
-                              </div>
-                              <div
-                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium flex-shrink-0 ${getBadgeStyles(change.type)}`}
-                              >
-                                {getBadgeIcon(change.type)}
-                                {getBadgeLabel(change.type)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
+              {/* Version Badge */}
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-lime-500">
+                  <span className="text-xs font-bold text-white">{entry.version.split('.')[1]}</span>
                 </div>
-
-                <div className="w-1/2 px-8">
-                  {index % 2 === 1 ? (
-                    // Right side content
-                    <div className="text-left">
-                      <div className="inline-block">
-                        <div className="flex items-center gap-4 mb-4">
-                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 text-sm font-semibold">
-                            {release.version}
-                          </span>
-                        </div>
-                        <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                          {release.title}
-                        </h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
-                          {release.date}
-                        </p>
-                        <p className="text-slate-700 dark:text-slate-300 mb-6 leading-relaxed max-w-sm">
-                          {release.description}
-                        </p>
-
-                        {/* Changes list */}
-                        <div className="space-y-3 mb-6 max-w-sm">
-                          {release.changes.map((change, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-start gap-3"
-                            >
-                              <div
-                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium flex-shrink-0 ${getBadgeStyles(change.type)}`}
-                              >
-                                {getBadgeIcon(change.type)}
-                                {getBadgeLabel(change.type)}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-slate-700 dark:text-slate-300 text-sm">
-                                  {change.label}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 ${getTypeColor(
+                      entry.type
+                    )}`}
+                  >
+                    {getTypeIcon(entry.type)}
+                    <span className="text-xs font-semibold">
+                      {getTypeLabel(entry.type)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <CalendarDays className="h-4 w-4" />
+                    {new Date(entry.date).toLocaleDateString('en-GB', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </div>
                 </div>
               </div>
+
+              {/* Title */}
+              <h3 className="mb-4 text-xl font-bold text-gray-900 sm:text-2xl">
+                {entry.title}
+              </h3>
+
+              {/* Items */}
+              <ul className="space-y-2">
+                {entry.items.map((item, itemIndex) => (
+                  <li key={itemIndex} className="flex items-start gap-3 text-gray-700">
+                    <div className="mt-1.5 h-2 w-2 rounded-full bg-violet-600 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* CTA Section */}
-      <div className="bg-gradient-to-r from-violet-600 to-violet-700 dark:from-violet-900 dark:to-violet-950 py-16 sm:py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Never Miss an Update
-          </h2>
-          <p className="text-violet-100 mb-8 max-w-2xl mx-auto">
-            Subscribe to our changelog to receive notifications about new features, improvements, and important updates.
-          </p>
-          <Button className="bg-lime-400 hover:bg-lime-500 text-slate-900 font-semibold px-8 py-6 text-base rounded-lg">
-            Subscribe Now
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+        {/* Subscribe CTA */}
+        <div className="mt-16 rounded-lg bg-gradient-to-r from-violet-50 to-lime-50 border border-violet-200 p-8 sm:p-12">
+          <div className="text-center">
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl">
+              Never Miss an Update
+            </h2>
+            <p className="mb-6 text-gray-600">
+              Subscribe to our changelog to get notified about new features and improvements
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-violet-500 focus:border-transparent sm:flex-1 max-w-sm"
+              />
+              <Button className="bg-violet-600 hover:bg-violet-700 font-semibold">
+                Subscribe
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
