@@ -1,262 +1,434 @@
 'use client'
 
-import React, { useState } from 'react'
-import { X, ChevronLeft, ChevronRight, Image, ZoomIn, Loader2 } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
+import {
+  Loader2,
+  Upload,
+  Film,
+  FileText,
+  Download,
+  Eye,
+  Grid,
+  List as ListIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface MediaItem {
   id: string
+  campaignId: string
+  title: string
+  type: 'image' | 'video' | 'document' | 'infographic'
   url: string
-  type: 'IMAGE' | 'VIDEO' | 'SKETCH' | 'MOCKUP'
-  title?: string
-  uploadedAt: string
+  thumbnailUrl?: string
+  description: string
+  uploadedBy: string
+  downloads: number
+  views: number
+  createdAt: string
 }
 
 interface MediaGalleryProps {
-  media: MediaItem[]
-  campaignTitle?: string
-  isLoading?: boolean
+  campaignId: string
 }
 
-export function MediaGallery({
-  media,
-  campaignTitle = 'Campaign',
-  isLoading = false,
-}: MediaGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+type ViewMode = 'grid' | 'list'
+type FilterType = 'all' | 'image' | 'video' | 'document' | 'infographic'
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-600 mb-3" />
-        <p className="text-gray-600">Loading media gallery...</p>
-      </div>
-    )
-  }
+export function MediaGallery({ campaignId }: MediaGalleryProps) {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [filter, setFilter] = useState<FilterType>('all')
+  const [selectedItem, setSelectedItem] = useState<string | null>(null)
 
-  if (!media || media.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 border border-dashed border-violet-200 rounded-lg bg-violet-50">
-        <Image className="w-12 h-12 text-violet-300 mb-3" />
-        <p className="text-violet-700 font-medium">No media yet</p>
-        <p className="text-violet-600 text-sm">Media attachments will appear here</p>
-      </div>
-    )
-  }
+  useEffect(() => {
+    fetchMediaItems()
+  }, [campaignId])
 
-  const openLightbox = (index: number) => {
-    setSelectedIndex(index)
-    setIsLightboxOpen(true)
-  }
-
-  const closeLightbox = () => {
-    setIsLightboxOpen(false)
-    setSelectedIndex(null)
-  }
-
-  const goToPrevious = () => {
-    if (selectedIndex !== null && selectedIndex > 0) {
-      setSelectedIndex(selectedIndex - 1)
-    } else if (selectedIndex !== null) {
-      setSelectedIndex(media.length - 1)
+  const fetchMediaItems = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/campaigns/${campaignId}/media-gallery`)
+      if (!response.ok) throw new Error('Failed to fetch media items')
+      const data = await response.json()
+      setItems(data)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const goToNext = () => {
-    if (selectedIndex !== null && selectedIndex < media.length - 1) {
-      setSelectedIndex(selectedIndex + 1)
-    } else {
-      setSelectedIndex(0)
+  const filteredItems = items.filter((item) =>
+    filter === 'all' ? true : item.type === filter
+  )
+
+  const getMediaIcon = (type: string) => {
+    switch (type) {
+      case 'image':
+        return <Image className="w-4 h-4" />
+      case 'video':
+        return <Film className="w-4 h-4" />
+      case 'document':
+        return <FileText className="w-4 h-4" />
+      case 'infographic':
+        return <Image className="w-4 h-4" />
+      default:
+        return null
     }
   }
 
-  const currentMedia = selectedIndex !== null ? media[selectedIndex] : null
-
-  // Generate color gradient based on index for placeholder
-  const getGradientColor = (index: number) => {
-    const colors = [
-      'from-blue-400 to-blue-600',
-      'from-purple-400 to-purple-600',
-      'from-pink-400 to-pink-600',
-      'from-emerald-400 to-emerald-600',
-      'from-amber-400 to-amber-600',
-      'from-red-400 to-red-600',
-      'from-indigo-400 to-indigo-600',
-      'from-cyan-400 to-cyan-600',
-    ]
-    return colors[index % colors.length]
+  const handleDownload = (item: MediaItem) => {
+    // Simulate download
+    const link = document.createElement('a')
+    link.href = item.url
+    link.download = item.title
+    link.click()
   }
 
-  const getTypeLabel = (type: string): string => {
-    return type === 'SKETCH' ? 'Sketch' : type === 'MOCKUP' ? 'Mockup' : type
-  }
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+      </div>
+    )
   }
 
   return (
-    <>
-      {/* Grid Gallery - 3-4 columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {media.map((item, index) => (
-          <div
-            key={item.id}
-            onClick={() => openLightbox(index)}
-            className="relative group cursor-pointer overflow-hidden rounded-lg bg-gray-100 shadow-sm hover:shadow-md transition-all duration-200"
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-slate-900">Media Gallery</h2>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className={viewMode === 'grid' ? 'bg-violet-600 hover:bg-violet-700' : ''}
           >
-            {/* Media Preview with Gradient Placeholder */}
-            <div
-              className={cn(
-                'relative w-full h-48 bg-gradient-to-br flex items-center justify-center',
-                getGradientColor(index)
-              )}
-            >
-              {item.url && item.type !== 'SKETCH' && item.type !== 'MOCKUP' && !item.url.includes('gradient') ? (
-                item.type === 'VIDEO' ? (
-                  <video
-                    src={item.url}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const element = e.currentTarget as HTMLElement
-                      element.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <img
-                    src={item.url}
-                    alt={item.title || `${campaignTitle} media ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const element = e.currentTarget as HTMLElement
-                      element.style.display = 'none'
-                    }}
-                  />
-                )
-              ) : (
-                <div className="flex flex-col items-center justify-center text-white">
-                  <ZoomIn className="w-8 h-8 mb-2 opacity-80" />
-                  <p className="text-xs font-medium opacity-80">{item.type}</p>
-                </div>
-              )}
-            </div>
+            <Grid className="w-4 h-4 mr-2" />
+            Grid
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className={viewMode === 'list' ? 'bg-violet-600 hover:bg-violet-700' : ''}
+          >
+            <ListIcon className="w-4 h-4 mr-2" />
+            List
+          </Button>
+          <Button className="bg-lime-600 hover:bg-lime-700 ml-2">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload
+          </Button>
+        </div>
+      </div>
 
-            {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200 flex items-center justify-center">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-center">
-                <ZoomIn className="w-6 h-6 mb-2 mx-auto" />
-                <p className="text-sm font-medium">View</p>
-              </div>
-            </div>
-
-            {/* Type Badge */}
-            <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full font-medium">
-              {getTypeLabel(item.type)}
-            </div>
-
-            {/* Title if available */}
-            {item.title && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-black/0 p-2">
-                <p className="text-white text-xs font-medium line-clamp-2">{item.title}</p>
-              </div>
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {['all', 'image', 'video', 'document', 'infographic'].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f as FilterType)}
+            className={cn(
+              'px-4 py-2 rounded-lg font-medium text-sm transition-colors capitalize',
+              filter === f
+                ? 'bg-violet-600 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             )}
-          </div>
+          >
+            {f}
+          </button>
         ))}
       </div>
 
-      {/* Lightbox Modal */}
-      {isLightboxOpen && currentMedia && (
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-12">
+          <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600">No media items found</p>
+        </div>
+      ) : (
+        <>
+          {/* Grid View */}
+          {viewMode === 'grid' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedItem(item.id)}
+                  className="group cursor-pointer rounded-lg overflow-hidden border border-slate-200 hover:border-violet-400 transition-all hover:shadow-lg"
+                >
+                  {/* Thumbnail */}
+                  <div className="relative w-full aspect-video bg-slate-100 overflow-hidden">
+                    {item.type === 'image' || item.type === 'infographic' ? (
+                      <img
+                        src={item.thumbnailUrl || item.url}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-100 to-lime-100">
+                        {getMediaIcon(item.type)}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <Eye className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-3">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div
+                        className={cn(
+                          'rounded p-1',
+                          item.type === 'image'
+                            ? 'bg-violet-100'
+                            : item.type === 'video'
+                              ? 'bg-violet-100'
+                              : item.type === 'document'
+                                ? 'bg-lime-100'
+                                : 'bg-lime-100'
+                        )}
+                      >
+                        {getMediaIcon(item.type)}
+                      </div>
+                      <h3 className="font-semibold text-slate-900 text-sm line-clamp-2">
+                        {item.title}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-600 line-clamp-2 mb-3">
+                      {item.description}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {item.views}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Download className="w-3 h-3" />
+                          {item.downloads}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === 'list' && (
+            <div className="space-y-3">
+              {filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedItem(item.id)}
+                  className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg hover:border-violet-400 hover:shadow-md transition-all cursor-pointer"
+                >
+                  {/* Thumbnail */}
+                  <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-slate-100 overflow-hidden">
+                    {item.type === 'image' || item.type === 'infographic' ? (
+                      <img
+                        src={item.thumbnailUrl || item.url}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-100 to-lime-100">
+                        {getMediaIcon(item.type)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-grow">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
+                          item.type === 'image'
+                            ? 'bg-violet-100 text-violet-700'
+                            : item.type === 'video'
+                              ? 'bg-violet-100 text-violet-700'
+                              : item.type === 'document'
+                                ? 'bg-lime-100 text-lime-700'
+                                : 'bg-lime-100 text-lime-700'
+                        )}
+                      >
+                        {getMediaIcon(item.type)}
+                        {item.type}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-slate-900">{item.title}</h3>
+                    <p className="text-sm text-slate-600 line-clamp-1">
+                      {item.description}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Uploaded by {item.uploadedBy} on{' '}
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex-shrink-0 flex items-center gap-6 text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4" />
+                      <span className="text-sm">{item.views}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Download className="w-4 h-4" />
+                      <span className="text-sm">{item.downloads}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDownload(item)
+                      }}
+                      className="border-violet-200 hover:border-violet-400 hover:text-violet-600"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Detail Modal */}
+      {selectedItem && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-          onClick={closeLightbox}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setSelectedItem(null)}
         >
           <div
-            className="relative max-w-4xl w-full max-h-[90vh] bg-black rounded-lg overflow-hidden flex flex-col"
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
-            <Button
-              onClick={closeLightbox}
-              variant="ghost"
-              size="sm"
-              className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 h-auto"
-            >
-              <X className="w-6 h-6" />
-            </Button>
+            {(() => {
+              const item = items.find((i) => i.id === selectedItem)
+              if (!item) return null
 
-            {/* Media Display */}
-            <div className="flex-1 flex items-center justify-center overflow-auto bg-gradient-to-br from-gray-900 to-black min-h-[400px]">
-              {currentMedia.type === 'VIDEO' ? (
-                <video
-                  src={currentMedia.url}
-                  className="w-full h-full object-contain"
-                  controls
-                  autoPlay
-                  onError={(e) => {
-                    const element = e.currentTarget as HTMLElement
-                    element.style.display = 'none'
-                  }}
-                />
-              ) : (
-                <img
-                  src={currentMedia.url}
-                  alt={currentMedia.title || 'Full view'}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    const element = e.currentTarget as HTMLElement
-                    element.style.display = 'none'
-                  }}
-                />
-              )}
-            </div>
-
-            {/* Navigation Buttons */}
-            {media.length > 1 && (
-              <>
-                <Button
-                  onClick={goToPrevious}
-                  variant="ghost"
-                  size="sm"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 h-auto"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </Button>
-                <Button
-                  onClick={goToNext}
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 h-auto"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </Button>
-              </>
-            )}
-
-            {/* Info Footer */}
-            <div className="bg-gradient-to-t from-black/90 to-black/40 p-4 text-white border-t border-white/10">
-              <div className="flex items-center justify-between">
+              return (
                 <div>
-                  <p className="text-sm font-semibold">
-                    {selectedIndex !== null ? `${selectedIndex + 1} / ${media.length}` : ''}
-                  </p>
-                  {currentMedia.title && (
-                    <p className="text-xs text-gray-300 mt-1">{currentMedia.title}</p>
-                  )}
-                  <p className="text-xs text-gray-400 mt-1">{formatDate(currentMedia.uploadedAt)}</p>
+                  {/* Media Display */}
+                  <div className="w-full bg-slate-900 aspect-video flex items-center justify-center relative">
+                    {item.type === 'image' || item.type === 'infographic' ? (
+                      <img
+                        src={item.url}
+                        alt={item.title}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center gap-4">
+                        {getMediaIcon(item.type)}
+                        <span className="text-white">{item.type}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setSelectedItem(null)}
+                      className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 p-2 rounded-full"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {/* Details */}
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                          {item.title}
+                        </h2>
+                        <p className="text-slate-600">{item.description}</p>
+                      </div>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium',
+                          item.type === 'image' || item.type === 'video'
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-lime-100 text-lime-700'
+                        )}
+                      >
+                        {getMediaIcon(item.type)}
+                        {item.type}
+                      </span>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">
+                          Uploaded By
+                        </p>
+                        <p className="font-semibold text-slate-900">
+                          {item.uploadedBy}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">
+                          Date
+                        </p>
+                        <p className="font-semibold text-slate-900">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">
+                          Views
+                        </p>
+                        <p className="font-semibold text-slate-900">
+                          {item.views}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">
+                          Downloads
+                        </p>
+                        <p className="font-semibold text-slate-900">
+                          {item.downloads}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => handleDownload(item)}
+                        className="flex-1 bg-violet-600 hover:bg-violet-700 text-white"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                      <Button variant="outline" onClick={() => setSelectedItem(null)}>
+                        Close
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xs bg-violet-600/80 px-3 py-1 rounded-full font-medium">
-                  {getTypeLabel(currentMedia.type)}
-                </span>
-              </div>
-            </div>
+              )
+            })()}
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
-
-export default MediaGallery
