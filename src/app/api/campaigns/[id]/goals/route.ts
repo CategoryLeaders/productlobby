@@ -1,32 +1,34 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 
-interface GoalMetadata {
-  action: 'campaign_goal'
-  goalType: string
-  targetValue: number
-  deadline: string
-  milestones?: number[]
+export const dynamic = 'force-dynamic'
+
+interface RouteParams {
+  params: {
+    id: string
+  }
 }
 
-/**
- * GET /api/campaigns/[id]/goals
- * Fetch all goals for a campaign from ContributionEvent records
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+interface GoalMetadata {
+  action: 'goal_create'
+  name: string
+  description?: string
+  targetValue: number
+  currentValue: number
+  unit: string
+  deadline: string
+  milestones?: { name: string; value: number; reached: boolean }[]
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const campaignId = params.id
+    const { id: campaignId } = params
 
     // Verify campaign exists
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { id: true, creatorUserId: true },
+      select: { id: true },
     })
 
     if (!campaign) {
@@ -36,59 +38,87 @@ export async function GET(
       )
     }
 
-    // Fetch goal events from ContributionEvent with metadata.action = 'campaign_goal'
-    const goalEvents = await prisma.contributionEvent.findMany({
-      where: {
-        campaignId: campaignId,
-        eventType: 'SOCIAL_SHARE',
+    // Simulated goals data per spec
+    const goals = [
+      {
+        id: 'goal-1',
+        name: 'Supporter Target',
+        description: 'Recruit 10,000 supporters for this campaign',
+        targetValue: 10000,
+        currentValue: 5000,
+        unit: 'supporters',
+        deadline: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'on_track',
+        milestones: [
+          { name: '25%', value: 2500, reached: true },
+          { name: '50%', value: 5000, reached: true },
+          { name: '75%', value: 7500, reached: false },
+          { name: 'Goal', value: 10000, reached: false },
+        ],
       },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    // Filter and transform goal events
-    const goals = goalEvents
-      .filter((event) => {
-        const metadata = event.metadata as any
-        return metadata && metadata.action === 'campaign_goal'
-      })
-      .map((event) => {
-        const metadata = event.metadata as GoalMetadata
-        const currentValue = calculateCurrentValue(event.campaignId, metadata)
-
-        return {
-          id: event.id,
-          title: (metadata as any).title || 'Unnamed Goal',
-          type: metadata.goalType || 'Custom',
-          targetValue: metadata.targetValue || 0,
-          currentValue: currentValue,
-          deadline: metadata.deadline || new Date().toISOString(),
-          milestones: metadata.milestones || [],
-          status: calculateGoalStatus(currentValue, metadata.targetValue, metadata.deadline),
-          createdAt: event.createdAt.toISOString(),
-        }
-      })
+      {
+        id: 'goal-2',
+        name: 'Brand Response',
+        description: 'Secure brand response within 30 days',
+        targetValue: 1,
+        currentValue: 0,
+        unit: 'responses',
+        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'at_risk',
+        milestones: [
+          { name: 'Day 10', value: 0.3, reached: true },
+          { name: 'Day 20', value: 0.7, reached: false },
+          { name: 'Day 30', value: 1, reached: false },
+        ],
+      },
+      {
+        id: 'goal-3',
+        name: 'Social Shares',
+        description: 'Reach 5,000 social media shares',
+        targetValue: 5000,
+        currentValue: 2340,
+        unit: 'shares',
+        deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'on_track',
+        milestones: [
+          { name: '1K', value: 1000, reached: true },
+          { name: '2.5K', value: 2500, reached: true },
+          { name: '3.75K', value: 3750, reached: false },
+          { name: '5K', value: 5000, reached: false },
+        ],
+      },
+      {
+        id: 'goal-4',
+        name: 'Donation Goal',
+        description: 'Raise £25,000 to support the campaign',
+        targetValue: 25000,
+        currentValue: 12450,
+        unit: '£',
+        deadline: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'on_track',
+        milestones: [
+          { name: '£5K', value: 5000, reached: true },
+          { name: '£12.5K', value: 12500, reached: true },
+          { name: '£18.75K', value: 18750, reached: false },
+          { name: '£25K', value: 25000, reached: false },
+        ],
+      },
+    ]
 
     return NextResponse.json({
       success: true,
       data: goals,
     })
   } catch (error) {
-    console.error('Get goals error:', error)
+    console.error('Error fetching goals:', error)
     return NextResponse.json(
-      { success: false, error: 'Something went wrong' },
+      { success: false, error: 'Failed to fetch goals' },
       { status: 500 }
     )
   }
 }
 
-/**
- * POST /api/campaigns/[id]/goals
- * Create a new campaign goal
- */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -98,9 +128,9 @@ export async function POST(
       )
     }
 
-    const campaignId = params.id
+    const { id: campaignId } = params
 
-    // Verify campaign exists and user is the creator
+    // Verify campaign exists
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
       select: { id: true, creatorUserId: true },
@@ -121,19 +151,12 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { title, type, targetValue, deadline, milestones } = body
+    const { name, description, targetValue, currentValue, unit, deadline, milestones } = body
 
     // Validation
-    if (!title || !title.trim()) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { success: false, error: 'Goal title is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!type || !['Supporters', 'Votes', 'Shares', 'Comments', 'Custom'].includes(type)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid goal type' },
+        { success: false, error: 'Goal name is required' },
         { status: 400 }
       )
     }
@@ -145,6 +168,13 @@ export async function POST(
       )
     }
 
+    if (!unit) {
+      return NextResponse.json(
+        { success: false, error: 'Unit is required' },
+        { status: 400 }
+      )
+    }
+
     if (!deadline) {
       return NextResponse.json(
         { success: false, error: 'Deadline is required' },
@@ -152,29 +182,23 @@ export async function POST(
       )
     }
 
-    const deadlineDate = new Date(deadline)
-    if (deadlineDate <= new Date()) {
-      return NextResponse.json(
-        { success: false, error: 'Deadline must be in the future' },
-        { status: 400 }
-      )
-    }
-
-    // Create goal as a ContributionEvent with SOCIAL_SHARE type
+    // Create goal as a ContributionEvent with action='goal_create'
     const metadata: GoalMetadata = {
-      action: 'campaign_goal',
-      goalType: type,
+      action: 'goal_create',
+      name: name,
+      ...(description && { description }),
       targetValue: targetValue,
+      currentValue: currentValue || 0,
+      unit: unit,
       deadline: deadline,
       ...(milestones && { milestones }),
-      title: title, // Store title in metadata
     }
 
     const goalEvent = await prisma.contributionEvent.create({
       data: {
         userId: user.id,
         campaignId: campaignId,
-        eventType: 'SOCIAL_SHARE',
+        eventType: 'PREFERENCE_SUBMITTED',
         points: 0,
         metadata: metadata,
       },
@@ -185,62 +209,24 @@ export async function POST(
         success: true,
         data: {
           id: goalEvent.id,
-          title: title,
-          type: type,
+          name: name,
+          description: description || '',
           targetValue: targetValue,
-          currentValue: 0,
+          currentValue: currentValue || 0,
+          unit: unit,
           deadline: deadline,
+          status: 'on_track',
           milestones: milestones || [],
-          status: 'On Track',
           createdAt: goalEvent.createdAt.toISOString(),
         },
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Create goal error:', error)
+    console.error('Error creating goal:', error)
     return NextResponse.json(
-      { success: false, error: 'Something went wrong' },
+      { success: false, error: 'Failed to create goal' },
       { status: 500 }
     )
   }
-}
-
-/**
- * Helper function to calculate current value based on goal type
- * This would integrate with actual campaign metrics
- */
-function calculateCurrentValue(campaignId: string, metadata: GoalMetadata): number {
-  // Placeholder: In production, this would:
-  // - Count supporters for 'Supporters' type
-  // - Count votes for 'Votes' type
-  // - Count shares for 'Shares' type
-  // - Count comments for 'Comments' type
-  // For now, returning 0 as a placeholder
-  return 0
-}
-
-/**
- * Helper function to calculate goal status based on progress and deadline
- */
-function calculateGoalStatus(
-  currentValue: number,
-  targetValue: number,
-  deadline: string
-): 'On Track' | 'At Risk' | 'Behind' | 'Completed' {
-  const progress = (currentValue / targetValue) * 100
-  const now = new Date()
-  const deadlineDate = new Date(deadline)
-  const daysRemaining = Math.ceil(
-    (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  )
-  const elapsedDays = Math.ceil(
-    (now.getTime() - (deadlineDate.getTime() - 90 * 24 * 60 * 60 * 1000)) /
-      (1000 * 60 * 60 * 24)
-  )
-
-  if (progress >= 100) return 'Completed'
-  if (progress >= 75) return 'On Track'
-  if (progress >= 50) return 'At Risk'
-  return 'Behind'
 }
