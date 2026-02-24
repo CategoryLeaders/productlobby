@@ -1,295 +1,196 @@
-import { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
-import {
-  Briefcase,
-  MapPin,
-  Heart,
-  Zap,
-  Users,
-  Trophy,
-  GraduationCap,
-  TrendingUp,
-  Send,
-} from 'lucide-react';
+import React from 'react'
+import { Briefcase, MapPin, Clock, Heart, Rocket, Users, Zap, Globe } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Careers at ProductLobby | Join Our Team',
+export const metadata = {
+  title: 'Careers | ProductLobby',
   description:
-    'Explore open positions at ProductLobby. Join a team building the future of product feedback and communication.',
-  keywords: [
-    'careers',
-    'jobs',
-    'hiring',
-    'product management',
-    'engineering',
-    'design',
-  ],
-};
+    'Join the ProductLobby team and help democratize consumer advocacy and product lobbying.',
+}
 
-const benefits = [
+const OPEN_ROLES = [
   {
-    icon: MapPin,
-    title: 'Remote First',
-    description: 'Work from anywhere in the world with flexible arrangements',
-  },
-  {
-    icon: GraduationCap,
-    title: 'Learning Budget',
-    description: 'Annual learning stipend for courses, conferences, and development',
-  },
-  {
-    icon: Heart,
-    title: 'Health & Wellness',
-    description: 'Comprehensive health coverage and wellness programs',
-  },
-  {
-    icon: Trophy,
-    title: 'Equity',
-    description: 'Own a piece of ProductLobby as we grow together',
-  },
-];
-
-const positions = [
-  {
-    id: 1,
     title: 'Senior Full-Stack Engineer',
     department: 'Engineering',
-    location: 'Remote',
+    location: 'Remote (UK/EU)',
     type: 'Full-time',
-    description:
-      'Lead the technical architecture of our platform. We\'re looking for an experienced engineer to guide our engineering team and shape our product.',
+    description: 'Build the next generation of consumer advocacy tools with Next.js, React, and PostgreSQL.',
   },
   {
-    id: 2,
     title: 'Product Designer',
     department: 'Design',
-    location: 'Remote',
+    location: 'Remote (Global)',
     type: 'Full-time',
-    description:
-      'Design beautiful and intuitive experiences for our users. Shape the visual direction and UX of ProductLobby across web and mobile.',
+    description: 'Design intuitive experiences that empower communities to lobby for better products.',
   },
   {
-    id: 3,
-    title: 'Head of Marketing',
+    title: 'Growth Marketing Manager',
     department: 'Marketing',
-    location: 'London',
+    location: 'London, UK',
     type: 'Full-time',
-    description:
-      'Lead our marketing strategy and build our brand. Drive growth through integrated marketing campaigns and strategic partnerships.',
+    description: 'Drive user acquisition and community growth through data-driven marketing strategies.',
   },
   {
-    id: 4,
-    title: 'Developer Advocate',
+    title: 'Community Manager',
     department: 'Community',
-    location: 'Remote',
+    location: 'Remote (UK)',
     type: 'Full-time',
-    description:
-      'Be the voice of our developer community. Create content, engage with developers, and shape the future of our platform.',
+    description: 'Build and nurture our community of passionate consumer advocates and campaigners.',
   },
   {
-    id: 5,
     title: 'Data Analyst',
     department: 'Data',
-    location: 'Remote',
-    type: 'Full-time',
-    description:
-      'Turn data into insights that drive product decisions. Build dashboards and analytics that help us understand our users better.',
+    location: 'Remote (Global)',
+    type: 'Contract',
+    description: 'Analyse campaign performance, user behaviour, and brand signal data to drive insights.',
   },
-  {
-    id: 6,
-    title: 'Customer Success Manager',
-    department: 'Support',
-    location: 'London / Remote',
-    type: 'Full-time',
-    description:
-      'Own customer relationships and ensure their success with ProductLobby. You\'ll work closely with key accounts and support teams.',
-  },
-];
-
-const values = [
-  {
-    icon: Users,
-    title: 'Customer-Centric',
-    description: 'Everything we do starts with understanding our users',
-  },
-  {
-    icon: Zap,
-    title: 'Move Fast',
-    description: 'We iterate quickly and learn from our users continuously',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Impact Driven',
-    description: 'We measure success by the value we create for our customers',
-  },
-];
+]
 
 export default function CareersPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Hero Section */}
-      <section className="relative px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="mb-6 text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl">
-            Join Our <span className="text-violet-600">Team</span>
-          </h1>
-          <p className="mb-8 text-xl text-slate-600">
-            Help us build the future of product feedback and communication. We're
-            a passionate team dedicated to empowering businesses to understand their
-            customers better and create products people love.
-          </p>
-          <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-            <Button
-              size="lg"
-              className="bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              Explore Open Roles
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-violet-200 hover:bg-violet-50"
-            >
-              Learn About Us
-            </Button>
+    <div className="w-full bg-white">
+      {/* Hero */}
+      <section className="relative min-h-[400px] bg-gradient-to-br from-violet-600 via-violet-500 to-violet-700 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-60 h-60 bg-lime-300 rounded-full blur-3xl"></div>
+        </div>
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="space-y-6">
+            <h1 className="text-5xl sm:text-6xl font-bold leading-tight">
+              Join Our Mission
+            </h1>
+            <p className="text-xl text-violet-100 max-w-2xl">
+              Help us build the platform that empowers consumers to shape the products
+              and services they use every day.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Why Work Here Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-slate-900">
-              Why Join ProductLobby?
-            </h2>
-            <p className="text-lg text-slate-600">
-              We invest in our team because great people build great products
+      {/* Values */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="space-y-12">
+          <div className="space-y-4">
+            <h2 className="text-4xl font-bold text-gray-900">Why ProductLobby?</h2>
+            <p className="text-lg text-gray-600">
+              We are building something meaningful — and we want you to be part of it.
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            {benefits.map((benefit, index) => {
-              const Icon = benefit.icon;
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[
+              { icon: Heart, title: 'Mission-Driven', desc: 'Work on technology that genuinely improves consumer experiences and brand accountability.' },
+              { icon: Rocket, title: 'High Growth', desc: 'Join an early-stage startup with massive potential and the opportunity to shape our direction.' },
+              { icon: Globe, title: 'Remote-First', desc: 'Work from anywhere with flexible hours and a focus on output over presenteeism.' },
+              { icon: Users, title: 'Great Team', desc: 'Collaborate with passionate, talented people who care deeply about our mission.' },
+            ].map((value, idx) => {
+              const Icon = value.icon
               return (
-                <div
-                  key={index}
-                  className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-violet-200"
-                >
-                  <div className="mb-4 inline-block rounded-lg bg-violet-100 p-3">
-                    <Icon className="h-6 w-6 text-violet-600" />
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold text-slate-900">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-slate-600">{benefit.description}</p>
+                <div key={idx} className="space-y-3 p-6 bg-gradient-to-br from-violet-50 to-white border border-violet-200 rounded-lg">
+                  <Icon className="w-8 h-8 text-violet-600" />
+                  <h3 className="font-bold text-gray-900">{value.title}</h3>
+                  <p className="text-sm text-gray-600">{value.desc}</p>
                 </div>
-              );
+              )
             })}
           </div>
         </div>
       </section>
 
-      {/* Open Positions Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-slate-900">
-              Open Positions
-            </h2>
-            <p className="text-lg text-slate-600">
-              Join us and help shape the future of product feedback
+      {/* Benefits */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-6xl mx-auto space-y-12">
+          <div className="space-y-4">
+            <h2 className="text-4xl font-bold text-gray-900">Benefits & Perks</h2>
+            <p className="text-lg text-gray-600">
+              We take care of our team so they can focus on doing their best work.
             </p>
           </div>
 
-          <div className="space-y-6">
-            {positions.map((position) => (
-              <div
-                key={position.id}
-                className="rounded-lg border border-slate-200 bg-white p-8 transition-all hover:shadow-md hover:border-violet-200"
-              >
-                <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                  <div className="flex-1">
-                    <h3 className="mb-2 text-2xl font-bold text-slate-900">
-                      {position.title}
-                    </h3>
-                    <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-                      <div className="flex items-center gap-1">
-                        <Briefcase className="h-4 w-4" />
-                        {position.department}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {position.location}
-                      </div>
-                      <div className="inline-flex items-center rounded-full bg-lime-100 px-3 py-1 text-sm font-medium text-lime-700">
-                        {position.type}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <p className="mb-6 text-slate-600">{position.description}</p>
-                <Button className="bg-violet-600 hover:bg-violet-700 text-white">
-                  Apply Now
-                </Button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              'Competitive salary + equity',
+              'Fully remote with co-working allowance',
+              '30 days annual leave + bank holidays',
+              'Learning & development budget',
+              'Latest equipment provided',
+              'Regular team retreats',
+              'Private health insurance',
+              'Flexible working hours',
+              'Generous parental leave',
+            ].map((benefit, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg">
+                <Zap className="w-5 h-5 text-lime-600 flex-shrink-0" />
+                <span className="text-gray-900 font-medium text-sm">{benefit}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Company Values Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8 bg-violet-50">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-slate-900">
-              Our Values
-            </h2>
-            <p className="text-lg text-slate-600">
-              These principles guide everything we do
+      {/* Open Roles */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="space-y-12">
+          <div className="space-y-4">
+            <h2 className="text-4xl font-bold text-gray-900">Open Positions</h2>
+            <p className="text-lg text-gray-600">
+              Find your next role and help us change how consumers interact with brands.
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {values.map((value, index) => {
-              const Icon = value.icon;
-              return (
-                <div key={index} className="text-center">
-                  <div className="mb-4 flex justify-center">
-                    <div className="inline-block rounded-lg bg-white p-4 shadow-sm">
-                      <Icon className="h-8 w-8 text-violet-600" />
+          <div className="space-y-4">
+            {OPEN_ROLES.map((role, idx) => (
+              <div key={idx} className="p-6 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="space-y-2 flex-1">
+                    <h3 className="text-lg font-bold text-gray-900">{role.title}</h3>
+                    <p className="text-sm text-gray-600">{role.description}</p>
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="w-3 h-3" />
+                        {role.department}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {role.location}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {role.type}
+                      </span>
                     </div>
                   </div>
-                  <h3 className="mb-2 text-xl font-semibold text-slate-900">
-                    {value.title}
-                  </h3>
-                  <p className="text-slate-600">{value.description}</p>
+                  <Button variant="outline" size="sm">
+                    Apply Now
+                  </Button>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-slate-50 p-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-slate-900">
-            Don't see your role?
-          </h2>
-          <p className="mb-8 text-lg text-slate-600">
-            We're always looking for talented people to join our team. Send us your
-            CV and let's explore how you can grow with ProductLobby.
-          </p>
-          <Button
-            size="lg"
-            className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold"
-          >
-            <Send className="mr-2 h-5 w-5" />
-            Send Your CV
-          </Button>
+      {/* CTA */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-violet-600 to-lime-500 text-white">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-4xl font-bold">Do Not See Your Role?</h2>
+            <p className="text-lg text-white/90">
+              We are always looking for exceptional people. Send us your CV and tell
+              us how you would contribute to our mission.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button variant="accent" size="lg" className="font-semibold">
+              Send Open Application
+            </Button>
+            <Button variant="secondary" size="lg" className="font-semibold">
+              Follow Us
+            </Button>
+          </div>
         </div>
       </section>
-    </main>
-  );
+    </div>
+  )
 }
