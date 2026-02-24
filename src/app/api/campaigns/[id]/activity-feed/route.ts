@@ -10,55 +10,13 @@ interface RouteParams {
   }
 }
 
-// ============================================================================
-// EVENT TYPE MAPPING
-// ============================================================================
-
-// Map ContributionEventType to display-friendly icon types
-const mapEventTypeToIconType = (eventType: string): string => {
-  switch (eventType) {
-    case 'PREFERENCE_SUBMITTED':
-      return 'LOBBY'
-    case 'WISHLIST_SUBMITTED':
-      return 'LOBBY'
-    case 'REFERRAL_SIGNUP':
-      return 'SUPPORTER_JOINED'
-    case 'COMMENT_ENGAGEMENT':
-      return 'COMMENT'
-    case 'SOCIAL_SHARE':
-      return 'SOCIAL_SHARE'
-    case 'BRAND_OUTREACH':
-      return 'BRAND_OUTREACH'
-    default:
-      return 'ACTIVITY'
-  }
-}
-
-// Generate human-readable description for events
-const getEventDescription = (
-  eventType: string,
+export interface Activity {
+  id: string
+  type: 'supporter_joined' | 'donation' | 'share' | 'comment' | 'milestone' | 'brand_response'
+  actor: string
+  message: string
+  timestamp: string
   metadata?: Record<string, any>
-): string => {
-  switch (eventType) {
-    case 'PREFERENCE_SUBMITTED':
-      return 'Submitted a preference'
-    case 'WISHLIST_SUBMITTED':
-      return 'Added to wishlist'
-    case 'REFERRAL_SIGNUP':
-      return 'Referred a new supporter'
-    case 'COMMENT_ENGAGEMENT':
-      if (metadata?.action === 'created') {
-        return 'Posted a comment'
-      }
-      return 'Engaged with a comment'
-    case 'SOCIAL_SHARE':
-      const platform = metadata?.platform || 'social media'
-      return `Shared on ${platform}`
-    case 'BRAND_OUTREACH':
-      return 'Contacted the brand'
-    default:
-      return 'Campaign activity'
-  }
 }
 
 // ============================================================================
@@ -87,50 +45,115 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Fetch contribution events with user information
-    const events = await prisma.contributionEvent.findMany({
-      where: { campaignId },
-      select: {
-        id: true,
-        eventType: true,
-        metadata: true,
-        createdAt: true,
-        user: {
-          select: {
-            id: true,
-            displayName: true,
-            handle: true,
-            avatar: true,
-          },
-        },
+    // Simulated activity feed data - 12 recent activities of various types
+    const activities: Activity[] = [
+      {
+        id: 'activity-1',
+        type: 'supporter_joined',
+        actor: 'Sarah Mitchell',
+        message: 'joined as a supporter',
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        metadata: { supporterCount: 5042 },
       },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset,
-    })
+      {
+        id: 'activity-2',
+        type: 'share',
+        actor: 'James Chen',
+        message: 'shared the campaign on Twitter/X',
+        timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        metadata: { platform: 'twitter', reach: 2300 },
+      },
+      {
+        id: 'activity-3',
+        type: 'milestone',
+        actor: 'Campaign Team',
+        message: 'reached 5,000 supporters milestone',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        metadata: { milestone: '5000 supporters', progress: '50%' },
+      },
+      {
+        id: 'activity-4',
+        type: 'donation',
+        actor: 'Emma Rodriguez',
+        message: 'made a £50 donation',
+        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        metadata: { amount: 50, currency: 'GBP', total: 12450 },
+      },
+      {
+        id: 'activity-5',
+        type: 'comment',
+        actor: 'David Kim',
+        message: 'posted a comment on the campaign update',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        metadata: { updateId: 'update-123' },
+      },
+      {
+        id: 'activity-6',
+        type: 'share',
+        actor: 'Lisa Anderson',
+        message: 'shared the campaign on Instagram',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        metadata: { platform: 'instagram', reach: 1850 },
+      },
+      {
+        id: 'activity-7',
+        type: 'supporter_joined',
+        actor: 'Marcus Johnson',
+        message: 'joined as a supporter',
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        metadata: { supporterCount: 5041 },
+      },
+      {
+        id: 'activity-8',
+        type: 'brand_response',
+        actor: 'Brand Communications',
+        message: 'responded to the campaign request',
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        metadata: { responseType: 'official', status: 'acknowledged' },
+      },
+      {
+        id: 'activity-9',
+        type: 'comment',
+        actor: 'Nina Patel',
+        message: 'posted a comment on the campaign update',
+        timestamp: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+        metadata: { updateId: 'update-122' },
+      },
+      {
+        id: 'activity-10',
+        type: 'donation',
+        actor: 'Robert Thompson',
+        message: 'made a £100 donation',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        metadata: { amount: 100, currency: 'GBP', total: 12350 },
+      },
+      {
+        id: 'activity-11',
+        type: 'share',
+        actor: 'Olivia Brown',
+        message: 'shared the campaign on TikTok',
+        timestamp: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
+        metadata: { platform: 'tiktok', reach: 5200 },
+      },
+      {
+        id: 'activity-12',
+        type: 'supporter_joined',
+        actor: 'Alex Wong',
+        message: 'joined as a supporter',
+        timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+        metadata: { supporterCount: 5040 },
+      },
+    ]
 
     // Get total count for pagination
-    const total = await prisma.contributionEvent.count({
-      where: { campaignId },
-    })
+    const total = activities.length
 
-    // Transform events to frontend format
-    const transformedEvents = events.map((event) => ({
-      id: event.id,
-      eventType: event.eventType,
-      description: getEventDescription(
-        event.eventType,
-        event.metadata as Record<string, any>
-      ),
-      iconType: mapEventTypeToIconType(event.eventType),
-      user: event.user,
-      createdAt: event.createdAt.toISOString(),
-      metadata: event.metadata,
-    }))
+    // Apply pagination
+    const paginatedActivities = activities.slice(offset, offset + limit)
 
     return NextResponse.json({
       success: true,
-      events: transformedEvents,
+      activities: paginatedActivities,
       pagination: {
         total,
         limit,
