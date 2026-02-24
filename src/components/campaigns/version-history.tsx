@@ -1,270 +1,180 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
-import {
-  GitBranch,
-  Clock,
-  User,
-  ChevronDown,
-  Loader2,
-} from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { GitBranch, RotateCcw, User, Calendar, AlertCircle } from 'lucide-react'
 import { formatRelativeTime, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Avatar } from '@/components/ui/avatar'
+import { toast } from 'sonner'
 
-interface VersionChange {
-  field: string
-  oldValue: string
-  newValue: string
-}
-
-interface CampaignVersion {
+interface Version {
   id: string
-  versionNumber: number
+  version: string
+  changes: string[]
+  author: string
   createdAt: string
-  editor: {
-    id: string
-    displayName: string
-    avatar?: string
-  }
-  metadata?: {
-    action?: string
-    changes?: VersionChange[]
-    summary?: string
-  }
+  type: 'major' | 'minor' | 'patch'
 }
 
 interface VersionHistoryProps {
   campaignId: string
 }
 
-const VersionSkeleton = () => (
-  <div className="space-y-4">
-    {[1, 2, 3].map((i) => (
-      <div key={i} className="border rounded-lg p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
-            <div className="flex-1">
-              <div className="h-4 bg-gray-200 rounded w-48 mb-2 animate-pulse" />
-              <div className="h-3 bg-gray-100 rounded w-32 animate-pulse" />
-            </div>
-          </div>
-          <div className="w-20 h-4 bg-gray-200 rounded animate-pulse" />
-        </div>
-      </div>
-    ))}
-  </div>
-)
-
-export function VersionHistory({ campaignId }: VersionHistoryProps) {
-  const [versions, setVersions] = useState<CampaignVersion[]>([])
+export default function VersionHistory({ campaignId }: VersionHistoryProps) {
+  const [versions, setVersions] = useState<Version[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set())
-
-  const fetchVersions = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch(
-        `/api/campaigns/${campaignId}/versions`,
-        {
-          method: 'GET',
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch version history')
-      }
-
-      const data = await response.json()
-      setVersions(data.versions || [])
-    } catch (err) {
-      console.error('Error fetching versions:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load versions')
-    } finally {
-      setLoading(false)
-    }
-  }, [campaignId])
+  const [restoring, setRestoring] = useState<string | null>(null)
 
   useEffect(() => {
     fetchVersions()
-  }, [fetchVersions])
+  }, [campaignId])
 
-  const toggleExpanded = (versionId: string) => {
-    const newExpanded = new Set(expandedVersions)
-    if (newExpanded.has(versionId)) {
-      newExpanded.delete(versionId)
-    } else {
-      newExpanded.add(versionId)
+  const fetchVersions = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/campaigns/${campaignId}/version-history`)
+      const data = await response.json()
+      if (data.success) {
+        setVersions(data.data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch versions:', error)
+      toast.error('Failed to load version history')
+    } finally {
+      setLoading(false)
     }
-    setExpandedVersions(newExpanded)
   }
 
-  const isLatestVersion = (index: number) => index === 0
-  const isCurrentVersion = (index: number) => index === 0
-
-  if (loading) {
-    return <VersionSkeleton />
+  const restoreVersion = async (versionId: string) => {
+    try {
+      setRestoring(versionId)
+      const response = await fetch(`/api/campaigns/${campaignId}/version-history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ versionId }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        toast.success('Version restored successfully')
+        await fetchVersions()
+      } else {
+        toast.error(data.error || 'Failed to restore version')
+      }
+    } catch (error) {
+      console.error('Failed to restore version:', error)
+      toast.error('Failed to restore version')
+    } finally {
+      setRestoring(null)
+    }
   }
 
-  if (error) {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-        <p className="font-medium">Error loading version history</p>
-        <p className="text-sm mt-1">{error}</p>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={fetchVersions}
-          className="mt-3 border-red-300 text-red-700 hover:bg-red-100"
-        >
-          Try again
-        </Button>
-      </div>
-    )
-  }
-
-  if (versions.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center">
-        <GitBranch className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-        <p className="text-gray-600">No version history yet</p>
-        <p className="text-sm text-gray-500">Changes will appear here as you edit the campaign</p>
-      </div>
-    )
+  const getTypeBadgeStyle = (type: 'major' | 'minor' | 'patch') => {
+    switch (type) {
+      case 'major':
+        return 'bg-violet-100 text-violet-700 border-violet-200'
+      case 'minor':
+        return 'bg-lime-100 text-lime-700 border-lime-200'
+      case 'patch':
+        return 'bg-blue-100 text-blue-700 border-blue-200'
+    }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-        <GitBranch className="w-4 h-4" />
-        <span>Campaign Version History ({versions.length})</span>
+    <div className="w-full bg-white rounded-lg border border-gray-200">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-violet-100 rounded-lg">
+            <GitBranch className="w-5 h-5 text-violet-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Version History</h2>
+            <p className="text-sm text-gray-600">Track all campaign changes and restore previous versions</p>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {versions.map((version, index) => {
-          const isExpanded = expandedVersions.has(version.id)
-          const isCurrent = isCurrentVersion(index)
-
-          return (
-            <div
-              key={version.id}
-              className={cn(
-                'rounded-lg border transition-colors',
-                isCurrent
-                  ? 'border-blue-300 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              )}
-            >
-              {/* Version Header */}
-              <button
-                onClick={() => toggleExpanded(version.id)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 group transition-colors"
+      {/* Content */}
+      <div className="p-6">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading version history...</p>
+            </div>
+          </div>
+        ) : versions.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No version history available</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {versions.map((version, index) => (
+              <div
+                key={version.id}
+                className="border border-gray-200 rounded-lg p-4 hover:border-violet-300 transition-colors"
               >
-                <div className="flex items-center gap-3 flex-1 text-left">
-                  {/* Avatar */}
-                  <div className="flex-shrink-0">
-                    {version.editor.avatar ? (
-                      <img
-                        src={version.editor.avatar}
-                        alt={version.editor.displayName}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
-                        {version.editor.displayName
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Version Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900">
-                        Version {version.versionNumber}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-3">
+                    {/* Version Header */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-lg font-bold text-gray-900">v{version.version}</span>
+                      <span className={cn('px-2 py-1 rounded-full text-xs font-semibold border', getTypeBadgeStyle(version.type))}>
+                        {version.type.charAt(0).toUpperCase() + version.type.slice(1)} Release
                       </span>
-                      {isCurrent && (
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                      {index === 0 && (
+                        <span className="px-2 py-1 bg-lime-100 text-lime-700 rounded-full text-xs font-semibold border border-lime-200">
                           Current
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+
+                    {/* Metadata */}
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
-                        <User className="w-3.5 h-3.5" />
-                        <span>{version.editor.displayName}</span>
+                        <User className="w-4 h-4" />
+                        <span>{version.author}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{formatRelativeTime(version.createdAt)}</span>
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatRelativeTime(new Date(version.createdAt))}</span>
                       </div>
                     </div>
-                    {version.metadata?.summary && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {version.metadata.summary}
-                      </p>
-                    )}
-                  </div>
-                </div>
 
-                {/* Expand Button */}
-                {version.metadata?.changes && version.metadata.changes.length > 0 && (
-                  <div className="flex-shrink-0 ml-4">
-                    <ChevronDown
-                      className={cn(
-                        'w-5 h-5 text-gray-400 transition-transform',
-                        isExpanded ? 'rotate-180' : ''
-                      )}
-                    />
+                    {/* Changes */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-gray-700">Changes in this version:</p>
+                      <ul className="space-y-1">
+                        {version.changes.map((change, idx) => (
+                          <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                            <span className="text-violet-600 mt-1">•</span>
+                            <span>{change}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                )}
-              </button>
 
-              {/* Expanded Diff View */}
-              {isExpanded && version.metadata?.changes && version.metadata.changes.length > 0 && (
-                <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-3 space-y-2">
-                  <p className="text-xs font-medium text-gray-600 mb-3">Changes:</p>
-                  <div className="space-y-2">
-                    {version.metadata.changes.map((change, changeIndex) => (
-                      <div
-                        key={changeIndex}
-                        className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm font-mono text-xs"
-                      >
-                        <div className="rounded bg-red-50 border border-red-200 p-2">
-                          <p className="text-gray-600 mb-1 font-sans">
-                            <span className="font-semibold text-gray-700">{change.field}</span>
-                          </p>
-                          <p className="text-red-700 break-words">{change.oldValue}</p>
-                        </div>
-                        <div className="rounded bg-green-50 border border-green-200 p-2">
-                          <p className="text-gray-600 mb-1 font-sans">
-                            <span className="font-semibold text-gray-700">{change.field}</span>
-                          </p>
-                          <p className="text-green-700 break-words">{change.newValue}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {/* Restore Button */}
+                  {index !== 0 && (
+                    <Button
+                      onClick={() => restoreVersion(version.id)}
+                      disabled={restoring === version.id}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      {restoring === version.id ? 'Restoring...' : 'Restore'}
+                    </Button>
+                  )}
                 </div>
-              )}
-
-              {/* No Changes Indicator */}
-              {isExpanded && (!version.metadata?.changes || version.metadata.changes.length === 0) && (
-                <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-600">
-                  No detailed changes recorded
-                </div>
-              )}
-            </div>
-          )
-        })}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
