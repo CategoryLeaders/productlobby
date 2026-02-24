@@ -1,227 +1,235 @@
-import type { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
-import { Handshake, ExternalLink, ArrowRight } from 'lucide-react';
+import type { Metadata } from 'next'
+import { Button } from '@/components/ui/button'
+import { Handshake, Building, Globe, Zap, Star, CheckCircle, ArrowRight, Users } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Partners | ProductLobby',
-  description: 'Discover our platform partners and integrations that enhance your ProductLobby experience.',
-};
-
-interface Partner {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  icon: string;
-  link: string;
+  title: 'Platform Partners | ProductLobby',
+  description: 'Join ProductLobby partners to expand your reach, enhance your offering, and create mutual value for users and businesses.',
 }
 
-const partners: Partner[] = [
+interface PartnerTier {
+  name: string
+  icon: React.ReactNode
+  benefits: string[]
+}
+
+interface Partner {
+  name: string
+  category: string
+}
+
+const partnerTiers: PartnerTier[] = [
   {
-    id: '1',
-    name: 'Amplitude',
-    category: 'Analytics',
-    description: 'Deep analytics and product insights to understand user behavior and optimize your product roadmap.',
-    icon: '📊',
-    link: 'https://amplitude.com',
+    name: 'Technology Partners',
+    icon: <Zap className="w-6 h-6" />,
+    benefits: [
+      'Integration support and documentation',
+      'Co-marketing opportunities',
+      'API rate limit increases',
+      'Dedicated technical support',
+      'Priority in feature requests',
+    ],
   },
   {
-    id: '2',
-    name: 'Salesforce',
-    category: 'CRM',
-    description: 'Complete customer relationship management platform to track leads and manage customer relationships.',
-    icon: '☁️',
-    link: 'https://salesforce.com',
+    name: 'Agency Partners',
+    icon: <Building className="w-6 h-6" />,
+    benefits: [
+      'White-label solutions',
+      'Revenue sharing programs',
+      'Training and certification',
+      'Dedicated account manager',
+      'Custom integration support',
+    ],
   },
   {
-    id: '3',
-    name: 'Slack',
-    category: 'Communication',
-    description: 'Real-time messaging and collaboration for seamless team communication and notifications.',
-    icon: '💬',
-    link: 'https://slack.com',
+    name: 'Strategic Partners',
+    icon: <Handshake className="w-6 h-6" />,
+    benefits: [
+      'Joint go-to-market strategies',
+      'Co-branded solutions',
+      'Executive partnership programs',
+      'Advanced analytics and reporting',
+      'Custom SLA agreements',
+    ],
+  },
+]
+
+const currentPartners: Partner[] = [
+  { name: 'Amplitude', category: 'Analytics' },
+  { name: 'Salesforce', category: 'CRM' },
+  { name: 'Slack', category: 'Communication' },
+  { name: 'HubSpot', category: 'Marketing' },
+  { name: 'Segment', category: 'Data Platform' },
+  { name: 'Stripe', category: 'Payments' },
+  { name: 'Zapier', category: 'Automation' },
+  { name: 'Intercom', category: 'Customer Support' },
+]
+
+const partnerBenefits = [
+  {
+    icon: <Globe className="w-6 h-6 text-violet-600" />,
+    title: 'Global Reach',
+    description: 'Access millions of product advocates and decision-makers across industries',
   },
   {
-    id: '4',
-    name: 'HubSpot',
-    category: 'Marketing',
-    description: 'All-in-one marketing, sales, and service platform to grow your business and nurture leads.',
-    icon: '🎯',
-    link: 'https://hubspot.com',
+    icon: <Star className="w-6 h-6 text-violet-600" />,
+    title: 'Mutual Growth',
+    description: 'Expand your market and create additional value for your customers',
   },
   {
-    id: '5',
-    name: 'Mixpanel',
-    category: 'Analytics',
-    description: 'Product analytics platform to track user actions and measure feature impact in real-time.',
-    icon: '📈',
-    link: 'https://mixpanel.com',
+    icon: <Users className="w-6 h-6 text-violet-600" />,
+    title: 'Community Support',
+    description: 'Join an active community of innovators and industry leaders',
   },
   {
-    id: '6',
-    name: 'Segment',
-    category: 'Data Platform',
-    description: 'Customer data platform that unifies data from all sources for better insights and personalization.',
-    icon: '🔗',
-    link: 'https://segment.com',
+    icon: <CheckCircle className="w-6 h-6 text-violet-600" />,
+    title: 'Verified Trust',
+    description: 'Build credibility through ProductLobby platform verification',
   },
-  {
-    id: '7',
-    name: 'Twitter API',
-    category: 'Social Media',
-    description: 'Integrate with Twitter to track mentions, engage with users, and monitor social sentiment.',
-    icon: '🐦',
-    link: 'https://twitter.com',
-  },
-  {
-    id: '8',
-    name: 'Stripe',
-    category: 'Payments',
-    description: 'Reliable payment processing and subscription management for SaaS and digital products.',
-    icon: '💳',
-    link: 'https://stripe.com',
-  },
-  {
-    id: '9',
-    name: 'Jira',
-    category: 'Project Management',
-    description: 'Issue tracking and project management tool for agile teams building great products.',
-    icon: '✓',
-    link: 'https://jira.atlassian.com',
-  },
-];
+]
 
 export default function PartnersPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="w-full bg-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:px-8 lg:py-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-lime-50 opacity-40" />
-        <div className="relative mx-auto max-w-7xl">
-          <div className="text-center">
-            <div className="mb-6 flex justify-center">
-              <div className="rounded-full bg-violet-100 p-4">
-                <Handshake className="h-10 w-10 text-violet-700" />
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Our Partners
+      <section className="relative min-h-[500px] bg-gradient-to-br from-violet-600 via-violet-500 to-violet-700 text-white overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-60 h-60 bg-lime-300 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
+          <div className="space-y-6">
+            <h1 className="text-5xl sm:text-6xl font-bold leading-tight">
+              Platform Partners
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-              Seamlessly integrate ProductLobby with your favorite tools and platforms to streamline your workflow and unlock new possibilities.
+            <p className="text-xl text-violet-100 max-w-2xl">
+              Join ProductLobby's ecosystem to reach millions of advocates, expand your market,
+              and create meaningful impact together.
             </p>
+            <Button className="bg-lime-500 hover:bg-lime-600 text-gray-900 font-semibold px-8 py-3 text-lg">
+              Explore Partnership Opportunities
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Partners Grid */}
-      <section className="px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {partners.map((partner) => (
+      {/* Partner Tiers Section */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="space-y-12">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-bold text-gray-900">Partnership Tiers</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Choose the partnership model that best fits your business and growth objectives
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {partnerTiers.map((tier, index) => (
               <div
-                key={partner.id}
-                className="group relative rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-violet-300 hover:shadow-lg hover:shadow-violet-200"
+                key={index}
+                className="relative border-2 border-gray-200 rounded-2xl p-8 bg-white hover:border-violet-400 hover:shadow-lg transition-all"
               >
-                {/* Category Badge */}
-                <div className="mb-4 inline-block">
-                  <span className="rounded-full bg-lime-100 px-3 py-1 text-sm font-semibold text-lime-700">
-                    {partner.category}
-                  </span>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-violet-100 rounded-lg text-violet-600">
+                    {tier.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">{tier.name}</h3>
                 </div>
 
-                {/* Icon and Title */}
-                <div className="mb-4 flex items-center gap-4">
-                  <div className="text-4xl">{partner.icon}</div>
-                  <h3 className="text-xl font-bold text-gray-900">{partner.name}</h3>
+                <div className="space-y-3">
+                  {tier.benefits.map((benefit, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-lime-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-gray-700">{benefit}</p>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Description */}
-                <p className="mb-6 text-gray-600">{partner.description}</p>
-
-                {/* Learn More Link */}
-                <a
-                  href={partner.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-violet-600 transition-colors hover:text-violet-700 font-medium"
-                >
+                <Button className="w-full mt-8 border-2 border-violet-600 text-violet-600 hover:bg-violet-50">
                   Learn More
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+                </Button>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Become a Partner CTA Section */}
-      <section className="px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-        <div className="mx-auto max-w-4xl">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-12 sm:px-12 sm:py-16 lg:px-16">
-            {/* Background accent */}
-            <div className="absolute right-0 top-0 -z-10 opacity-20">
-              <svg
-                className="h-96 w-96"
-                viewBox="0 0 400 400"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="200" cy="200" r="200" fill="currentColor" />
-              </svg>
-            </div>
+      {/* Current Partners Section */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto bg-gradient-to-br from-violet-50 to-lime-50 rounded-2xl">
+        <div className="space-y-12">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-bold text-gray-900">Our Current Partners</h2>
+            <p className="text-lg text-gray-600">
+              Trusted by leading companies around the world
+            </p>
+          </div>
 
-            <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">
-                Become a Partner
-              </h2>
-              <p className="mt-4 text-lg text-violet-100">
-                Interested in integrating with ProductLobby? Join our partner network and reach our growing community of product teams.
-              </p>
-              <div className="mt-8">
-                <Button
-                  asChild
-                  className="bg-lime-400 text-gray-900 hover:bg-lime-300"
-                >
-                  <a href="mailto:partners@productlobby.com">
-                    Get in Touch
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </a>
-                </Button>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {currentPartners.map((partner, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-lime-500 rounded-lg flex items-center justify-center mb-4">
+                  <span className="text-white font-bold text-sm text-center px-2">
+                    {partner.name.split(' ')[0]}
+                  </span>
+                </div>
+                <h3 className="font-semibold text-gray-900 text-center">{partner.name}</h3>
+                <p className="text-xs text-gray-600 mt-1">{partner.category}</p>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Additional Info Section */}
-      <section className="px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-3">
-            <div className="text-center">
-              <div className="mb-4 text-4xl">🤝</div>
-              <h3 className="text-lg font-semibold text-gray-900">Easy Integration</h3>
-              <p className="mt-2 text-gray-600">
-                Quick setup with our comprehensive APIs and webhooks
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mb-4 text-4xl">🚀</div>
-              <h3 className="text-lg font-semibold text-gray-900">Grow Together</h3>
-              <p className="mt-2 text-gray-600">
-                Co-marketing opportunities and mutual promotion
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mb-4 text-4xl">💡</div>
-              <h3 className="text-lg font-semibold text-gray-900">Innovation</h3>
-              <p className="mt-2 text-gray-600">
-                Access to our product roadmap and early features
-              </p>
-            </div>
+      {/* Benefits Section */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="space-y-12">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-bold text-gray-900">Partnership Benefits</h2>
+            <p className="text-lg text-gray-600">
+              What you'll gain by joining the ProductLobby partner ecosystem
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {partnerBenefits.map((benefit, index) => (
+              <div key={index} className="space-y-4 p-6 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-lg">
+                    {benefit.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">{benefit.title}</h3>
+                </div>
+                <p className="text-gray-700">{benefit.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
+        <div className="bg-gradient-to-r from-violet-600 to-lime-500 rounded-2xl p-12 sm:p-16 text-white space-y-6">
+          <h2 className="text-4xl font-bold">Ready to Partner?</h2>
+          <p className="text-lg text-violet-100 max-w-2xl mx-auto">
+            Apply to become a ProductLobby partner and unlock new opportunities for growth and impact.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button className="bg-white text-violet-600 hover:bg-gray-100 font-semibold px-8 py-3 text-lg">
+              Apply Now
+            </Button>
+            <Button className="border-2 border-white text-white hover:bg-white/10 font-semibold px-8 py-3 text-lg">
+              Contact Sales
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
           </div>
         </div>
       </section>
     </div>
-  );
+  )
 }
