@@ -1,282 +1,187 @@
-import { Metadata } from "next";
-import {
-  Search,
-  ArrowRight,
-  Code2,
-  Slack,
-  Mail,
-  BarChart3,
-  MessageSquare,
-  Building2,
-  Mail as MailIcon,
-  Search as SearchIcon,
-  LayoutGrid,
-  Zap,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Metadata } from 'next'
+import { Zap, Link2, Shield, CheckCircle, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
-  title: "Integrations | ProductLobby",
-  description:
-    "Connect ProductLobby with your favorite tools and services. Explore 500+ integrations to automate your workflow.",
+  title: 'Integrations | ProductLobby',
+  description: 'Connect ProductLobby with your favorite tools and services. Explore 500+ integrations to automate your workflow.',
   openGraph: {
-    title: "Integrations | ProductLobby",
-    description:
-      "Connect ProductLobby with your favorite tools and services. Explore 500+ integrations to automate your workflow.",
+    title: 'Integrations | ProductLobby',
+    description: 'Connect ProductLobby with your favorite tools and services. Explore 500+ integrations to automate your workflow.',
   },
-};
-
-interface Integration {
-  id: string;
-  name: string;
-  description: string;
-  category: "analytics" | "communication" | "crm" | "marketing" | "productivity" | "payments";
-  icon: React.ReactNode;
-  color: string;
-  comingSoon?: boolean;
-  connected?: boolean;
 }
 
-const integrations: Integration[] = [
-  {
-    id: "slack",
-    name: "Slack",
-    description: "Get ProductLobby notifications in your Slack workspace",
-    category: "communication",
-    icon: "S",
-    color: "bg-blue-500",
-  },
-  {
-    id: "zapier",
-    name: "Zapier",
-    description: "Connect ProductLobby to thousands of apps via Zapier",
-    category: "productivity",
-    icon: "Z",
-    color: "bg-orange-500",
-    comingSoon: true,
-  },
-  {
-    id: "hubspot",
-    name: "HubSpot",
-    description: "Sync customer data and manage relationships seamlessly",
-    category: "crm",
-    icon: "H",
-    color: "bg-orange-600",
-  },
-  {
-    id: "mailchimp",
-    name: "Mailchimp",
-    description: "Send targeted email campaigns to your ProductLobby users",
-    category: "marketing",
-    icon: "M",
-    color: "bg-yellow-500",
-  },
-  {
-    id: "google-analytics",
-    name: "Google Analytics",
-    description: "Track user behavior and engagement metrics",
-    category: "analytics",
-    icon: "G",
-    color: "bg-red-500",
-  },
-  {
-    id: "intercom",
-    name: "Intercom",
-    description: "Chat with your customers directly in ProductLobby",
-    category: "communication",
-    icon: "I",
-    color: "bg-blue-600",
-    comingSoon: true,
-  },
-  {
-    id: "salesforce",
-    name: "Salesforce",
-    description: "Manage sales pipelines and customer information",
-    category: "crm",
-    icon: "S",
-    color: "bg-blue-400",
-  },
-  {
-    id: "jira",
-    name: "Jira",
-    description: "Track issues and manage projects with Jira integration",
-    category: "productivity",
-    icon: "J",
-    color: "bg-blue-700",
-  },
-  {
-    id: "notion",
-    name: "Notion",
-    description: "Embed and sync your Notion workspace data",
-    category: "productivity",
-    icon: "N",
-    color: "bg-gray-800",
-  },
-  {
-    id: "stripe",
-    name: "Stripe",
-    description: "Process payments and manage subscriptions",
-    category: "payments",
-    icon: "S",
-    color: "bg-purple-600",
-  },
-  {
-    id: "segment",
-    name: "Segment",
-    description: "Unify your customer data and send to any destination",
-    category: "analytics",
-    icon: "S",
-    color: "bg-green-600",
-  },
-  {
-    id: "webhooks",
-    name: "Webhooks",
-    description: "Custom integrations with incoming and outgoing webhooks",
-    category: "productivity",
-    icon: "W",
-    color: "bg-violet-600",
-  },
-];
-
-const categories = [
-  { id: "all", label: "All" },
-  { id: "analytics", label: "Analytics" },
-  { id: "communication", label: "Communication" },
-  { id: "crm", label: "CRM" },
-  { id: "marketing", label: "Marketing" },
-  { id: "productivity", label: "Productivity" },
-];
-
-interface IntegrationCardProps {
-  integration: Integration;
+interface FeaturedIntegration {
+  name: string
+  icon: string
+  description: string
+  color: string
 }
 
-function IntegrationCard({ integration }: IntegrationCardProps) {
-  return (
-    <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-violet-300 hover:shadow-lg">
-      {integration.comingSoon && (
-        <div className="absolute right-0 top-0 bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
-          Coming Soon
-        </div>
-      )}
-
-      <div className="mb-4 flex items-center gap-3">
-        <div
-          className={`${integration.color} flex h-12 w-12 items-center justify-center rounded-lg font-bold text-white`}
-        >
-          {integration.icon}
-        </div>
-        <h3 className="font-semibold text-gray-900">{integration.name}</h3>
-      </div>
-
-      <p className="mb-4 text-sm text-gray-600">{integration.description}</p>
-
-      <div className="mb-4 flex items-center gap-2">
-        <span className="inline-block rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 capitalize">
-          {integration.category}
-        </span>
-      </div>
-
-      <Button
-        disabled={integration.comingSoon}
-        className={`w-full ${
-          integration.comingSoon
-            ? "bg-gray-200 text-gray-500 hover:bg-gray-200"
-            : "bg-violet-600 text-white hover:bg-violet-700"
-        }`}
-      >
-        {integration.comingSoon ? "Coming Soon" : "Connect"}
-      </Button>
-    </div>
-  );
-}
+const featuredIntegrations: FeaturedIntegration[] = [
+  {
+    name: 'Slack',
+    icon: '💬',
+    description: 'Get real-time notifications and campaign updates in your Slack workspace',
+    color: 'bg-blue-50 border-blue-200',
+  },
+  {
+    name: 'Stripe',
+    icon: '💳',
+    description: 'Accept payments and manage billing seamlessly',
+    color: 'bg-purple-50 border-purple-200',
+  },
+  {
+    name: 'Mailchimp',
+    icon: '📧',
+    description: 'Send targeted email campaigns to your supporter base',
+    color: 'bg-yellow-50 border-yellow-200',
+  },
+  {
+    name: 'Google Analytics',
+    icon: '📊',
+    description: 'Track user behavior and campaign performance metrics',
+    color: 'bg-orange-50 border-orange-200',
+  },
+  {
+    name: 'Zapier',
+    icon: '⚡',
+    description: 'Connect to thousands of apps and automate workflows',
+    color: 'bg-orange-50 border-orange-200',
+  },
+  {
+    name: 'HubSpot',
+    icon: '🎯',
+    description: 'Manage relationships and sync customer data',
+    color: 'bg-red-50 border-red-200',
+  },
+]
 
 export default function IntegrationsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-              Integrations Marketplace
-            </h1>
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-600">
-              Connect ProductLobby with your favorite tools and services. Automate your workflow
-              and sync data across platforms seamlessly.
-            </p>
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-violet-500 to-lime-500 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-grid-white/[0.05]" />
+        </div>
+        <div className="relative max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Platform Integrations</h1>
+          <p className="text-xl text-white/90 max-w-2xl mx-auto">
+            Connect ProductLobby with your favorite tools to streamline your campaign management and boost productivity
+          </p>
+        </div>
+      </section>
 
-            {/* Search Bar */}
-            <div className="mx-auto max-w-xl">
-              <div className="relative">
-                <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search integrations..."
-                  className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-12 pr-4 text-gray-900 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
-                />
+      {/* Featured Integrations Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Featured Integrations</h2>
+          <p className="text-gray-600">Popular integrations that enhance your ProductLobby experience</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {featuredIntegrations.map((integration) => (
+            <div
+              key={integration.name}
+              className={`rounded-lg border p-6 ${integration.color} hover:shadow-lg transition-shadow`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-4xl">{integration.icon}</div>
+                <ArrowRight className="w-4 h-4 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{integration.name}</h3>
+              <p className="text-sm text-gray-700 mb-4">{integration.description}</p>
+              <Button className="w-full bg-gradient-to-r from-violet-600 to-lime-600 hover:from-violet-700 hover:to-lime-700 text-white border-0">
+                Connect
+              </Button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How Integrations Work Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">How Integrations Work</h2>
+            <p className="text-gray-600">Three simple steps to enhance your workflow</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                number: '1',
+                title: 'Select Integration',
+                description: 'Choose from our library of 500+ integrations or build your own using our API',
+              },
+              {
+                number: '2',
+                title: 'Authenticate',
+                description: 'Securely connect your account with one-click authentication',
+              },
+              {
+                number: '3',
+                title: 'Configure & Automate',
+                description: 'Set up workflows and let ProductLobby work with your tools automatically',
+              },
+            ].map((step) => (
+              <div key={step.number} className="relative">
+                <div className="flex items-start gap-4">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-violet-500 to-lime-500 text-white font-bold flex-shrink-0">
+                    {step.number}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h3>
+                    <p className="text-gray-600 text-sm">{step.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* API Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-lime-50 p-8 md:p-12">
+          <div className="flex items-start gap-4 mb-4">
+            <Shield className="w-8 h-8 text-violet-600 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Developer-Friendly API</h3>
+              <p className="text-gray-700 mb-4">
+                Build custom integrations with our comprehensive REST API. Access detailed documentation, SDKs, and webhooks for real-time data synchronization.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button className="bg-violet-600 hover:bg-violet-700 text-white">
+                  View Documentation
+                </Button>
+                <Button variant="outline" className="text-violet-600 border-violet-300 hover:bg-violet-50">
+                  Check API Reference
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Category Filter Tabs */}
-        <div className="mb-10 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                category.id === "all"
-                  ? "bg-violet-600 text-white"
-                  : "border border-gray-300 bg-white text-gray-700 hover:border-violet-400 hover:text-violet-600"
-              }`}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Integration Cards Grid */}
-        <div className="mb-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {integrations.map((integration) => (
-            <IntegrationCard key={integration.id} integration={integration} />
-          ))}
-        </div>
-
-        {/* Stats Section */}
-        <div className="mb-16 rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-lime-50 p-8 text-center">
-          <div className="mb-2 text-4xl font-bold text-violet-600">500+</div>
-          <p className="text-gray-700">
-            Integrations available through our marketplace and API
+      {/* CTA Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-violet-100 to-lime-100">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Streamline Your Workflow?</h2>
+          <p className="text-lg text-gray-700 mb-8">
+            Start connecting ProductLobby to your favorite tools today and automate your campaign management
           </p>
-        </div>
-
-        {/* Build Your Own CTA */}
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-          <div className="mb-4 flex justify-center">
-            <Code2 className="h-12 w-12 text-lime-500" />
-          </div>
-          <h2 className="mb-3 text-2xl font-bold text-gray-900">
-            Build Your Own Integration
-          </h2>
-          <p className="mx-auto mb-6 max-w-2xl text-gray-600">
-            Use our powerful REST API and webhooks to build custom integrations tailored to your
-            needs. Our comprehensive documentation makes it easy to get started.
-          </p>
-          <div className="flex flex-col justify-center gap-3 sm:flex-row">
-            <Button className="bg-violet-600 text-white hover:bg-violet-700">
-              View API Documentation
-              <ArrowRight className="ml-2 h-4 w-4" />
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button className="bg-gradient-to-r from-violet-600 to-lime-600 hover:from-violet-700 hover:to-lime-700 text-white text-lg px-8 py-6">
+              Explore All Integrations
             </Button>
-            <Button variant="outline" className="border-gray-300 text-gray-900">
-              View Code Examples
+            <Button variant="outline" className="text-gray-900 border-gray-300 hover:bg-white text-lg px-8 py-6">
+              Learn More
             </Button>
           </div>
         </div>
       </section>
     </div>
-  );
+  )
 }
