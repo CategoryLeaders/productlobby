@@ -1,167 +1,142 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { getCurrentUser } from '@/lib/auth'
-
 export const dynamic = 'force-dynamic'
 
-type Category = 'Quality' | 'Value' | 'Experience' | 'Communication'
+import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
 
-interface FeedbackData {
-  rating: number
-  category: Category
-  comment: string
+type QuestionType = 'rating' | 'text' | 'multiple_choice' | 'nps'
+
+interface SurveyQuestion {
+  id: string
+  question: string
+  type: QuestionType
+  options?: string[]
+  required: boolean
 }
 
-/**
- * GET /api/campaigns/[id]/feedback-survey
- * Returns survey questions and responses for a campaign
- */
+interface SurveyResponse {
+  success: boolean
+  data?: SurveyQuestion[]
+  error?: string
+}
+
+// Simulated survey questions
+const simulatedQuestions: SurveyQuestion[] = [
+  {
+    id: 'q1',
+    question: 'How likely are you to recommend this campaign to a friend? (NPS)',
+    type: 'nps',
+    required: true,
+  },
+  {
+    id: 'q2',
+    question: 'How would you rate your overall experience with this campaign?',
+    type: 'rating',
+    required: true,
+  },
+  {
+    id: 'q3',
+    question: 'What is the main reason you support this campaign?',
+    type: 'multiple_choice',
+    options: [
+      'Align with my values',
+      'Personal experience',
+      'Recommendations from friends',
+      'Media coverage',
+      'Other',
+    ],
+    required: true,
+  },
+  {
+    id: 'q4',
+    question: 'What could we improve about this campaign?',
+    type: 'text',
+    required: false,
+  },
+  {
+    id: 'q5',
+    question: 'How engaged have you been with campaign updates?',
+    type: 'rating',
+    required: false,
+  },
+]
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+  { params }: { params: { id: string } }
+): Promise<NextResponse<SurveyResponse>> {
   try {
-    const { id } = await params
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
-    // Verify campaign exists
+    // Verify campaign access
     const campaign = await prisma.campaign.findUnique({
-      where: { id },
-      select: { id: true },
+      where: { id: params.id },
     })
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: 'Campaign not found' }, { status: 404 })
     }
 
-    // Fetch all feedback survey responses for this campaign
-    const feedbackEvents = await prisma.contributionEvent.findMany({
-      where: {
-        campaignId: id,
-        eventType: 'SOCIAL_SHARE',
-        // Check metadata for feedback_survey action
-      },
-      select: {
-        metadata: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    // Filter and parse feedback events
-    const responses = feedbackEvents
-      .filter(event => {
-        const metadata = event.metadata as Record<string, any> | null
-        return metadata?.action === 'feedback_survey'
-      })
-      .map(event => {
-        const metadata = event.metadata as Record<string, any>
-        return {
-          rating: metadata.rating || 0,
-          category: metadata.category || 'Quality',
-          comment: metadata.comment || '',
-          createdAt: event.createdAt.toISOString(),
-        }
-      })
-
-    // Calculate average rating
-    const averageRating =
-      responses.length > 0
-        ? responses.reduce((sum, r) => sum + r.rating, 0) / responses.length
-        : 0
-
+    // Return simulated survey questions
     return NextResponse.json({
-      averageRating,
-      responseCount: responses.length,
-      responses,
+      success: true,
+      data: simulatedQuestions,
     })
   } catch (error) {
-    console.error('Error fetching feedback survey:', error)
+    console.error('Feedback survey error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch feedback survey' },
+      { success: false, error: 'Failed to fetch feedback survey' },
       { status: 500 }
     )
   }
 }
 
-/**
- * POST /api/campaigns/[id]/feedback-survey
- * Submit feedback for a campaign
- * Requires: Authentication
- */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+  { params }: { params: { id: string } }
+): Promise<NextResponse<SurveyResponse>> {
   try {
-    const { id } = await params
     const user = await getCurrentUser()
-
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify campaign exists
+    const { responses } = await request.json()
+
+    // Verify campaign access
     const campaign = await prisma.campaign.findUnique({
-      where: { id },
-      select: { id: true },
+      where: { id: params.id },
     })
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: 'Campaign not found' }, { status: 404 })
     }
 
-    // Parse request body
-    const body: FeedbackData = await request.json()
-
-    // Validate input
-    if (!body.rating || body.rating < 1 || body.rating > 5) {
-      return NextResponse.json(
-        { error: 'Invalid rating. Must be between 1 and 5.' },
-        { status: 400 }
-      )
-    }
-
-    const validCategories: Category[] = ['Quality', 'Value', 'Experience', 'Communication']
-    if (!validCategories.includes(body.category)) {
-      return NextResponse.json(
-        { error: 'Invalid category' },
-        { status: 400 }
-      )
-    }
-
-    // Create contribution event for feedback survey
-    const event = await prisma.contributionEvent.create({
+    // Record the survey responses as a ContributionEvent
+    await prisma.contributionEvent.create({
       data: {
+        action: 'survey_response',
+        campaignId: params.id,
         userId: user.id,
-        campaignId: id,
-        eventType: 'SOCIAL_SHARE',
-        points: 5, // Small point reward for feedback
         metadata: {
-          action: 'feedback_survey',
-          rating: body.rating,
-          category: body.category,
-          comment: body.comment || '',
+          responses,
+          timestamp: new Date().toISOString(),
         },
       },
     })
 
+    // Return success response
     return NextResponse.json({
       success: true,
-      eventId: event.id,
+      data: simulatedQuestions,
     })
   } catch (error) {
-    console.error('Error submitting feedback survey:', error)
+    console.error('Survey submission error:', error)
     return NextResponse.json(
-      { error: 'Failed to submit feedback' },
+      { success: false, error: 'Failed to submit survey' },
       { status: 500 }
     )
   }
