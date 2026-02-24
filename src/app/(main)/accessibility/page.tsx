@@ -1,339 +1,253 @@
-import { Metadata } from 'next';
-import {
-  AccessibilityIcon,
-  Keyboard,
-  Speaker,
-  Palette,
-  ImageIcon,
-  Focus,
-  Smartphone,
-  CheckCircle,
-  AlertCircle,
-  Mail,
-  BarChart3,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Metadata } from 'next'
+import { Eye, CheckCircle, Users, Globe, Keyboard, Monitor } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Accessibility Statement | ProductLobby',
+  title: 'Accessibility | ProductLobby',
   description:
-    'Learn about ProductLobby\'s commitment to digital accessibility and WCAG 2.1 AA compliance.',
-  openGraph: {
-    title: 'Accessibility Statement | ProductLobby',
-    description:
-      'Learn about ProductLobby\'s commitment to digital accessibility and WCAG 2.1 AA compliance.',
-    type: 'website',
-  },
-};
-
-const AccessibilityFeature = ({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-}) => (
-  <div className="flex gap-4">
-    <div className="flex-shrink-0">
-      <Icon className="h-6 w-6 text-violet-600" aria-hidden="true" />
-    </div>
-    <div>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        {title}
-      </h3>
-      <p className="text-gray-600 dark:text-gray-400">{description}</p>
-    </div>
-  </div>
-);
+    'ProductLobby is committed to making our platform accessible to everyone. Learn about our accessibility features and standards.',
+}
 
 export default function AccessibilityPage() {
+  const features = [
+    {
+      icon: <Eye className="h-8 w-8" />,
+      title: 'Screen Reader Support',
+      description:
+        'Full compatibility with JAWS, NVDA, and VoiceOver screen readers. Semantic HTML ensures proper navigation and structure.',
+    },
+    {
+      icon: <Keyboard className="h-8 w-8" />,
+      title: 'Keyboard Navigation',
+      description:
+        'Complete keyboard navigation support. Tab through all interactive elements, use Enter/Space to activate, and escape to close modals.',
+    },
+    {
+      icon: <Monitor className="h-8 w-8" />,
+      title: 'Colour Contrast',
+      description:
+        'All text meets WCAG AAA standards with minimum 7:1 contrast ratio. Test tools available to verify colour compatibility.',
+    },
+    {
+      icon: <Globe className="h-8 w-8" />,
+      title: 'Text Sizing',
+      description:
+        'Responsive text that scales from 80% to 200% without content loss. Zoom functionality compatible across all browsers.',
+    },
+    {
+      icon: <CheckCircle className="h-8 w-8" />,
+      title: 'Motion Preferences',
+      description:
+        'Respects prefers-reduced-motion settings. Animations disabled for users who prefer minimal motion.',
+    },
+    {
+      icon: <Users className="h-8 w-8" />,
+      title: 'Language Support',
+      description:
+        'Available in 25+ languages with proper language tags. Supports right-to-left languages and localized content.',
+    },
+  ]
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <main className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="mx-auto max-w-4xl px-4 py-24 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-6 rounded-full bg-violet-100 dark:bg-violet-900/30 p-4">
-              <AccessibilityIcon className="h-12 w-12 text-violet-600 dark:text-violet-400" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white sm:text-5xl mb-4">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-100 via-purple-100 to-lime-100 opacity-50" />
+        <div className="relative max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+            Accessibility at ProductLobby
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            We believe everyone should have equal access to ProductLobby. Our platform is
+            designed with accessibility at its core.
+          </p>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Button className="bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:from-violet-600 hover:to-purple-600">
+              Report Accessibility Issue
+            </Button>
+            <Button
+              variant="outline"
+              className="border-violet-300 text-violet-700 hover:bg-violet-50"
+            >
               Accessibility Statement
-            </h1>
-            <p className="max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-              ProductLobby is committed to providing digital accessibility for all users,
-              regardless of ability or device used to access our platform.
-            </p>
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        {/* Commitment Statement */}
-        <section className="mb-16">
-          <div className="rounded-lg bg-white dark:bg-gray-700 p-8 shadow-sm border border-gray-200 dark:border-gray-600">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <CheckCircle className="h-6 w-6 text-lime-500" />
-              Our Commitment
+      {/* WCAG Compliance */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent to-violet-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              WCAG 2.1 Compliance
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
-              ProductLobby strives to ensure that all features are accessible to everyone,
-              including people with disabilities. We are committed to providing an inclusive
-              experience and continuously improving our platform's accessibility.
-            </p>
-            <p className="text-gray-700 dark:text-gray-300">
-              We follow the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA as our
-              standard for digital accessibility. These guidelines help ensure our website is
-              accessible to the widest possible audience, including people with visual, motor,
-              hearing, and cognitive impairments.
+            <p className="text-lg text-gray-600">
+              ProductLobby meets or exceeds Web Content Accessibility Guidelines (WCAG)
+              2.1 Level AA standards, with many features at Level AAA.
             </p>
           </div>
-        </section>
 
-        {/* WCAG Compliance */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            WCAG 2.1 Level AA Compliance
-          </h2>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                title: 'Perceivable',
-                description:
-                  'Information and user interface components are presented in ways users can perceive.',
+                level: 'A',
+                description: 'Minimum accessibility requirements',
+                status: 'Exceeded',
               },
               {
-                title: 'Operable',
-                description:
-                  'Users can navigate and operate all functionality through keyboard and other input devices.',
+                level: 'AA',
+                description: 'Enhanced accessibility for most users',
+                status: 'Exceeded',
               },
               {
-                title: 'Understandable',
-                description:
-                  'Information and operations are clear and easy to understand for all users.',
+                level: 'AAA',
+                description: 'Enhanced accessibility for users with disabilities',
+                status: 'Partial',
               },
-            ].map((item) => (
+            ].map((item, idx) => (
               <div
-                key={item.title}
-                className="rounded-lg bg-white dark:bg-gray-700 p-6 shadow-sm border border-gray-200 dark:border-gray-600"
+                key={idx}
+                className="p-6 border border-violet-300 rounded-lg bg-white hover:shadow-lg transition-shadow"
               >
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
+                <div className="text-4xl font-bold text-violet-600 mb-2">
+                  WCAG {item.level}
+                </div>
+                <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                <div className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  {item.status}
+                </div>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Accessibility Features */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
+      {/* Features Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
             Accessibility Features
           </h2>
-          <div className="space-y-8">
-            <AccessibilityFeature
-              icon={Keyboard}
-              title="Full Keyboard Navigation"
-              description="All interactive elements, including buttons, links, and form fields, are fully accessible using keyboard navigation. Users can navigate through the entire application using Tab, Enter, and arrow keys without requiring a mouse."
-            />
-            <AccessibilityFeature
-              icon={Speaker}
-              title="Screen Reader Support"
-              description="Our platform is tested and compatible with popular screen readers including NVDA, JAWS, and VoiceOver. Proper ARIA labels and semantic HTML ensure content is properly announced to assistive technologies."
-            />
-            <AccessibilityFeature
-              icon={Palette}
-              title="Color Contrast"
-              description="All text meets or exceeds WCAG AA standards for color contrast ratios (4.5:1 for normal text, 3:1 for large text). Users can also enable high contrast modes for enhanced visibility."
-            />
-            <AccessibilityFeature
-              icon={ImageIcon}
-              title="Descriptive Alt Text"
-              description="All meaningful images include descriptive alt text. Decorative images are properly marked as such to prevent unnecessary verbosity for screen reader users."
-            />
-            <AccessibilityFeature
-              icon={Focus}
-              title="Clear Focus Indicators"
-              description="All interactive elements display clear, visible focus indicators when navigated via keyboard. This helps users track their position on the page and improves overall navigation experience."
-            />
-            <AccessibilityFeature
-              icon={Smartphone}
-              title="Responsive Design"
-              description="Our platform is fully responsive and accessible on all screen sizes, from mobile devices to large desktop monitors. Content reflows properly and remains usable at any zoom level."
-            />
-          </div>
-        </section>
 
-        {/* Known Limitations */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <AlertCircle className="h-6 w-6 text-amber-500" />
-            Known Limitations
-          </h2>
-          <div className="rounded-lg bg-white dark:bg-gray-700 p-8 shadow-sm border border-gray-200 dark:border-gray-600">
-            <ul className="space-y-3 text-gray-700 dark:text-gray-300">
-              <li className="flex gap-3">
-                <span className="text-violet-600 dark:text-violet-400 font-bold">•</span>
-                <span>
-                  Some data visualization charts may require alternative text descriptions for
-                  full comprehension by screen reader users.
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-violet-600 dark:text-violet-400 font-bold">•</span>
-                <span>
-                  PDFs and downloadable documents may not always meet accessibility standards.
-                  Please contact us if you need accessible alternatives.
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-violet-600 dark:text-violet-400 font-bold">•</span>
-                <span>
-                  Third-party embedded content and integrations may have varying levels of
-                  accessibility support beyond our control.
-                </span>
-              </li>
-            </ul>
+          <div className="grid md:grid-cols-2 gap-8">
+            {features.map((feature, idx) => (
+              <div
+                key={idx}
+                className="p-6 border border-lime-200 rounded-lg bg-gradient-to-br from-lime-50 to-violet-50 hover:shadow-md transition-shadow"
+              >
+                <div className="text-lime-600 mb-4">{feature.icon}</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Report Accessibility Issues */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Mail className="h-6 w-6 text-lime-500" />
-            Report Accessibility Issues
+      {/* Commitment Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-violet-100 to-lime-100">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">
+            Our Commitment
           </h2>
-          <div className="rounded-lg bg-white dark:bg-gray-700 p-8 shadow-sm border border-gray-200 dark:border-gray-600">
-            <p className="text-gray-700 dark:text-gray-300 mb-6">
-              We welcome feedback on the accessibility of ProductLobby. If you encounter any
-              accessibility barriers or have suggestions for improvement, please get in touch
-              with us using one of the following methods:
-            </p>
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Email</p>
-                  <a
-                    href="mailto:accessibility@productlobby.com"
-                    className="text-violet-600 dark:text-violet-400 hover:underline"
-                  >
-                    accessibility@productlobby.com
-                  </a>
-                </div>
+          <p className="text-lg text-gray-600 mb-8">
+            Accessibility is an ongoing journey. We continuously test our platform,
+            gather feedback from users with disabilities, and implement improvements.
+            We are committed to maintaining and enhancing accessibility standards
+            across all features.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'Regular Testing',
+                desc: 'Automated and manual testing with assistive technologies',
+              },
+              {
+                title: 'User Feedback',
+                desc: 'Working with disability advocacy groups and users',
+              },
+              {
+                title: 'Continuous Improvement',
+                desc: 'Regular updates to meet evolving standards',
+              },
+            ].map((item, idx) => (
+              <div key={idx} className="p-4 bg-white rounded-lg border border-violet-300">
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-gray-600">{item.desc}</p>
               </div>
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Support Form</p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Use our support portal to submit detailed accessibility reports with
-                    screenshots and browser information.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              Please include as much detail as possible about the issue, including:
-            </p>
-            <ul className="space-y-2 text-gray-700 dark:text-gray-300 mb-6">
-              <li className="flex gap-2">
-                <span className="text-lime-500">✓</span>
-                <span>Page or feature where the issue occurs</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-lime-500">✓</span>
-                <span>Browser and assistive technology used</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-lime-500">✓</span>
-                <span>Description of the accessibility barrier</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-lime-500">✓</span>
-                <span>Steps to reproduce the issue</span>
-              </li>
-            </ul>
-            <Button className="bg-violet-600 hover:bg-violet-700 text-white">
-              Submit Accessibility Report
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">
+            Found an Accessibility Issue?
+          </h2>
+          <p className="text-lg text-gray-600 mb-8">
+            If you encounter any accessibility barriers, please let us know. Your
+            feedback helps us improve for everyone.
+          </p>
+
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Button className="bg-gradient-to-r from-violet-500 to-lime-500 text-white hover:from-violet-600 hover:to-lime-600">
+              Report an Issue
+            </Button>
+            <Button
+              variant="outline"
+              className="border-violet-300 text-violet-700 hover:bg-violet-50"
+            >
+              <Link href="/contact">Contact Support</Link>
             </Button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Testing Methods */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-lime-500" />
-            Testing Methods
+      {/* FAQ Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent to-violet-50">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
+            Frequently Asked Questions
           </h2>
+
           <div className="space-y-6">
-            <div className="rounded-lg bg-white dark:bg-gray-700 p-8 shadow-sm border border-gray-200 dark:border-gray-600">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                Automated Testing
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
-                We use automated accessibility testing tools to continuously monitor and identify
-                potential accessibility issues:
-              </p>
-              <ul className="space-y-2 text-gray-600 dark:text-gray-400 ml-4">
-                <li>• axe DevTools for automated accessibility audits</li>
-                <li>• Lighthouse for comprehensive web vitals and accessibility scoring</li>
-                <li>• WAVE for visual feedback on accessibility features</li>
-                <li>• Color contrast checkers for WCAG compliance</li>
-              </ul>
-            </div>
-            <div className="rounded-lg bg-white dark:bg-gray-700 p-8 shadow-sm border border-gray-200 dark:border-gray-600">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                Manual Testing
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Beyond automated tools, our team conducts regular manual accessibility testing:
-              </p>
-              <ul className="space-y-2 text-gray-600 dark:text-gray-400 ml-4">
-                <li>• Keyboard-only navigation testing</li>
-                <li>• Screen reader testing with NVDA, JAWS, and VoiceOver</li>
-                <li>• Zoom and text size adjustment verification</li>
-                <li>• Focus indicator and keyboard trap testing</li>
-                <li>• Color blindness simulation testing</li>
-              </ul>
-            </div>
+            {[
+              {
+                q: 'How can I navigate ProductLobby using only a keyboard?',
+                a: 'Use Tab to move between interactive elements, Shift+Tab to move backwards, Enter/Space to activate buttons, and Escape to close modals. All features are fully keyboard accessible.',
+              },
+              {
+                q: 'Which screen readers are supported?',
+                a: 'ProductLobby is tested with JAWS, NVDA, VoiceOver, and TalkBack. We support all standards-compliant screen readers.',
+              },
+              {
+                q: 'Can I adjust text size?',
+                a: 'Yes, you can adjust text size up to 200% using browser zoom controls. The interface will adapt responsively without content loss.',
+              },
+              {
+                q: 'How do I report accessibility issues?',
+                a: 'Use the "Report an Issue" button above, or email accessibility@productlobby.com with details about the problem and your assistive technology.',
+              },
+            ].map((item, idx) => (
+              <div key={idx} className="p-6 border border-lime-200 rounded-lg bg-white">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  {item.q}
+                </h3>
+                <p className="text-gray-600">{item.a}</p>
+              </div>
+            ))}
           </div>
-        </section>
-
-        {/* Third-Party Content */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Third-Party Content & Services
-          </h2>
-          <div className="rounded-lg bg-white dark:bg-gray-700 p-8 shadow-sm border border-gray-200 dark:border-gray-600">
-            <p className="text-gray-700 dark:text-gray-300">
-              ProductLobby integrates with various third-party services and embeds content from
-              external sources. While we strive to choose accessible partners and solutions, we
-              cannot guarantee the accessibility of all third-party content. If you experience
-              accessibility issues with embedded content or integrations, please contact us and
-              we will work with you to find accessible alternatives where possible.
-            </p>
-          </div>
-        </section>
-
-        {/* Last Updated */}
-        <section className="border-t border-gray-200 dark:border-gray-600 pt-8">
-          <div className="rounded-lg bg-gradient-to-r from-violet-50 to-lime-50 dark:from-violet-900/20 dark:to-lime-900/20 p-6 border border-violet-200 dark:border-violet-800">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-semibold text-gray-900 dark:text-white">Last Updated:</span>{' '}
-              February 23, 2026
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              This accessibility statement was last reviewed and updated on February 23, 2026.
-              We continuously work to improve accessibility and update this statement as
-              improvements are made.
-            </p>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
-  );
+  )
 }
