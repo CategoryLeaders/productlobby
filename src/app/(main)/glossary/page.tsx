@@ -4,11 +4,6 @@ import { useState } from 'react';
 import { BookOpen, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-export const metadata = {
-  title: 'Glossary | ProductLobby',
-  description: 'Definitions of key platform terms and concepts',
-};
-
 const glossaryTerms = [
   {
     term: 'Bookmark',

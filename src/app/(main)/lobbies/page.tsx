@@ -104,7 +104,7 @@ function EmptyState() {
           When you lobby for a campaign, it will appear here so you can track its progress.
         </p>
         <Link href="/campaigns">
-          <Button variant="primary" size="md" className="gap-2">
+          <Button variant="primary" size="default" className="gap-2">
             Browse Campaigns
             <ArrowRight className="w-4 h-4" />
           </Button>
@@ -127,13 +127,13 @@ function LoginPrompt() {
         </p>
         <div className="flex gap-3 justify-center">
           <Link href="/login">
-            <Button variant="primary" size="md" className="gap-2">
+            <Button variant="primary" size="default" className="gap-2">
               <LogIn className="w-4 h-4" />
               Log In
             </Button>
           </Link>
           <Link href="/campaigns">
-            <Button variant="outline" size="md" className="gap-2">
+            <Button variant="outline" size="default" className="gap-2">
               Browse Campaigns
               <ArrowRight className="w-4 h-4" />
             </Button>

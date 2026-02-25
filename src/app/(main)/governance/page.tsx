@@ -195,7 +195,7 @@ export default function GovernancePage() {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900">Community Vote</h3>
                 <p className="text-gray-600 mt-1">
-                  Open voting for eligible community members (>60% approval
+                  Open voting for eligible community members (&gt;60% approval
                   required for policy changes).
                 </p>
               </div>

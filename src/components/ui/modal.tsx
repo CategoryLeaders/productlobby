@@ -52,7 +52,7 @@ export const ModalContent = React.forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            'fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] border border-gray-200 bg-white shadow-elevated-lg rounded-lg duration-200 animate-slide-up',
+            'fixed left-[50%] top-[50%] z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] border border-gray-200 bg-white shadow-elevated-lg rounded-lg duration-200 animate-slide-up',
             'data-[state=open]:animate-slide-up data-[state=closed]:animate-fade-out',
             className
           )}

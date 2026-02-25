@@ -240,7 +240,7 @@ export function AutoReplyConfig({ campaignId, isCreator = false }: AutoReplyConf
                     rows={4}
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Use template variables like {{'{name}'}} to personalize messages
+                    Use template variables like {'{name}'} to personalize messages
                   </p>
                 </div>
 

@@ -46,7 +46,7 @@ const upcomingWebinars: Webinar[] = [
     speaker: 'Sarah Chen',
     role: 'VP of Product at TechCorp',
     description:
-      'Learn the strategies behind creating products that resonate with users. We'll dive into user research, validation, and iterative design principles.',
+      'Learn the strategies behind creating products that resonate with users. We\'ll dive into user research, validation, and iterative design principles.',
     category: 'Product',
     attendees: 847,
     isFeatured: true,
@@ -289,7 +289,7 @@ export default function WebinarsPage() {
               </div>
               <p className="mb-6 text-gray-600">
                 Subscribe to our newsletter and never miss an upcoming webinar or event.
-                We'll send you invitations, reminders, and exclusive content.
+                We\'ll send you invitations, reminders, and exclusive content.
               </p>
               <form className="flex flex-col gap-3 sm:flex-row">
                 <input

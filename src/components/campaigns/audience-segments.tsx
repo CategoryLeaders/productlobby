@@ -519,8 +519,8 @@ export function AudienceSegments({ campaignId }: Props) {
                     <option value="gte">≥</option>
                     <option value="lte">≤</option>
                     <option value="eq">=</option>
-                    <option value="gt">></option>
-                    <option value="lt"><</option>
+                    <option value="gt">{">"}</option>
+                    <option value="lt">{"<"}</option>
                   </select>
                   <input
                     type="text"
