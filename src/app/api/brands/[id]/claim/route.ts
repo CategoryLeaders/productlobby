@@ -3,23 +3,55 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { BrandClaimSchema } from '@/types'
 import { nanoid } from 'nanoid'
-import { Resend } from 'resend'
-import dns from 'dns/promises'
-
-let _resend: Resend | null = null
-
-function getResendClient(): Resend {
-  if (!_resend) {
-    if (!process.env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY environment variable is not set')
-    }
-    _resend = new Resend(process.env.RESEND_API_KEY)
-  }
-  return _resend
-}
+import { verifyEmailDomain } from '@/lib/brand-verification'
 
 interface RouteParams {
   params: Promise<{ id: string }>
+}
+
+// Helper: attempt to send email via Resend, falling back to console log in dev
+async function sendVerificationEmail(
+  to: string,
+  brandName: string,
+  verifyUrl: string
+) {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #7C3AED;">Verify Brand Ownership</h2>
+      <p>Click the link below to verify your claim to <strong>${brandName}</strong> on ProductLobby:</p>
+      <a href="${verifyUrl}" style="display: inline-block; background: #7C3AED; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">Verify Brand</a>
+      <p style="color: #666; font-size: 14px;">This link expires in 24 hours.</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+      <p style="color: #999; font-size: 12px;">If you did not request this, you can safely ignore this email.</p>
+    </div>
+  `
+
+  // Dev mode bypass: log to console instead of sending real emails
+  if (
+    !process.env.RESEND_API_KEY ||
+    process.env.RESEND_API_KEY === 'placeholder' ||
+    process.env.RESEND_API_KEY === 're_placeholder'
+  ) {
+    console.log('\n========================================')
+    console.log('DEV MODE: Verification email (not sent)')
+    console.log('========================================')
+    console.log(`To: ${to}`)
+    console.log(`Subject: Verify your claim to ${brandName} on ProductLobby`)
+    console.log(`Verify URL: ${verifyUrl}`)
+    console.log('========================================\n')
+    return
+  }
+
+  // Production: send via Resend
+  const { Resend } = await import('resend')
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  await resend.emails.send({
+    from: process.env.EMAIL_FROM || 'ProductLobby <noreply@productlobby.com>',
+    to,
+    subject: `Verify your claim to ${brandName} on ProductLobby`,
+    html,
+  })
 }
 
 // POST /api/brands/[id]/claim - Start brand claim process
@@ -37,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const brand = await prisma.brand.findUnique({
       where: { id },
-      select: { status: true, website: true, name: true },
+      select: { id: true, slug: true, status: true, website: true, name: true },
     })
 
     if (!brand) {
@@ -53,6 +85,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 400 }
       )
     }
+
+    // Check if there's already a pending claim
+    const existingClaim = await prisma.brandVerification.findFirst({
+      where: {
+        brandId: id,
+        status: 'PENDING',
+      },
+    })
 
     const body = await request.json()
     const result = BrandClaimSchema.safeParse(body)
@@ -75,14 +115,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         )
       }
 
-      // Validate email domain matches brand website
+      // AC6: Only users with matching email domains can claim a brand
       if (brand.website) {
         const brandDomain = new URL(brand.website).hostname.replace('www.', '')
-        const emailDomain = email.split('@')[1]
-
-        if (emailDomain !== brandDomain) {
+        if (!verifyEmailDomain(email, brand.website)) {
           return NextResponse.json(
-            { success: false, error: `Email must be from ${brandDomain}` },
+            {
+              success: false,
+              error: `Email domain must match ${brandDomain}. Please use your work email address.`,
+            },
             { status: 400 }
           )
         }
@@ -98,25 +139,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         },
       })
 
-      // Send verification email
-      const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/brands/${id}/verify?token=${token}`
-
-      await getResendClient().emails.send({
-        from: process.env.EMAIL_FROM || 'ProductLobby <noreply@productlobby.com>',
-        to: email,
-        subject: `Verify your claim to ${brand.name} on ProductLobby`,
-        html: `
-          <h2>Verify Brand Ownership</h2>
-          <p>Click the link below to verify your claim to ${brand.name} on ProductLobby:</p>
-          <a href="${verifyUrl}">Verify Brand</a>
-          <p>This link expires in 24 hours.</p>
-        `,
+      // Mark brand as CLAIMED (in progress)
+      await prisma.brand.update({
+        where: { id },
+        data: { status: 'CLAIMED' },
       })
+
+      // Send verification email (with dev-mode console fallback)
+      const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/brands/${brand.slug}/verify?token=${token}&brandId=${id}`
+
+      await sendVerificationEmail(email, brand.name, verifyUrl)
 
       return NextResponse.json({
         success: true,
-        message: 'Verification email sent',
-        data: { method: 'EMAIL_DOMAIN' },
+        message: 'Verification email sent. Check your inbox (or console in dev mode).',
+        data: {
+          method: 'EMAIL_DOMAIN',
+          brandSlug: brand.slug,
+          // In dev mode, include the token for easy testing
+          ...(process.env.NODE_ENV === 'development' ? { devToken: token } : {}),
+        },
       })
     } else if (method === 'DNS_TXT') {
       // Create verification record
@@ -127,6 +169,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           token,
           status: 'PENDING',
         },
+      })
+
+      // Mark brand as CLAIMED (in progress)
+      await prisma.brand.update({
+        where: { id },
+        data: { status: 'CLAIMED' },
       })
 
       // Get domain from website
@@ -152,6 +200,58 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     )
   } catch (error) {
     console.error('Brand claim error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Something went wrong' },
+      { status: 500 }
+    )
+  }
+}
+
+// GET /api/brands/[id]/claim - Get current claim status for a brand
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+
+    const brand = await prisma.brand.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        team: {
+          select: {
+            userId: true,
+            role: true,
+            user: {
+              select: {
+                displayName: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!brand) {
+      return NextResponse.json(
+        { success: false, error: 'Brand not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        brandId: brand.id,
+        brandName: brand.name,
+        status: brand.status,
+        isClaimed: brand.status !== 'UNCLAIMED',
+        isVerified: brand.status === 'VERIFIED',
+        ownerCount: brand.team.length,
+      },
+    })
+  } catch (error) {
+    console.error('Brand claim status error:', error)
     return NextResponse.json(
       { success: false, error: 'Something went wrong' },
       { status: 500 }

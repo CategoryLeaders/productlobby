@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { getCurrentUser } from '@/lib/auth'
 import BrandDashboard from './brand-dashboard'
 
 interface PageProps {
@@ -77,6 +78,12 @@ export default async function BrandPage({ params }: PageProps) {
           },
         },
       },
+      team: {
+        select: {
+          userId: true,
+          role: true,
+        },
+      },
     },
   })
 
@@ -84,5 +91,21 @@ export default async function BrandPage({ params }: PageProps) {
     notFound()
   }
 
-  return <BrandDashboard brand={brand} />
+  // Get current user for claim CTA logic
+  const user = await getCurrentUser()
+  const isTeamMember = user
+    ? brand.team.some((t) => t.userId === user.id)
+    : false
+  const userRole = user
+    ? brand.team.find((t) => t.userId === user.id)?.role || null
+    : null
+
+  return (
+    <BrandDashboard
+      brand={brand}
+      currentUser={user ? { id: user.id, email: user.email, displayName: user.displayName } : null}
+      isTeamMember={isTeamMember}
+      userRole={userRole}
+    />
+  )
 }

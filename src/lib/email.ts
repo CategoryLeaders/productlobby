@@ -39,6 +39,21 @@ export async function sendEmail({
   html: string
   replyTo?: string
 }): Promise<EmailResult> {
+  // Dev-mode bypass: log emails to console when Resend isn't configured
+  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_...') {
+    console.log('\n📧 [DEV EMAIL] ─────────────────────────────')
+    console.log(`  To: ${to}`)
+    console.log(`  Subject: ${subject}`)
+    // Extract links from HTML for easy clicking in dev
+    const links = html.match(/href="([^"]+)"/g)?.map(m => m.slice(6, -1)) || []
+    if (links.length > 0) {
+      console.log('  Links:')
+      links.forEach(link => console.log(`    → ${link}`))
+    }
+    console.log('─────────────────────────────────────────────\n')
+    return { success: true }
+  }
+
   try {
     await getResendClient().emails.send({
       from: FROM_EMAIL,

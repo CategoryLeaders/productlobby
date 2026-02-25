@@ -20,17 +20,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params
     const body = await request.json()
-    const { token, method } = body
+    const { token } = body
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Verification token is required' },
+        { status: 400 }
+      )
+    }
 
     const brand = await prisma.brand.findUnique({
       where: { id },
-      select: { status: true, website: true },
+      select: { id: true, slug: true, status: true, website: true, name: true },
     })
 
     if (!brand) {
       return NextResponse.json(
         { success: false, error: 'Brand not found' },
         { status: 404 }
+      )
+    }
+
+    if (brand.status === 'VERIFIED') {
+      return NextResponse.json(
+        { success: false, error: 'Brand is already verified' },
+        { status: 400 }
       )
     }
 
@@ -45,7 +59,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!verification) {
       return NextResponse.json(
-        { success: false, error: 'Invalid or expired verification' },
+        { success: false, error: 'Invalid or expired verification token' },
         { status: 400 }
       )
     }
@@ -59,7 +73,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       })
 
       return NextResponse.json(
-        { success: false, error: 'Verification token expired' },
+        { success: false, error: 'Verification token has expired. Please start a new claim.' },
         { status: 400 }
       )
     }
@@ -92,13 +106,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       } catch (dnsError) {
         console.error('DNS lookup error:', dnsError)
         return NextResponse.json(
-          { success: false, error: 'Could not verify DNS record' },
+          { success: false, error: 'Could not verify DNS record. Please check your DNS configuration.' },
           { status: 400 }
         )
       }
     }
 
-    // Mark verification as complete
+    // Mark verification as complete and brand as VERIFIED
     await prisma.$transaction([
       prisma.brandVerification.update({
         where: { id: verification.id },
@@ -111,7 +125,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         where: { id },
         data: { status: 'VERIFIED' },
       }),
-      // Add user as brand owner
+      // Add user as brand OWNER
       prisma.brandTeam.upsert({
         where: {
           brandId_userId: {
@@ -132,10 +146,74 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      message: 'Brand verified successfully',
+      message: 'Brand verified successfully! You are now the brand owner.',
+      data: {
+        brandId: brand.id,
+        brandSlug: brand.slug,
+        brandName: brand.name,
+        status: 'VERIFIED',
+      },
     })
   } catch (error) {
     console.error('Brand verify error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Something went wrong' },
+      { status: 500 }
+    )
+  }
+}
+
+// GET /api/brands/[id]/verify - Check verification status (for the verify page)
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const { searchParams } = new URL(request.url)
+    const token = searchParams.get('token')
+
+    const brand = await prisma.brand.findUnique({
+      where: { id },
+      select: { id: true, name: true, slug: true, status: true },
+    })
+
+    if (!brand) {
+      return NextResponse.json(
+        { success: false, error: 'Brand not found' },
+        { status: 404 }
+      )
+    }
+
+    // If token provided, check its status
+    if (token) {
+      const verification = await prisma.brandVerification.findFirst({
+        where: { brandId: id, token },
+      })
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          brand: { id: brand.id, name: brand.name, slug: brand.slug },
+          status: brand.status,
+          verification: verification
+            ? {
+                status: verification.status,
+                method: verification.method,
+                createdAt: verification.createdAt,
+                verifiedAt: verification.verifiedAt,
+              }
+            : null,
+        },
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        brand: { id: brand.id, name: brand.name, slug: brand.slug },
+        status: brand.status,
+      },
+    })
+  } catch (error) {
+    console.error('Brand verify status error:', error)
     return NextResponse.json(
       { success: false, error: 'Something went wrong' },
       { status: 500 }
