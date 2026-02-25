@@ -42,14 +42,28 @@ export const CreateCampaignSchema = z.object({
     'home',
     'sports',
     'automotive',
+    'food_drink',
+    'beauty',
+    'gaming',
+    'pets',
     'other',
   ]),
-  template: CampaignTemplateEnum.optional(), // Not stored in DB, kept for future use
+  template: CampaignTemplateEnum.optional(),
   targetedBrandId: z.string().uuid().optional().nullable(),
-  targetBrand: z.string().optional(), // Accept free-text brand name from form
+  targetBrand: z.string().max(200).optional(),
   openToAlternatives: z.boolean().default(false),
   currency: z.string().length(3).default('GBP'),
   mediaUrls: z.array(z.string().url()).max(10).optional(),
+  // New fields for 6-step wizard
+  pitchSummary: z.string().max(300).optional(),
+  problemSolved: z.string().max(1000).optional(),
+  inspiration: z.string().max(2000).optional(),
+  originStory: z.string().max(3000).optional(),
+  priceRangeMin: z.coerce.number().min(0).optional(),
+  priceRangeMax: z.coerce.number().min(0).optional(),
+  suggestedPrice: z.coerce.number().min(0).optional(),
+  milestones: z.any().optional(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 })
 
 export const UpdateCampaignSchema = CreateCampaignSchema.partial()

@@ -3,17 +3,25 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 export interface WizardFormData {
+  // Step 1: The Idea
   title: string
   tagline: string
   category: string
+  problemStatement: string
+  // Step 2: The Detail
   description: string
-  problem: string
-  inspiration: string
-  minPrice: number
-  maxPrice: number
-  willPay: number
+  targetBrand: string
+  priceRangeMin: number
+  priceRangeMax: number
+  suggestedPrice: number
+  // Step 3: Visual Evidence
   images: string[]
   videoUrl: string
+  // Step 4: The Pitch
+  originStory: string
+  whyItMatters: string
+  // Step 5: Success Criteria
+  successCriteria: string
 }
 
 export interface ValidationErrors {
@@ -42,14 +50,17 @@ const defaultFormData: WizardFormData = {
   title: '',
   tagline: '',
   category: '',
+  problemStatement: '',
   description: '',
-  problem: '',
-  inspiration: '',
-  minPrice: 20,
-  maxPrice: 100,
-  willPay: 0,
+  targetBrand: '',
+  priceRangeMin: 20,
+  priceRangeMax: 100,
+  suggestedPrice: 0,
   images: [],
   videoUrl: '',
+  originStory: '',
+  whyItMatters: '',
+  successCriteria: '',
 }
 
 export function WizardProvider({ children }: { children: React.ReactNode }) {
@@ -67,44 +78,28 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
     try {
       const draftData = {
         ...formData,
+        currentStep,
         savedAt: new Date().toISOString(),
       }
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
       localStorage.setItem(DRAFT_TIMESTAMP_KEY, new Date().toISOString())
-
-      await fetch('/api/campaigns/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(draftData),
-      }).catch(() => {
-        // Silently fail server-side save, local storage is enough
-      })
     } catch (error) {
       console.error('Failed to save draft:', error)
     } finally {
       setIsSaving(false)
     }
-  }, [formData])
+  }, [formData, currentStep])
 
   const loadDraft = useCallback(async () => {
     try {
-      // Try loading from localStorage first
       const storedDraft = localStorage.getItem(DRAFT_KEY)
       if (storedDraft) {
         const draft = JSON.parse(storedDraft)
-        setFormDataState(draft)
-        return
-      }
-
-      // Try loading from server
-      const response = await fetch('/api/campaigns/draft', {
-        method: 'GET',
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.data) {
-          setFormDataState(data.data)
+        const { currentStep: savedStep, savedAt, ...data } = draft
+        // Merge with defaults so new fields get default values
+        setFormDataState({ ...defaultFormData, ...data })
+        if (savedStep && savedStep >= 1 && savedStep <= 6) {
+          setCurrentStep(savedStep)
         }
       }
     } catch (error) {

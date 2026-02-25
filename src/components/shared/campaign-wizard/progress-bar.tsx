@@ -53,7 +53,7 @@ export function ProgressBar({ currentStep, totalSteps, stepLabels }: ProgressBar
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-2 text-xs">
+          <div className="grid grid-cols-6 gap-1 text-xs">
             {stepLabels.map((label, index) => (
               <div
                 key={index}

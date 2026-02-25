@@ -1,27 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { WizardProvider, useWizard } from '@/components/shared/campaign-wizard/wizard-context'
 import { ProgressBar } from '@/components/shared/campaign-wizard/progress-bar'
-import { StepBasics } from '@/components/shared/campaign-wizard/step-basics'
-import { StepStory } from '@/components/shared/campaign-wizard/step-story'
-import { StepPricing } from '@/components/shared/campaign-wizard/step-pricing'
+import { StepIdea } from '@/components/shared/campaign-wizard/step-idea'
+import { StepDetail } from '@/components/shared/campaign-wizard/step-detail'
 import { StepVisuals } from '@/components/shared/campaign-wizard/step-visuals'
+import { StepPitch } from '@/components/shared/campaign-wizard/step-pitch'
+import { StepSuccess } from '@/components/shared/campaign-wizard/step-success'
 import { StepReview } from '@/components/shared/campaign-wizard/step-review'
 
-const STEPS = ['The Basics', 'Tell the Story', 'Set Expectations', 'Add Visuals', 'Review & Launch']
+const STEPS = ['The Idea', 'The Detail', 'Visuals', 'The Pitch', 'Success', 'Review']
 const TOTAL_STEPS = STEPS.length
-
-interface ValidationRules {
-  [key: number]: () => boolean
-}
 
 function WizardContent() {
   const router = useRouter()
-  const { currentStep, setCurrentStep, formData, setValidationErrors, validationErrors, saveDraft, clearDraft } =
+  const { currentStep, setCurrentStep, formData, setValidationErrors, saveDraft, clearDraft } =
     useWizard()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -33,22 +30,26 @@ function WizardContent() {
     switch (step) {
       case 1:
         if (formData.title.length < 10) errors.title = 'Title must be at least 10 characters'
-        if (formData.tagline.length < 10) errors.tagline = 'Tagline must be at least 10 characters'
         if (!formData.category) errors.category = 'Please select a category'
+        if (formData.tagline.length < 10) errors.tagline = 'One-liner must be at least 10 characters'
+        if (formData.problemStatement.length < 20) errors.problemStatement = 'Problem statement must be at least 20 characters'
         break
       case 2:
         if (formData.description.length < 100)
           errors.description = 'Description must be at least 100 characters'
-        if (!formData.problem) errors.problem = 'Please describe the problem'
-        if (!formData.inspiration) errors.inspiration = 'Please share your inspiration'
+        if (formData.suggestedPrice <= 0) errors.suggestedPrice = 'Please enter how much you would pay'
         break
       case 3:
-        if (formData.willPay === 0) errors.willPay = 'Please enter how much you would pay'
+        // Visuals are optional
         break
       case 4:
-        // Visuals are optional, but if provided they should be valid
+        if (formData.originStory.length < 30) errors.originStory = 'Origin story must be at least 30 characters'
+        if (formData.whyItMatters.length < 20) errors.whyItMatters = 'Please explain why this matters (at least 20 characters)'
         break
       case 5:
+        if (formData.successCriteria.length < 50) errors.successCriteria = 'Success criteria must be at least 50 characters'
+        break
+      case 6:
         // Review step - no validation needed
         break
     }
@@ -85,16 +86,19 @@ function WizardContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.title,
-          tagline: formData.tagline,
-          category: formData.category,
           description: formData.description,
-          problem: formData.problem,
-          inspiration: formData.inspiration,
-          minPrice: formData.minPrice,
-          maxPrice: formData.maxPrice,
-          willPay: formData.willPay,
-          mediaUrls: formData.images,
-          videoUrl: formData.videoUrl,
+          category: formData.category,
+          pitchSummary: formData.tagline,
+          problemSolved: formData.problemStatement,
+          originStory: formData.originStory,
+          inspiration: formData.whyItMatters,
+          targetBrand: formData.targetBrand || undefined,
+          priceRangeMin: formData.priceRangeMin,
+          priceRangeMax: formData.priceRangeMax,
+          suggestedPrice: formData.suggestedPrice,
+          milestones: { successCriteria: formData.successCriteria },
+          mediaUrls: formData.images.length > 0 ? formData.images : undefined,
+          videoUrl: formData.videoUrl || undefined,
           template: 'VARIANT',
           currency: 'GBP',
         }),
@@ -124,14 +128,16 @@ function WizardContent() {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <StepBasics />
+        return <StepIdea />
       case 2:
-        return <StepStory />
+        return <StepDetail />
       case 3:
-        return <StepPricing />
-      case 4:
         return <StepVisuals />
+      case 4:
+        return <StepPitch />
       case 5:
+        return <StepSuccess />
+      case 6:
         return <StepReview onEdit={setCurrentStep} />
       default:
         return null

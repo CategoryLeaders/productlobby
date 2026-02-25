@@ -218,6 +218,14 @@ export async function POST(request: NextRequest) {
         openToAlternatives: data.openToAlternatives,
         currency: data.currency,
         status: 'DRAFT',
+        pitchSummary: data.pitchSummary || null,
+        problemSolved: data.problemSolved || null,
+        inspiration: data.inspiration || null,
+        originStory: data.originStory || null,
+        priceRangeMin: data.priceRangeMin ?? null,
+        priceRangeMax: data.priceRangeMax ?? null,
+        suggestedPrice: data.suggestedPrice ?? null,
+        milestones: data.milestones || undefined,
         // Create media records if URLs provided
         ...(data.mediaUrls && data.mediaUrls.length > 0
           ? {

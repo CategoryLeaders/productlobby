@@ -112,16 +112,16 @@ export function StepVisuals() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Add Visuals</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Visual Evidence</h2>
         <p className="text-gray-600">
-          Images and videos make campaigns 3x more likely to succeed. Both are optional, but highly recommended.
+          Show what you mean. Upload product sketches, competitor examples, or inspiration images that bring your idea to life.
         </p>
       </div>
 
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-semibold text-gray-900 mb-3">
-            Campaign Images <span className="text-gray-500 font-normal">(optional)</span>
+            Campaign Images <span className="text-gray-500 font-normal">(optional but recommended)</span>
           </label>
 
           {formData.images.length === 0 ? (
@@ -157,6 +157,9 @@ export function StepVisuals() {
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     JPEG, PNG, WebP or GIF up to 4.5MB each. Max 5 images.
+                  </p>
+                  <p className="text-xs text-violet-600 mt-2 font-medium">
+                    Product sketches, competitor examples, mood boards, inspiration
                   </p>
                 </div>
               )}
@@ -231,7 +234,7 @@ export function StepVisuals() {
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition"
           />
           <p className="text-xs text-gray-500 mt-2">
-            Add a YouTube or Vimeo link. We'll embed a preview automatically.
+            Add a YouTube or Vimeo link to help illustrate your idea.
           </p>
 
           {videoEmbedUrl && (
@@ -252,7 +255,7 @@ export function StepVisuals() {
 
       <div className="bg-lime-50 border border-lime-200 rounded-lg p-4">
         <p className="text-sm text-lime-800">
-          <span className="font-semibold">Pro tip:</span> Campaigns with high-quality images and videos get 80% more supporter engagement. Take time to add visuals that showcase your campaign.
+          <span className="font-semibold">Pro tip:</span> Campaigns with high-quality images get 80% more supporter engagement. Even rough sketches or competitor screenshots help people visualise what you're asking for.
         </p>
       </div>
     </div>
