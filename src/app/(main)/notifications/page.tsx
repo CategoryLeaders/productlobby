@@ -104,19 +104,17 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const [unreadCount, setUnreadCount] = useState(0)
 
-  // Fetch all notifications
+  // Fetch all notifications with pagination
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true)
-      const url = new URL('/api/user/notifications/recent', window.location.origin)
-      
-      const response = await fetch(url.toString(), {
-        credentials: 'include',
-      })
+      const response = await fetch(
+        `/api/user/notifications?page=1&limit=50&filter=${filter}`,
+        { credentials: 'include' }
+      )
 
       if (response.ok) {
         const data = await response.json()
-        // For now, fetch recent. In a real app, you'd paginate or fetch all
         setNotifications(data.notifications || [])
         setUnreadCount(data.unreadCount || 0)
       }
@@ -125,7 +123,7 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [filter])
 
   // Initial load
   useEffect(() => {

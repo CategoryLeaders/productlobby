@@ -345,7 +345,7 @@ export const NotificationBell: React.FC = () => {
           {/* Footer */}
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <Link
-              href="/activity"
+              href="/notifications"
               className="text-sm text-violet-600 hover:text-violet-700 font-medium"
               onClick={() => setIsOpen(false)}
             >
