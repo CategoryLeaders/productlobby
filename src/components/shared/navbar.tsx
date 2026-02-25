@@ -17,6 +17,7 @@ import {
   ChevronDown,
   LogOut,
   Settings,
+  Bell,
 } from 'lucide-react'
 
 export const Navbar: React.FC = () => {
@@ -243,6 +244,15 @@ export const Navbar: React.FC = () => {
 
             {user && (
               <div className="space-y-2 border-t border-gray-200 pt-3 mt-3">
+                {/* Mobile Notification Bell */}
+                <Link
+                  href="/notifications"
+                  className="flex items-center gap-3 px-4 py-2 text-foreground font-medium rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Bell size={16} />
+                  <span>Notifications</span>
+                </Link>
                 <Link
                   href="/dashboard/campaigns"
                   className="block px-4 py-2 text-foreground font-medium rounded-lg hover:bg-gray-100 transition-colors duration-200"

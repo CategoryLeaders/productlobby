@@ -77,7 +77,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       try {
         const records = await dns.resolveTxt(domain)
-        const expectedValue = `crowdlobby-verify=${token}`
+        const expectedValue = `productlobby-verify=${token}`
 
         const found = records.some((recordArray) =>
           recordArray.some((record) => record === expectedValue)

@@ -111,12 +111,26 @@ export const NotificationBell: React.FC = () => {
     return () => clearInterval(interval)
   }, [fetchUnreadCount])
 
-  // Fetch notifications when dropdown opens
+  // Fetch notifications and mark all as read when dropdown opens
   useEffect(() => {
     if (isOpen) {
       fetchRecentNotifications()
+      // Auto-mark all as read when dropdown opens
+      if (unreadCount > 0) {
+        fetch('/api/user/notifications/mark-all-read', {
+          method: 'POST',
+          credentials: 'include',
+        })
+          .then(() => {
+            setUnreadCount(0)
+            setNotifications((prev) =>
+              prev.map((n) => ({ ...n, read: true }))
+            )
+          })
+          .catch(() => {})
+      }
     }
-  }, [isOpen, fetchRecentNotifications])
+  }, [isOpen, fetchRecentNotifications]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown when clicking outside
   useEffect(() => {

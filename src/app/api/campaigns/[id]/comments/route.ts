@@ -189,7 +189,7 @@ export async function POST(
     if (parentId) {
       parentComment = await prisma.comment.findUnique({
         where: { id: parentId },
-        select: { id: true, campaignId: true, userId: true },
+        select: { id: true, campaignId: true, userId: true, parentId: true },
       })
 
       if (!parentComment) {
@@ -202,6 +202,14 @@ export async function POST(
       if (parentComment.campaignId !== campaignId) {
         return NextResponse.json(
           { error: 'Parent comment is not from this campaign' },
+          { status: 400 }
+        )
+      }
+
+      // Enforce max 2-level nesting: replies to replies are not allowed
+      if (parentComment.parentId !== null) {
+        return NextResponse.json(
+          { error: 'Cannot reply to a reply. Maximum nesting depth is 2 levels.' },
           { status: 400 }
         )
       }
