@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium text-sm',
+                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium text-sm focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2 focus-visible:outline-none',
                   active
                     ? 'bg-violet-100 text-violet-700 border-l-4 border-violet-700'
                     : 'text-foreground hover:bg-gray-50'
@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium text-sm',
+                        'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium text-sm focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2 focus-visible:outline-none',
                         active
                           ? 'bg-violet-100 text-violet-700 border-l-4 border-violet-700'
                           : 'text-foreground hover:bg-gray-50'

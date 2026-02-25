@@ -33,7 +33,7 @@ const ToggleSwitch = React.forwardRef<HTMLButtonElement, ToggleSwitchProps>(
           disabled={disabled}
           className={cn(
             'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2',
+            'focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-50',
             checked ? 'bg-violet-600' : 'bg-gray-300'
           )}

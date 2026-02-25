@@ -60,11 +60,19 @@ export async function GET(
       )
     }
 
-    // Fetch user by handle
-    const user = await prisma.user.findUnique({
+    // Fetch user by handle or ID (supports both lookups)
+    let user = await prisma.user.findUnique({
       where: { handle },
       select: { id: true },
     })
+
+    // If not found by handle, try by ID (for backward compatibility)
+    if (!user) {
+      user = await prisma.user.findUnique({
+        where: { id: handle },
+        select: { id: true },
+      })
+    }
 
     if (!user) {
       return NextResponse.json(

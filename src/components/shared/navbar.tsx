@@ -87,7 +87,7 @@ export const Navbar: React.FC = () => {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-foreground font-medium text-sm hover:text-violet-600 transition-colors duration-200"
+                className="text-foreground font-medium text-sm hover:text-violet-600 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2 focus-visible:outline-none rounded-md"
               >
                 {link.label}
               </Link>
@@ -101,7 +101,7 @@ export const Navbar: React.FC = () => {
                 <Link href="/login">
                   <Button
                     variant="ghost"
-                    size="md"
+                    size="default"
                   >
                     Log In
                   </Button>
@@ -109,7 +109,7 @@ export const Navbar: React.FC = () => {
                 <Link href="/campaigns/new">
                   <Button
                     variant="primary"
-                    size="md"
+                    size="default"
                   >
                     Start a Campaign
                   </Button>
@@ -215,7 +215,7 @@ export const Navbar: React.FC = () => {
               <Link
                 key={link.href}
                 href={link.href}
-                className="block px-4 py-2 text-foreground font-medium rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                className="block px-4 py-2 text-foreground font-medium rounded-lg hover:bg-gray-100 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2 focus-visible:outline-none"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}
