@@ -52,18 +52,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : 'button'
+    const classes = cn(
+      baseStyles,
+      variantStyles[variant],
+      sizeStyles[size],
+      className
+    )
+
+    if (asChild) {
+      return (
+        <Slot ref={ref} className={classes} {...props}>
+          {children}
+        </Slot>
+      )
+    }
 
     return (
-      <Comp
+      <button
         ref={ref}
         disabled={disabled || loading}
-        className={cn(
-          baseStyles,
-          variantStyles[variant],
-          sizeStyles[size],
-          className
-        )}
+        className={classes}
         {...props}
       >
         {loading && (
@@ -89,7 +97,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </svg>
         )}
         {children}
-      </Comp>
+      </button>
     )
   }
 )

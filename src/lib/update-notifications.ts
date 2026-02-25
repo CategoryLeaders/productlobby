@@ -51,10 +51,9 @@ export async function notifySubscribers(
     const inAppNotifications = users.map((user) => ({
       userId: user.id,
       type: 'UPDATE_POSTED' as const,
-      campaignId,
       title: `${payload.brandName} posted: ${payload.updateTitle}`,
-      description: payload.content.substring(0, 150),
-      actionUrl: `/campaigns/${campaignId}/updates`,
+      message: payload.content.substring(0, 150),
+      linkUrl: `/campaigns/${campaignId}/updates`,
       read: false,
       createdAt: new Date(),
     }))
@@ -68,7 +67,7 @@ export async function notifySubscribers(
     const notificationPreferences = await prisma.notificationPreference.findMany({
       where: {
         userId: { in: userIds },
-        emailUpdates: true,
+        emailCampaignUpdates: true,
       },
       select: { userId: true },
     })

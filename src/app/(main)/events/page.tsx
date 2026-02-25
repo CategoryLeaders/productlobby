@@ -195,13 +195,14 @@ function EventCard({ event, isPast = false }: { event: Event; isPast?: boolean }
 
         {/* Action button */}
         {!isPast && event.link && (
-          <Button
-            className="w-full mt-2 bg-violet-600 hover:bg-violet-700 text-white"
-            onClick={() => (window.location.href = event.link || '#')}
-          >
-            Register Now
-            <ExternalLink className="w-4 h-4 ml-2" />
-          </Button>
+          <a href={event.link} target="_blank" rel="noopener noreferrer" className="block w-full mt-2">
+            <Button
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              Register Now
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </Button>
+          </a>
         )}
         {isPast && (
           <div className="text-sm text-gray-500 font-medium">Event completed</div>

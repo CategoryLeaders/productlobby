@@ -359,14 +359,11 @@ export default async function PrintPage({ params }: PrintPageProps) {
       <body>
         <button
           className="print-button"
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              window.print()
-            }
-          }}
+          id="print-btn"
         >
           Print this page
         </button>
+        <script dangerouslySetInnerHTML={{ __html: `document.getElementById('print-btn').addEventListener('click', function() { window.print(); });` }} />
 
         <div className="print-container">
           <div className="header">

@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import { CheckCircle, Users, BarChart3, Zap, Shield, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -344,26 +345,24 @@ export default function GovernancePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              variant="accent"
-              size="lg"
-              className="font-semibold"
-              onClick={() => {
-                window.location.href = '/governance/community-council'
-              }}
-            >
-              Join Advisory Council
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              className="font-semibold"
-              onClick={() => {
-                window.location.href = '/governance/feedback'
-              }}
-            >
-              Share Feedback
-            </Button>
+            <Link href="/governance/community-council">
+              <Button
+                variant="accent"
+                size="lg"
+                className="font-semibold"
+              >
+                Join Advisory Council
+              </Button>
+            </Link>
+            <Link href="/governance/feedback">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="font-semibold"
+              >
+                Share Feedback
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

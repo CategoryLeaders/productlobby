@@ -14,7 +14,7 @@ import {
   HelpCircle,
   UserPlus,
   Check,
-  CheckAll,
+  CheckCheck,
   ChevronLeft,
 } from 'lucide-react'
 
@@ -223,7 +223,7 @@ export default function NotificationsPage() {
                 'text-violet-600 hover:bg-violet-50 active:bg-violet-100'
               )}
             >
-              <CheckAll className="w-4 h-4" />
+              <CheckCheck className="w-4 h-4" />
               Mark all as read
             </button>
           )}
